@@ -1,0 +1,14 @@
+﻿################################################################################
+# 此 .gitignore 文件已由 Microsoft(R) Visual Studio 自动创建。
+################################################################################
+
+/Bin/x64/Debug/BurnServerD.ilk
+/Bin/x64/Debug/BurnServerD.pdb
+/Build/BurnServer.opensdf
+/Build/BurnServer.sdf
+/Build/BurnServer.v12.suo
+/Build/x64/Debug
+/Build/Debug
+/Build/ipch/testburnserver-527c7dcf
+/TestBurnServer/Debug
+/TestBurnServer/x64/Debug

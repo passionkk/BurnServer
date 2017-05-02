@@ -1,0 +1,94 @@
+# Makefile for BurnServer
+
+COMPILER_FLAGS	+= -D_LINUX_ -D_LINUX
+
+COMPILER_FLAGS	+= -D_REENTRANT -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__USE_POSIX
+
+COMPILER_FLAGS	+= -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -march=pentium-m -mtune=pentium-m -pipe -ffast-math -fomit-frame-pointer
+
+C++		=	g++
+CC		=	gcc
+CCFLAGS	+= $(COMPILER_FLAGS)  -g 
+#CCFLAGS	+= $(COMPILER_FLAGS)
+C++LINK = g++
+
+# EACH DIRECTORY WITH HEADERS MUST BE APPENDED IN THIS MANNER TO THE CCFLAGS
+
+CCFLAGS += -I./BurnServer
+CCFLAGS += -I./BurnServer/Depends/Charset
+CCFLAGS += -I./BurnServer/Depends/FileAnywhereModule
+CCFLAGS += -I./BurnServer/Depends/tinyxml
+CCFLAGS += -I./BurnServer/Depends/StringUtil
+CCFLAGS += -I./BurnServer/Depends/FileSys
+CCFLAGS += -I./BurnServer/Depends/NCX
+CCFLAGS += -I./BurnServer/Depends/TaskModelLib
+CCFLAGS += -I./BurnServer/Depends/Burn/include
+CCFLAGS += -I./BurnServer/Depends/ConfigurableFile
+CCFLAGS += -I./BurnServer/Depends/Charset
+CCFLAGS += -I./BurnServer/Depends/Util
+CCFLAGS += -I./BurnServer/Depends/e2fsprogs
+
+C++FLAGS	= $(CCFLAGS)
+
+
+CFILES		=	
+
+CPPFILES	= ./BurnServer/main.cpp \
+./BurnServer/InterfaceProcessTask.cpp \
+./BurnServer/InterfaceServer.cpp \
+./BurnServer/InterfaceProtocol.cpp \
+./BurnServer/BurnInfo.cpp \
+./BurnServer/BurnTask.cpp \
+./BurnServer/BurnSendStateTask.cpp \
+./BurnServer/BurnServerAgent.cpp \
+./BurnServer/Depends/FileAnywhereModule/CommonUtil.cpp \
+./BurnServer/Depends/FileAnywhereModule/FileAnywhereManager.cpp \
+./BurnServer/Depends/FileAnywhereModule/FileAnywhereObserver.cpp \
+./BurnServer/Depends/FileAnywhereModule/FileAnywhereTaskParameter.cpp \
+./BurnServer/Depends/FileAnywhereModule/UUID.cpp \
+./BurnServer/Depends/tinyxml/tinystr.cpp \
+./BurnServer/Depends/tinyxml/tinyxml.cpp \
+./BurnServer/Depends/tinyxml/tinyxmlerror.cpp \
+./BurnServer/Depends/tinyxml/tinyxmlparser.cpp \
+./BurnServer/Depends/StringUtil/StringUtil.cpp \
+./BurnServer/Depends/FileSys/DirectoryUtil.cpp \
+./BurnServer/Depends/FileSys/FileUtil.cpp \
+./BurnServer/Depends/ConfigurableFile/ConfigurableFile.cpp \
+./BurnServer/Depends/Charset/CharsetConvert.cpp \
+./BurnServer/Depends/Util/SocketUtil.cpp
+
+# DEPEND LIB PATH
+LIBFILES = 	\
+./BurnServer/Depends/NCX/libNCX.a \
+./BurnServer/Depends/Burn/lib/libburn.a \
+./BurnServer/Depends/Burn/lib/libRingBuf.a \
+./BurnServer/Depends/Burn/lib/libstream.a \
+./BurnServer/Depends/Burn/lib/libMediaLib.a \
+./BurnServer/Depends/Burn/lib/libMP4Lib.a \
+./BurnServer/Depends/Burn/lib/libMP4RtpLib.a \
+./BurnServer/Depends/Burn/lib/libMP4WriteLib.a \
+./BurnServer/Depends/Burn/lib/GCC_4_1_2/libDVDSDK.a \
+./BurnServer/Depends/Burn/lib/GCC_4_1_2/libChnsysRTSPLib.a \
+./BurnServer/Depends/TaskModelLib/libTaskModel.a
+
+CORE_LINK_LIBS = -lpthread -lrt -ldl -lstdc++ -lm -lcrypt -luuid
+
+LIBS = -lstream -lburn -lRingBuf -lDVDSDK -lNCX -lChnsysRTSPLib -lTSLib -lTaskModel $(CORE_LINK_LIBS)
+
+LINKPATH = \
+-L./BurnServer/Depends/NCX/ \
+-L./BurnServer/Depends/TaskModelLib/ \
+-L./BurnServer/Depends/Burn/lib/ \
+-L./BurnServer/Depends/Burn/lib/GCC_4_1_2/
+	
+BurnServer : $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) 
+	$(C++LINK) -o BurnServer.out $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) $(C++FLAGS) $(LINKPATH) $(LIBS)
+
+clean:
+	rm -f *.out *.log $(CFILES:.c=.o) $(CPPFILES:.cpp=.o)
+
+.cpp.o:
+	$(C++) -c -o $*.o $(C++FLAGS) $*.cpp
+
+.c.o:
+	$(CC) -c -o $*.o $(CCFLAGS) $*.c

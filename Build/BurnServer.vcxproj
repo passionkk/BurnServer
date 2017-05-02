@@ -1,0 +1,526 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Debug|Win32">
+      <Configuration>Debug</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Debug|x64">
+      <Configuration>Debug</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{BA28A9D9-CB2C-4488-885A-9F5AD888E726}</ProjectGuid>
+    <Keyword>Win32Proj</Keyword>
+    <RootNamespace>BurnServer</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Static</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>true</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseOfMfc>Static</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>v120</PlatformToolset>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+    <CharacterSet>Unicode</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <LinkIncremental>true</LinkIncremental>
+    <OutDir>../Bin/x86/Debug/</OutDir>
+    <TargetName>$(ProjectName)D</TargetName>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <TargetName>$(ProjectName)D</TargetName>
+    <LinkIncremental>true</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <LinkIncremental>false</LinkIncremental>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>../Include;../include/poco/json;../include/microhttpd;../Include/libcurl</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OutputFile>../Bin/x86/Debug/$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>PocoFoundationd.lib;PocoJSONd.lib;libcurld.lib;libmicrohttpd-dll_d.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../Depends/Poco;../Depends/microhttpd;../Depends/libcurl</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <WarningLevel>Level3</WarningLevel>
+      <Optimization>Disabled</Optimization>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>false</SDLCheck>
+      <AdditionalIncludeDirectories>../Include;../include/poco/json;../include/microhttpd;../Include/libcurl</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <OutputFile>../Bin/x86/Debug/$(TargetName)$(TargetExt)</OutputFile>
+      <AdditionalDependencies>PocoFoundationd.lib;PocoJSONd.lib;libcurld.lib;libmicrohttpd-dll_d.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../Depends/Poco;../Depends/microhttpd;../Depends/libcurl</AdditionalLibraryDirectories>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <PrecompiledHeader>Use</PrecompiledHeader>
+      <Optimization>MaxSpeed</Optimization>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <IntrinsicFunctions>true</IntrinsicFunctions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <SDLCheck>true</SDLCheck>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <Text Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\Source\BurnServer_main.cpp" />
+    <ClCompile Include="..\Source\Bussiness.cpp" />
+    <ClCompile Include="..\Source\CCBUtility.cpp" />
+    <ClCompile Include="..\Source\HttpServerChannel.cpp" />
+    <ClCompile Include="..\Source\HttpServerModule.cpp" />
+    <ClCompile Include="..\Source\UDPServerChannel.cpp" />
+    <ClCompile Include="..\Source\UDPServerModule.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\Include\Poco\AbstractCache.h" />
+    <ClInclude Include="..\Include\Poco\AbstractDelegate.h" />
+    <ClInclude Include="..\Include\Poco\AbstractEvent.h" />
+    <ClInclude Include="..\Include\Poco\AbstractObserver.h" />
+    <ClInclude Include="..\Include\Poco\AbstractPriorityDelegate.h" />
+    <ClInclude Include="..\Include\Poco\AbstractStrategy.h" />
+    <ClInclude Include="..\Include\Poco\AccessExpirationDecorator.h" />
+    <ClInclude Include="..\Include\Poco\AccessExpireCache.h" />
+    <ClInclude Include="..\Include\Poco\AccessExpireLRUCache.h" />
+    <ClInclude Include="..\Include\Poco\AccessExpireStrategy.h" />
+    <ClInclude Include="..\Include\Poco\ActiveDispatcher.h" />
+    <ClInclude Include="..\Include\Poco\ActiveMethod.h" />
+    <ClInclude Include="..\Include\Poco\ActiveResult.h" />
+    <ClInclude Include="..\Include\Poco\ActiveRunnable.h" />
+    <ClInclude Include="..\Include\Poco\ActiveStarter.h" />
+    <ClInclude Include="..\Include\Poco\Activity.h" />
+    <ClInclude Include="..\Include\Poco\Alignment.h" />
+    <ClInclude Include="..\Include\Poco\Any.h" />
+    <ClInclude Include="..\Include\Poco\ArchiveStrategy.h" />
+    <ClInclude Include="..\Include\Poco\Array.h" />
+    <ClInclude Include="..\Include\Poco\Ascii.h" />
+    <ClInclude Include="..\Include\Poco\ASCIIEncoding.h" />
+    <ClInclude Include="..\Include\Poco\AsyncChannel.h" />
+    <ClInclude Include="..\Include\Poco\AtomicCounter.h" />
+    <ClInclude Include="..\Include\Poco\AutoPtr.h" />
+    <ClInclude Include="..\Include\Poco\AutoReleasePool.h" />
+    <ClInclude Include="..\Include\Poco\Base32Decoder.h" />
+    <ClInclude Include="..\Include\Poco\Base32Encoder.h" />
+    <ClInclude Include="..\Include\Poco\Base64Decoder.h" />
+    <ClInclude Include="..\Include\Poco\Base64Encoder.h" />
+    <ClInclude Include="..\Include\Poco\BasicEvent.h" />
+    <ClInclude Include="..\Include\Poco\BinaryReader.h" />
+    <ClInclude Include="..\Include\Poco\BinaryWriter.h" />
+    <ClInclude Include="..\Include\Poco\Buffer.h" />
+    <ClInclude Include="..\Include\Poco\BufferAllocator.h" />
+    <ClInclude Include="..\Include\Poco\BufferedBidirectionalStreamBuf.h" />
+    <ClInclude Include="..\Include\Poco\BufferedStreamBuf.h" />
+    <ClInclude Include="..\Include\Poco\Bugcheck.h" />
+    <ClInclude Include="..\Include\Poco\ByteOrder.h" />
+    <ClInclude Include="..\Include\Poco\Channel.h" />
+    <ClInclude Include="..\Include\Poco\Checksum.h" />
+    <ClInclude Include="..\Include\Poco\ClassLibrary.h" />
+    <ClInclude Include="..\Include\Poco\ClassLoader.h" />
+    <ClInclude Include="..\Include\Poco\Clock.h" />
+    <ClInclude Include="..\Include\Poco\Condition.h" />
+    <ClInclude Include="..\Include\Poco\Config.h" />
+    <ClInclude Include="..\Include\Poco\Configurable.h" />
+    <ClInclude Include="..\Include\Poco\ConsoleChannel.h" />
+    <ClInclude Include="..\Include\Poco\CountingStream.h" />
+    <ClInclude Include="..\Include\Poco\DateTime.h" />
+    <ClInclude Include="..\Include\Poco\DateTimeFormat.h" />
+    <ClInclude Include="..\Include\Poco\DateTimeFormatter.h" />
+    <ClInclude Include="..\Include\Poco\DateTimeParser.h" />
+    <ClInclude Include="..\Include\Poco\Debugger.h" />
+    <ClInclude Include="..\Include\Poco\DefaultStrategy.h" />
+    <ClInclude Include="..\Include\Poco\DeflatingStream.h" />
+    <ClInclude Include="..\Include\Poco\Delegate.h" />
+    <ClInclude Include="..\Include\Poco\DigestEngine.h" />
+    <ClInclude Include="..\Include\Poco\DigestStream.h" />
+    <ClInclude Include="..\Include\Poco\DirectoryIterator.h" />
+    <ClInclude Include="..\Include\Poco\DirectoryIteratorStrategy.h" />
+    <ClInclude Include="..\Include\Poco\DirectoryIterator_UNIX.h" />
+    <ClInclude Include="..\Include\Poco\DirectoryIterator_VMS.h" />
+    <ClInclude Include="..\Include\Poco\DirectoryIterator_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\DirectoryIterator_WIN32U.h" />
+    <ClInclude Include="..\Include\Poco\DirectoryWatcher.h" />
+    <ClInclude Include="..\Include\Poco\DynamicAny.h" />
+    <ClInclude Include="..\Include\Poco\DynamicAnyHolder.h" />
+    <ClInclude Include="..\Include\Poco\DynamicFactory.h" />
+    <ClInclude Include="..\Include\Poco\DynamicStruct.h" />
+    <ClInclude Include="..\Include\Poco\Environment.h" />
+    <ClInclude Include="..\Include\Poco\Environment_UNIX.h" />
+    <ClInclude Include="..\Include\Poco\Environment_VMS.h" />
+    <ClInclude Include="..\Include\Poco\Environment_VX.h" />
+    <ClInclude Include="..\Include\Poco\Environment_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\Environment_WIN32U.h" />
+    <ClInclude Include="..\Include\Poco\Environment_WINCE.h" />
+    <ClInclude Include="..\Include\Poco\Error.h" />
+    <ClInclude Include="..\Include\Poco\ErrorHandler.h" />
+    <ClInclude Include="..\Include\Poco\Event.h" />
+    <ClInclude Include="..\Include\Poco\EventArgs.h" />
+    <ClInclude Include="..\Include\Poco\EventChannel.h" />
+    <ClInclude Include="..\Include\Poco\EventLogChannel.h" />
+    <ClInclude Include="..\Include\Poco\Event_POSIX.h" />
+    <ClInclude Include="..\Include\Poco\Event_VX.h" />
+    <ClInclude Include="..\Include\Poco\Event_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\Exception.h" />
+    <ClInclude Include="..\Include\Poco\ExpirationDecorator.h" />
+    <ClInclude Include="..\Include\Poco\Expire.h" />
+    <ClInclude Include="..\Include\Poco\ExpireCache.h" />
+    <ClInclude Include="..\Include\Poco\ExpireLRUCache.h" />
+    <ClInclude Include="..\Include\Poco\ExpireStrategy.h" />
+    <ClInclude Include="..\Include\Poco\FIFOBuffer.h" />
+    <ClInclude Include="..\Include\Poco\FIFOBufferStream.h" />
+    <ClInclude Include="..\Include\Poco\FIFOEvent.h" />
+    <ClInclude Include="..\Include\Poco\FIFOStrategy.h" />
+    <ClInclude Include="..\Include\Poco\File.h" />
+    <ClInclude Include="..\Include\Poco\FileChannel.h" />
+    <ClInclude Include="..\Include\Poco\FileStream.h" />
+    <ClInclude Include="..\Include\Poco\FileStreamFactory.h" />
+    <ClInclude Include="..\Include\Poco\FileStream_POSIX.h" />
+    <ClInclude Include="..\Include\Poco\FileStream_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\File_UNIX.h" />
+    <ClInclude Include="..\Include\Poco\File_VMS.h" />
+    <ClInclude Include="..\Include\Poco\File_VX.h" />
+    <ClInclude Include="..\Include\Poco\File_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\File_WIN32U.h" />
+    <ClInclude Include="..\Include\Poco\File_WINCE.h" />
+    <ClInclude Include="..\Include\Poco\Format.h" />
+    <ClInclude Include="..\Include\Poco\Formatter.h" />
+    <ClInclude Include="..\Include\Poco\FormattingChannel.h" />
+    <ClInclude Include="..\Include\Poco\Foundation.h" />
+    <ClInclude Include="..\Include\Poco\FPEnvironment.h" />
+    <ClInclude Include="..\Include\Poco\FPEnvironment_C99.h" />
+    <ClInclude Include="..\Include\Poco\FPEnvironment_DEC.h" />
+    <ClInclude Include="..\Include\Poco\FPEnvironment_DUMMY.h" />
+    <ClInclude Include="..\Include\Poco\FPEnvironment_SUN.h" />
+    <ClInclude Include="..\Include\Poco\FPEnvironment_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\FunctionDelegate.h" />
+    <ClInclude Include="..\Include\Poco\FunctionPriorityDelegate.h" />
+    <ClInclude Include="..\Include\Poco\Glob.h" />
+    <ClInclude Include="..\Include\Poco\Hash.h" />
+    <ClInclude Include="..\Include\Poco\HashFunction.h" />
+    <ClInclude Include="..\Include\Poco\HashMap.h" />
+    <ClInclude Include="..\Include\Poco\HashSet.h" />
+    <ClInclude Include="..\Include\Poco\HashStatistic.h" />
+    <ClInclude Include="..\Include\Poco\HashTable.h" />
+    <ClInclude Include="..\Include\Poco\HexBinaryDecoder.h" />
+    <ClInclude Include="..\Include\Poco\HexBinaryEncoder.h" />
+    <ClInclude Include="..\Include\Poco\HMACEngine.h" />
+    <ClInclude Include="..\Include\Poco\InflatingStream.h" />
+    <ClInclude Include="..\Include\Poco\Instantiator.h" />
+    <ClInclude Include="..\Include\Poco\JSON\Array.h" />
+    <ClInclude Include="..\Include\Poco\JSON\Handler.h" />
+    <ClInclude Include="..\Include\Poco\JSON\JSON.h" />
+    <ClInclude Include="..\Include\Poco\JSON\JSONException.h" />
+    <ClInclude Include="..\Include\Poco\JSON\Object.h" />
+    <ClInclude Include="..\Include\Poco\JSON\ParseHandler.h" />
+    <ClInclude Include="..\Include\Poco\JSON\Parser.h" />
+    <ClInclude Include="..\Include\Poco\JSON\PrintHandler.h" />
+    <ClInclude Include="..\Include\Poco\JSON\Query.h" />
+    <ClInclude Include="..\Include\Poco\JSON\Stringifier.h" />
+    <ClInclude Include="..\Include\Poco\JSON\Template.h" />
+    <ClInclude Include="..\Include\Poco\JSON\TemplateCache.h" />
+    <ClInclude Include="..\Include\Poco\KeyValueArgs.h" />
+    <ClInclude Include="..\Include\Poco\Latin1Encoding.h" />
+    <ClInclude Include="..\Include\Poco\Latin2Encoding.h" />
+    <ClInclude Include="..\Include\Poco\Latin9Encoding.h" />
+    <ClInclude Include="..\Include\Poco\LinearHashTable.h" />
+    <ClInclude Include="..\Include\Poco\LineEndingConverter.h" />
+    <ClInclude Include="..\Include\Poco\ListMap.h" />
+    <ClInclude Include="..\Include\Poco\LocalDateTime.h" />
+    <ClInclude Include="..\Include\Poco\LogFile.h" />
+    <ClInclude Include="..\Include\Poco\LogFile_STD.h" />
+    <ClInclude Include="..\Include\Poco\LogFile_VMS.h" />
+    <ClInclude Include="..\Include\Poco\LogFile_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\LogFile_WIN32U.h" />
+    <ClInclude Include="..\Include\Poco\Logger.h" />
+    <ClInclude Include="..\Include\Poco\LoggingFactory.h" />
+    <ClInclude Include="..\Include\Poco\LoggingRegistry.h" />
+    <ClInclude Include="..\Include\Poco\LogStream.h" />
+    <ClInclude Include="..\Include\Poco\LRUCache.h" />
+    <ClInclude Include="..\Include\Poco\LRUStrategy.h" />
+    <ClInclude Include="..\Include\Poco\Manifest.h" />
+    <ClInclude Include="..\Include\Poco\MD4Engine.h" />
+    <ClInclude Include="..\Include\Poco\MD5Engine.h" />
+    <ClInclude Include="..\Include\Poco\MemoryPool.h" />
+    <ClInclude Include="..\Include\Poco\MemoryStream.h" />
+    <ClInclude Include="..\Include\Poco\Message.h" />
+    <ClInclude Include="..\Include\Poco\MetaObject.h" />
+    <ClInclude Include="..\Include\Poco\MetaProgramming.h" />
+    <ClInclude Include="..\Include\Poco\Mutex.h" />
+    <ClInclude Include="..\Include\Poco\Mutex_POSIX.h" />
+    <ClInclude Include="..\Include\Poco\Mutex_VX.h" />
+    <ClInclude Include="..\Include\Poco\Mutex_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\Mutex_WINCE.h" />
+    <ClInclude Include="..\Include\Poco\NamedEvent.h" />
+    <ClInclude Include="..\Include\Poco\NamedEvent_Android.h" />
+    <ClInclude Include="..\Include\Poco\NamedEvent_UNIX.h" />
+    <ClInclude Include="..\Include\Poco\NamedEvent_VMS.h" />
+    <ClInclude Include="..\Include\Poco\NamedEvent_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\NamedEvent_WIN32U.h" />
+    <ClInclude Include="..\Include\Poco\NamedMutex.h" />
+    <ClInclude Include="..\Include\Poco\NamedMutex_Android.h" />
+    <ClInclude Include="..\Include\Poco\NamedMutex_UNIX.h" />
+    <ClInclude Include="..\Include\Poco\NamedMutex_VMS.h" />
+    <ClInclude Include="..\Include\Poco\NamedMutex_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\NamedMutex_WIN32U.h" />
+    <ClInclude Include="..\Include\Poco\NamedTuple.h" />
+    <ClInclude Include="..\Include\Poco\NestedDiagnosticContext.h" />
+    <ClInclude Include="..\Include\Poco\NObserver.h" />
+    <ClInclude Include="..\Include\Poco\Notification.h" />
+    <ClInclude Include="..\Include\Poco\NotificationCenter.h" />
+    <ClInclude Include="..\Include\Poco\NotificationQueue.h" />
+    <ClInclude Include="..\Include\Poco\NotificationStrategy.h" />
+    <ClInclude Include="..\Include\Poco\Nullable.h" />
+    <ClInclude Include="..\Include\Poco\NullChannel.h" />
+    <ClInclude Include="..\Include\Poco\NullStream.h" />
+    <ClInclude Include="..\Include\Poco\NumberFormatter.h" />
+    <ClInclude Include="..\Include\Poco\NumberParser.h" />
+    <ClInclude Include="..\Include\Poco\NumericString.h" />
+    <ClInclude Include="..\Include\Poco\ObjectPool.h" />
+    <ClInclude Include="..\Include\Poco\Observer.h" />
+    <ClInclude Include="..\Include\Poco\OpcomChannel.h" />
+    <ClInclude Include="..\Include\Poco\Optional.h" />
+    <ClInclude Include="..\Include\Poco\Path.h" />
+    <ClInclude Include="..\Include\Poco\Path_UNIX.h" />
+    <ClInclude Include="..\Include\Poco\Path_VMS.h" />
+    <ClInclude Include="..\Include\Poco\Path_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\Path_WIN32U.h" />
+    <ClInclude Include="..\Include\Poco\Path_WINCE.h" />
+    <ClInclude Include="..\Include\Poco\PatternFormatter.h" />
+    <ClInclude Include="..\Include\Poco\PBKDF2Engine.h" />
+    <ClInclude Include="..\Include\Poco\Pipe.h" />
+    <ClInclude Include="..\Include\Poco\PipeImpl.h" />
+    <ClInclude Include="..\Include\Poco\PipeImpl_DUMMY.h" />
+    <ClInclude Include="..\Include\Poco\PipeImpl_POSIX.h" />
+    <ClInclude Include="..\Include\Poco\PipeImpl_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\PipeStream.h" />
+    <ClInclude Include="..\Include\Poco\Platform.h" />
+    <ClInclude Include="..\Include\Poco\Platform_POSIX.h" />
+    <ClInclude Include="..\Include\Poco\Platform_VMS.h" />
+    <ClInclude Include="..\Include\Poco\Platform_VX.h" />
+    <ClInclude Include="..\Include\Poco\Platform_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\Poco.h" />
+    <ClInclude Include="..\Include\Poco\PriorityDelegate.h" />
+    <ClInclude Include="..\Include\Poco\PriorityEvent.h" />
+    <ClInclude Include="..\Include\Poco\PriorityExpire.h" />
+    <ClInclude Include="..\Include\Poco\PriorityNotificationQueue.h" />
+    <ClInclude Include="..\Include\Poco\PriorityStrategy.h" />
+    <ClInclude Include="..\Include\Poco\Process.h" />
+    <ClInclude Include="..\Include\Poco\Process_UNIX.h" />
+    <ClInclude Include="..\Include\Poco\Process_VMS.h" />
+    <ClInclude Include="..\Include\Poco\Process_VX.h" />
+    <ClInclude Include="..\Include\Poco\Process_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\Process_WIN32U.h" />
+    <ClInclude Include="..\Include\Poco\Process_WINCE.h" />
+    <ClInclude Include="..\Include\Poco\PurgeStrategy.h" />
+    <ClInclude Include="..\Include\Poco\Random.h" />
+    <ClInclude Include="..\Include\Poco\RandomStream.h" />
+    <ClInclude Include="..\Include\Poco\RecursiveDirectoryIterator.h" />
+    <ClInclude Include="..\Include\Poco\RecursiveDirectoryIteratorImpl.h" />
+    <ClInclude Include="..\Include\Poco\RefCountedObject.h" />
+    <ClInclude Include="..\Include\Poco\RegularExpression.h" />
+    <ClInclude Include="..\Include\Poco\RotateStrategy.h" />
+    <ClInclude Include="..\Include\Poco\Runnable.h" />
+    <ClInclude Include="..\Include\Poco\RunnableAdapter.h" />
+    <ClInclude Include="..\Include\Poco\RWLock.h" />
+    <ClInclude Include="..\Include\Poco\RWLock_Android.h" />
+    <ClInclude Include="..\Include\Poco\RWLock_POSIX.h" />
+    <ClInclude Include="..\Include\Poco\RWLock_VX.h" />
+    <ClInclude Include="..\Include\Poco\RWLock_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\RWLock_WINCE.h" />
+    <ClInclude Include="..\Include\Poco\ScopedLock.h" />
+    <ClInclude Include="..\Include\Poco\ScopedUnlock.h" />
+    <ClInclude Include="..\Include\Poco\Semaphore.h" />
+    <ClInclude Include="..\Include\Poco\Semaphore_POSIX.h" />
+    <ClInclude Include="..\Include\Poco\Semaphore_VX.h" />
+    <ClInclude Include="..\Include\Poco\Semaphore_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\SHA1Engine.h" />
+    <ClInclude Include="..\Include\Poco\SharedLibrary.h" />
+    <ClInclude Include="..\Include\Poco\SharedLibrary_HPUX.h" />
+    <ClInclude Include="..\Include\Poco\SharedLibrary_UNIX.h" />
+    <ClInclude Include="..\Include\Poco\SharedLibrary_VMS.h" />
+    <ClInclude Include="..\Include\Poco\SharedLibrary_VX.h" />
+    <ClInclude Include="..\Include\Poco\SharedLibrary_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\SharedLibrary_WIN32U.h" />
+    <ClInclude Include="..\Include\Poco\SharedMemory.h" />
+    <ClInclude Include="..\Include\Poco\SharedMemory_DUMMY.h" />
+    <ClInclude Include="..\Include\Poco\SharedMemory_POSIX.h" />
+    <ClInclude Include="..\Include\Poco\SharedMemory_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\SharedPtr.h" />
+    <ClInclude Include="..\Include\Poco\SignalHandler.h" />
+    <ClInclude Include="..\Include\Poco\SimpleFileChannel.h" />
+    <ClInclude Include="..\Include\Poco\SimpleHashTable.h" />
+    <ClInclude Include="..\Include\Poco\SingletonHolder.h" />
+    <ClInclude Include="..\Include\Poco\SortedDirectoryIterator.h" />
+    <ClInclude Include="..\Include\Poco\SplitterChannel.h" />
+    <ClInclude Include="..\Include\Poco\Stopwatch.h" />
+    <ClInclude Include="..\Include\Poco\StrategyCollection.h" />
+    <ClInclude Include="..\Include\Poco\StreamChannel.h" />
+    <ClInclude Include="..\Include\Poco\StreamConverter.h" />
+    <ClInclude Include="..\Include\Poco\StreamCopier.h" />
+    <ClInclude Include="..\Include\Poco\StreamTokenizer.h" />
+    <ClInclude Include="..\Include\Poco\StreamUtil.h" />
+    <ClInclude Include="..\Include\Poco\String.h" />
+    <ClInclude Include="..\Include\Poco\StringTokenizer.h" />
+    <ClInclude Include="..\Include\Poco\SynchronizedObject.h" />
+    <ClInclude Include="..\Include\Poco\SyslogChannel.h" />
+    <ClInclude Include="..\Include\Poco\Task.h" />
+    <ClInclude Include="..\Include\Poco\TaskManager.h" />
+    <ClInclude Include="..\Include\Poco\TaskNotification.h" />
+    <ClInclude Include="..\Include\Poco\TeeStream.h" />
+    <ClInclude Include="..\Include\Poco\TemporaryFile.h" />
+    <ClInclude Include="..\Include\Poco\TextBufferIterator.h" />
+    <ClInclude Include="..\Include\Poco\TextConverter.h" />
+    <ClInclude Include="..\Include\Poco\TextEncoding.h" />
+    <ClInclude Include="..\Include\Poco\TextIterator.h" />
+    <ClInclude Include="..\Include\Poco\Thread.h" />
+    <ClInclude Include="..\Include\Poco\ThreadLocal.h" />
+    <ClInclude Include="..\Include\Poco\ThreadPool.h" />
+    <ClInclude Include="..\Include\Poco\ThreadTarget.h" />
+    <ClInclude Include="..\Include\Poco\Thread_POSIX.h" />
+    <ClInclude Include="..\Include\Poco\Thread_VX.h" />
+    <ClInclude Include="..\Include\Poco\Thread_WIN32.h" />
+    <ClInclude Include="..\Include\Poco\Thread_WINCE.h" />
+    <ClInclude Include="..\Include\Poco\TimedNotificationQueue.h" />
+    <ClInclude Include="..\Include\Poco\Timer.h" />
+    <ClInclude Include="..\Include\Poco\Timespan.h" />
+    <ClInclude Include="..\Include\Poco\Timestamp.h" />
+    <ClInclude Include="..\Include\Poco\Timezone.h" />
+    <ClInclude Include="..\Include\Poco\Token.h" />
+    <ClInclude Include="..\Include\Poco\Tuple.h" />
+    <ClInclude Include="..\Include\Poco\TypeList.h" />
+    <ClInclude Include="..\Include\Poco\Types.h" />
+    <ClInclude Include="..\Include\Poco\UnbufferedStreamBuf.h" />
+    <ClInclude Include="..\Include\Poco\Unicode.h" />
+    <ClInclude Include="..\Include\Poco\UnicodeConverter.h" />
+    <ClInclude Include="..\Include\Poco\UniqueAccessExpireCache.h" />
+    <ClInclude Include="..\Include\Poco\UniqueAccessExpireLRUCache.h" />
+    <ClInclude Include="..\Include\Poco\UniqueAccessExpireStrategy.h" />
+    <ClInclude Include="..\Include\Poco\UniqueExpireCache.h" />
+    <ClInclude Include="..\Include\Poco\UniqueExpireLRUCache.h" />
+    <ClInclude Include="..\Include\Poco\UniqueExpireStrategy.h" />
+    <ClInclude Include="..\Include\Poco\UnWindows.h" />
+    <ClInclude Include="..\Include\Poco\URI.h" />
+    <ClInclude Include="..\Include\Poco\URIStreamFactory.h" />
+    <ClInclude Include="..\Include\Poco\URIStreamOpener.h" />
+    <ClInclude Include="..\Include\Poco\UTF16Encoding.h" />
+    <ClInclude Include="..\Include\Poco\UTF32Encoding.h" />
+    <ClInclude Include="..\Include\Poco\UTF8Encoding.h" />
+    <ClInclude Include="..\Include\Poco\UTF8String.h" />
+    <ClInclude Include="..\Include\Poco\UTFString.h" />
+    <ClInclude Include="..\Include\Poco\UUID.h" />
+    <ClInclude Include="..\Include\Poco\UUIDGenerator.h" />
+    <ClInclude Include="..\Include\Poco\ValidArgs.h" />
+    <ClInclude Include="..\Include\Poco\Version.h" />
+    <ClInclude Include="..\Include\Poco\Void.h" />
+    <ClInclude Include="..\Include\Poco\Windows1250Encoding.h" />
+    <ClInclude Include="..\Include\Poco\Windows1251Encoding.h" />
+    <ClInclude Include="..\Include\Poco\Windows1252Encoding.h" />
+    <ClInclude Include="..\Include\Poco\WindowsConsoleChannel.h" />
+    <ClInclude Include="..\Include\Poco\zconf.h" />
+    <ClInclude Include="..\Include\Poco\zlib.h" />
+    <ClInclude Include="..\Source\Bussiness.h" />
+    <ClInclude Include="..\Source\CCBUtility.h" />
+    <ClInclude Include="..\Source\CommonDefine.h" />
+    <ClInclude Include="..\Source\HttpServerChannel.h" />
+    <ClInclude Include="..\Source\HttpServerModule.h" />
+    <ClInclude Include="..\Source\UDPServerChannel.h" />
+    <ClInclude Include="..\Source\UDPServerModule.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
