@@ -12,6 +12,13 @@ public:
 
 #include <string>
 
+#include "Poco/Mutex.h"
+#include "Poco/Net/Net.h"
+#include "Poco/Net/DatagramSocket.h"
+#include "Poco/Net/SocketAddress.h"
+#include "Poco/Net/Socket.h"
+#include "poco/Foundation.h"
+
 class CHttpClient
 {
 public:
@@ -54,6 +61,10 @@ public:
 	* @return 返回是否Post成功
 	*/
 	int Gets(const std::string & strUrl, std::string & strResponse, const char * pCaPath = NULL);
+
+	int SendHttpProtocol(std::string sSend, std::string &sRecv, bool bLog = true);
+
+	int BurnServerConnect();
 
 public:
 	void SetDebug(bool bDebug);

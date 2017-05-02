@@ -16,12 +16,32 @@ CHttpClient::~CHttpClient()
 #include <string>
 
 #ifdef DEBUG
-#pragma comment(lib, "libcurld.lib")     
+//#pragma comment(lib, "libcurld.lib")     
 #endif // DEBUG
 
 //#pragma comment(lib, "wldap32.lib")     
 //#pragma comment(lib, "ws2_32.lib")     
-//#pragma comment(lib, "winmm.lib")   
+//#pragma comment(lib, "winmm.lib")  
+#include "Poco/Foundation.h"
+//#include "Poco/File.h"
+//#include "poco/StringTokenizer.h"
+#include "poco/JSON/Parser.h"
+#include "poco/Dynamic/Var.h"
+#include "Poco/net/Net.h"
+#include "poco/net/DatagramSocket.h"
+#include "poco/net/streamsocket.h"
+
+using namespace Poco::JSON;
+using namespace Poco::Dynamic;
+using Poco::DynamicStruct;
+
+#define UDP_BUFFER_SIZE (64 * 1024)
+
+size_t client_write_data(void* buffer, size_t size, size_t nmemb, void *stream)
+{
+	((std::string*)stream)->append((char*)buffer, size * nmemb);
+	return size * nmemb;
+}
 
 CHttpClient::CHttpClient(void) :
 m_bDebug(false)
@@ -202,6 +222,94 @@ int CHttpClient::Gets(const std::string & strUrl, std::string & strResponse, con
 	return res;
 }
 
+int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bLog)
+{
+	if (bLog)
+	{
+		//g_NetLog.Debug("[H323Channel::SendHttpProtocol] send content: %s\n", sSend.c_str());
+	}
+	int iRet = -1;
+	std::string strUrl = "http://127.0.0.1:90/activeProtocol.action";
+
+	CURL *curl = NULL;
+	CURLcode res;
+
+	curl = curl_easy_init();
+	if (curl != NULL)
+	{
+		curl_easy_setopt(curl, CURLOPT_URL, strUrl.c_str()); //url地址  
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, client_write_data); //对返回的数据进行操作的函数地址  
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &sRecv); //这是write_data的第四个参数值  
+		curl_easy_setopt(curl, CURLOPT_POST, 1); //设置为非0表示本次操作为post  
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); //设置为非0,响应头信息location
+		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+
+		// 设置要POST的JSON数据  
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, sSend.c_str());
+
+
+		res = curl_easy_perform(curl);
+
+		if (res != CURLE_OK)
+		{
+			switch (res)
+			{
+			case CURLE_UNSUPPORTED_PROTOCOL:
+				fprintf(stderr, "不支持的协议,由URL的头部指定\n");
+			case CURLE_COULDNT_CONNECT:
+				fprintf(stderr, "不能连接到remote主机或者代理\n");
+			case CURLE_HTTP_RETURNED_ERROR:
+				fprintf(stderr, "http返回错误\n");
+			case CURLE_READ_ERROR:
+				fprintf(stderr, "读本地文件错误\n");
+			default:
+				fprintf(stderr, "返回值:%d\n", res);
+			}
+		}
+		else
+		{
+			if (bLog)
+			{
+				//g_NetLog.Debug("[H323Channel::SendHttpProtocol] recv content: %s\n", sRecv.c_str());
+			}
+			iRet = 0;
+		}
+		curl_easy_cleanup(curl);
+	}
+	return 0;
+}
+
+
+int CHttpClient::BurnServerConnect()
+{
+	try
+	{
+		Object::Ptr pObj = new Object(true);
+		Object::Ptr pObj1 = new Object(true);
+		pObj1->set("videoEncodeType", 8);
+		pObj1->set("logicNo", 88);
+		pObj->set("params", pObj1);
+		pObj->set("method", "agentSetVideoEncodeType");
+
+		std::stringstream ss;
+		pObj->stringify(ss);
+		std::string sSend = ss.str();
+		std::string sRecv = "";
+
+		if (SendHttpProtocol(sSend, sRecv) == 0)
+		{
+
+		}
+
+	}
+	catch (...)
+	{
+		//g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
+	}
+	return 0;
+}
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 void CHttpClient::SetDebug(bool bDebug)
