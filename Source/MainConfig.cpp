@@ -1,7 +1,7 @@
 #include "MainConfig.h"
 #include "CommonDefine.h"
 
-
+const char* g_pConfigPath = "E:\\Work\\GitRepos\\BurnServer\\Bin\\x86\\Debug\\config.json";
 MainConfig *MainConfig::m_pInstance = NULL;
 
 MainConfig::MainConfig()
@@ -37,8 +37,8 @@ void MainConfig::Init()
 {
 	if (m_pInstance)
 	{
-		if (m_pInstance->IsConfigFileRight("config.json"))
-			m_pInstance->ReadFromFile("config.json");
+		if (m_pInstance->IsConfigFileRight(g_pConfigPath))
+			m_pInstance->ReadFromFile(g_pConfigPath);
 	}
 }
 
