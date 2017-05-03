@@ -1,4 +1,5 @@
 #pragma once
+#include "CommonDefine.h"
 
 class RetransChannel
 {
@@ -24,11 +25,12 @@ public:
 	static void Uninitialize();
 	static MainConfig* GetInstance();
 	
+	bool IsConfigFileRight(std::string strFile);
 	int ReadFromFile(std::string strFile);
 	int SaveFile();
 
 	//获取服务器配置信息 nServerType：0，Http；1，UDP
-	Poco::DynamicStruct GetServerConfigInfo(int nServerType);
+	RetransChannel GetServerConfigInfo(int nServerType);
 	//int GetHttpServerConfigInfo();
 	//int GetUDPServerConfigInfo();
 
@@ -37,7 +39,19 @@ public:
 	virtual ~MainConfig();
 
 protected:
-	static MainConfig*	m_pInstance;
-	std::string			m_strFile;
+	void Init();
+
+protected:
+	static MainConfig*			m_pInstance;
+	std::string					m_strFile;
+	Poco::Dynamic::Var          m_varFullConfig;
+	
+	//http server config
+	Poco::DynamicStruct			m_dsHttpInfo;
+	RetransChannel				m_chnnelHttp;
+	
+	//udp server config
+	Poco::DynamicStruct			m_dsUDPInfo;
+	RetransChannel				m_chnnelUdp;
 };
 

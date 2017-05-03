@@ -20,6 +20,7 @@
 #include "Poco/net/Net.h"
 #include "poco/net/DatagramSocket.h"
 #include "poco/net/streamsocket.h"
+#include "poco/FileStream.h"
 
 using namespace Poco;
 using namespace Poco::Dynamic;

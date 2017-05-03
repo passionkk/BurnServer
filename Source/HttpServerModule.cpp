@@ -2,6 +2,7 @@
 #include "Bussiness.h"
 #include "CommonDefine.h"
 #include "jsoncpp/json/json.h"
+#include "MainConfig.h"
 
 HttpServerModule* HttpServerModule::m_pInstance = NULL;
 
@@ -126,8 +127,11 @@ HttpServerModule *HttpServerModule::GetInstance()
 void HttpServerModule::Init()
 {
     HttpServerChannel* pChannel = new HttpServerChannel();
-    pChannel->Start(90, &Access_callback, (void*)this, &response_completed_callback);
-    m_vectChannels.push_back(pChannel);
+	RetransChannel httpInfo = MainConfig::GetInstance()->GetServerConfigInfo(0);
+	int iPort = httpInfo.m_iPort;
+	pChannel->Start(iPort, &Access_callback, (void*)this, &response_completed_callback);
+	//pChannel->Start(90, &Access_callback, (void*)this, &response_completed_callback);
+	m_vectChannels.push_back(pChannel);
 }
 
 void HttpServerModule::UnInit()
