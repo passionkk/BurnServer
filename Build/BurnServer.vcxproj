@@ -91,15 +91,15 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>false</SDLCheck>
-      <AdditionalIncludeDirectories>../Include;../include/poco/json;../include/microhttpd;../Include/libcurl</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../Include;../include/poco/json;../include/microhttpd;../Include/libcurl;../Include/jsoncpp</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <OutputFile>../Bin/x86/Debug/$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>PocoFoundationd.lib;PocoJSONd.lib;libcurld.lib;libmicrohttpd-dll_d.lib</AdditionalDependencies>
-      <AdditionalLibraryDirectories>../Depends/Poco;../Depends/microhttpd;../Depends/libcurl</AdditionalLibraryDirectories>
+      <AdditionalDependencies>PocoFoundationd.lib;PocoJSONd.lib;libcurld.lib;libmicrohttpd-dll_d.lib;lib_json.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>../Depends/Poco;../Depends/microhttpd;../Depends/libcurl;../Depends/jsoncpp</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -164,6 +164,7 @@
     <ClCompile Include="..\Source\CCBUtility.cpp" />
     <ClCompile Include="..\Source\HttpServerChannel.cpp" />
     <ClCompile Include="..\Source\HttpServerModule.cpp" />
+    <ClCompile Include="..\Source\MainConfig.cpp" />
     <ClCompile Include="..\Source\UDPServerChannel.cpp" />
     <ClCompile Include="..\Source\UDPServerModule.cpp" />
   </ItemGroup>
@@ -517,6 +518,7 @@
     <ClInclude Include="..\Source\CommonDefine.h" />
     <ClInclude Include="..\Source\HttpServerChannel.h" />
     <ClInclude Include="..\Source\HttpServerModule.h" />
+    <ClInclude Include="..\Source\MainConfig.h" />
     <ClInclude Include="..\Source\UDPServerChannel.h" />
     <ClInclude Include="..\Source\UDPServerModule.h" />
   </ItemGroup>

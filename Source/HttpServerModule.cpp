@@ -1,6 +1,7 @@
 #include "HttpServerModule.h"
 #include "Bussiness.h"
 #include "CommonDefine.h"
+#include "jsoncpp/json/json.h"
 
 HttpServerModule* HttpServerModule::m_pInstance = NULL;
 
@@ -190,7 +191,11 @@ std::string HttpServerModule::ProcessProtocol(std::string sMethod, std::string j
     try
     {
         std::string jsonSend = "";
-		if(sMethod == "agentHeartBeat")
+		if (sMethod == "testProtocol")
+		{
+			jsonSend = TestProtocol(jsonRecv);
+		}
+		else if(sMethod == "agentHeartBeat")
         {
             jsonSend = AgentHeartBeat(jsonRecv);
         }
@@ -205,6 +210,43 @@ std::string HttpServerModule::ProcessProtocol(std::string sMethod, std::string j
         printf("%s catched\n", __PRETTY_FUNCTION__);
         return "";
     }
+}
+
+std::string HttpServerModule::TestProtocol(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+			int iLogicNo = jsonValueParams["logicNo"].asInt();
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+		return "";
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
 }
 
 std::string HttpServerModule::AgentHeartBeat(std::string strIn)

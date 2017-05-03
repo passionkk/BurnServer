@@ -64,7 +64,7 @@ public:
 
 	int SendHttpProtocol(std::string sSend, std::string &sRecv, bool bLog = true);
 
-	int BurnServerConnect();
+	int BurnServerConnect(CString& strRecv);
 
 public:
 	void SetDebug(bool bDebug);

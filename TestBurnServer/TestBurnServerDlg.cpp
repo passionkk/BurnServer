@@ -56,12 +56,14 @@ CTestBurnServerDlg::CTestBurnServerDlg(CWnd* pParent /*=NULL*/)
 void CTestBurnServerDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
+	DDX_Control(pDX, IDC_EDIT_RECV, m_editRecvInfo);
 }
 
 BEGIN_MESSAGE_MAP(CTestBurnServerDlg, CDialogEx)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
+	ON_BN_CLICKED(IDC_BTN_TEST, &CTestBurnServerDlg::OnBnClickedBtnTest)
 END_MESSAGE_MAP()
 
 
@@ -150,3 +152,14 @@ HCURSOR CTestBurnServerDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+
+
+void CTestBurnServerDlg::OnBnClickedBtnTest()
+{
+	// TODO:  在此添加控件通知处理程序代码
+	CString strRecv;
+	strRecv.Empty();
+	m_httpClient.BurnServerConnect(strRecv);
+	if (!strRecv.IsEmpty())
+		m_editRecvInfo.SetWindowText(strRecv);
+}

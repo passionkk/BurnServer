@@ -282,7 +282,7 @@ int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bL
 }
 
 
-int CHttpClient::BurnServerConnect()
+int CHttpClient::BurnServerConnect(CString& strRecv)
 {
 	try
 	{
@@ -291,7 +291,7 @@ int CHttpClient::BurnServerConnect()
 		pObj1->set("videoEncodeType", 8);
 		pObj1->set("logicNo", 88);
 		pObj->set("params", pObj1);
-		pObj->set("method", "agentSetVideoEncodeType");
+		pObj->set("method", "testProtocol");
 
 		std::stringstream ss;
 		pObj->stringify(ss);
@@ -299,8 +299,9 @@ int CHttpClient::BurnServerConnect()
 		std::string sRecv = "";
 
 		if (SendHttpProtocol(sSend, sRecv) == 0)
-		{
-
+		{		
+			CString str(sRecv.c_str());
+			strRecv = str;//strRecv.Format(L"%s", sRecv.c_str());
 		}
 
 	}

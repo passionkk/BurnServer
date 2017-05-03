@@ -3,7 +3,8 @@
 //
 
 #pragma once
-
+#include "HttpClient.h"
+#include "afxwin.h"
 
 // CTestBurnServerDlg ¶Ô»°¿ò
 class CTestBurnServerDlg : public CDialogEx
@@ -29,4 +30,9 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg void OnBnClickedBtnTest();
+
+	CHttpClient m_httpClient;
+	CEdit		m_editRecvInfo;
 };

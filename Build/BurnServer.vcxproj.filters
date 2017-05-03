@@ -66,6 +66,9 @@
     <ClCompile Include="..\Source\Bussiness.cpp">
       <Filter>Business</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\MainConfig.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\Poco\AbstractCache.h">
@@ -1120,6 +1123,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\Bussiness.h">
       <Filter>Business</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\MainConfig.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

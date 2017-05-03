@@ -26,7 +26,9 @@ public:
 
 private:
 
-    std::string AgentHeartBeat(std::string strIn);
+	std::string TestProtocol(std::string strIn);
+	std::string AgentHeartBeat(std::string strIn);
+
 
 private:
     static HttpServerModule   *m_pInstance;
