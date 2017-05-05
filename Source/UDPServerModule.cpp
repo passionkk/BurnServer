@@ -1,5 +1,6 @@
 #include "UDPServerModule.h"
 #include "CommonDefine.h"
+#include "MainConfig.h"
 
 UDPServerModule* UDPServerModule::m_pInstance = NULL;
 
@@ -42,36 +43,19 @@ UDPServerModule *UDPServerModule::GetInstance()
 void UDPServerModule::Init()
 {
     //read config
-	Poco::DynamicStruct  udpServerModule;// = MainConfig::GetInstance()->UdpServerModule_GetCopy();
+	RetransChannel UDPChannel = MainConfig::GetInstance()->GetServerConfigInfo(1);
 
-    for(int i = 0;i < udpServerModule["channels"].size();i++)
+	std::string strIP = UDPChannel.m_strIP;
+	int iPort = UDPChannel.m_iPort;
+	UDPServerChannel* pChannel = new UDPServerChannel(strIP);
+	pChannel->AddRetransChannel(UDPChannel);
+	if (0 == pChannel->start(iPort))
     {
-        std::string sName = udpServerModule["channels"][i]["name"].toString();
-        int iPort = int(udpServerModule["channels"][i]["port"]);
-
-        UDPServerChannel* pChannel = new UDPServerChannel(sName);
-
-        for(int j = 0; j < udpServerModule["channels"][i]["retrans"]["entities"].size(); j++)
-        {
-			/*RetransChannel retransChannel;
-			retransChannel.m_strType =  udpServerModule["channels"][i]["retrans"]["entities"][j]["type"].toString();
-			retransChannel.m_strIP =  udpServerModule["channels"][i]["retrans"]["entities"][j]["ip"].toString();
-			retransChannel.m_iPort =  int(udpServerModule["channels"][i]["retrans"]["entities"][j]["port"]);
-			retransChannel.m_strSerialName =  udpServerModule["channels"][i]["retrans"]["entities"][j]["serialPortName"].toString();
-
-			pChannel->AddRetransChannel(retransChannel);*/
-        }
-
-        //pChannel->AddListener(CmdProcessor::GetInstance());
-
-        if (0 == pChannel->start(iPort))
-        {
-            m_vectChannels.push_back(pChannel);
-        }
-        else
-        {
-            delete pChannel;
-        }
+		m_vectChannels.push_back(pChannel);
+	}
+	else
+    {
+		delete pChannel;
     }
 }
 

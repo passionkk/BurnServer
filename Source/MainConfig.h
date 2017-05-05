@@ -1,23 +1,6 @@
 #pragma once
 #include "CommonDefine.h"
 
-class RetransChannel
-{
-public:
-	RetransChannel()
-	{
-		m_strType = "";
-		m_strIP = "";
-		m_iPort = 0;
-		m_strSerialName = "";
-	}
-public:
-	std::string m_strType;
-	std::string m_strIP;
-	int m_iPort;
-	std::string m_strSerialName;
-};
-
 class MainConfig
 {
 public:

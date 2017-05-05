@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
+#include "CommonDefine.h"
 
 #include "Poco/Net/Net.h"
 #include "Poco/Net/DatagramSocket.h"
@@ -22,22 +23,6 @@ using Poco::Net::IPAddress;
 
 typedef int(*UdpServerCallBackFunc)(char *sRemoteIP, int nRemotePort, DatagramSocket &localSocket, char *sData, int nData, void *pContext);
 
-class RetransChannel
-{
-public:
-	RetransChannel()
-	{
-		m_strType = "";
-		m_strIP = "";
-		m_iPort = 0;
-		m_strSerialName = "";
-	}
-public:
-	std::string m_strType;
-	std::string m_strIP;
-	int m_iPort;
-	std::string m_strSerialName;
-};
 typedef  void CmdListener;
 
 class UDPServerChannel: public Poco::Runnable
