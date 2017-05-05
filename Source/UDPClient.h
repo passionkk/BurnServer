@@ -17,10 +17,13 @@ public:
 public:
 	//连接服务器
 	bool		ConnectServer();
+	bool		Bind();
 	bool		SendProtocol(std::string strSend, std::string& strRecv);
 
 public:
 	std::string		m_strServerIP;
 	int				m_nServerPort;
+	Poco::Net::SocketAddress	m_socketAddr;
+	Poco::Net::DatagramSocket	m_udpSocket;
 };
 
