@@ -69,6 +69,9 @@
     <ClCompile Include="..\Source\MainConfig.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\UDPClient.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\Poco\AbstractCache.h">
@@ -1125,6 +1128,9 @@
       <Filter>Business</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\MainConfig.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\UDPClient.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

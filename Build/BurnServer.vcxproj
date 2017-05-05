@@ -165,6 +165,7 @@
     <ClCompile Include="..\Source\HttpServerChannel.cpp" />
     <ClCompile Include="..\Source\HttpServerModule.cpp" />
     <ClCompile Include="..\Source\MainConfig.cpp" />
+    <ClCompile Include="..\Source\UDPClient.cpp" />
     <ClCompile Include="..\Source\UDPServerChannel.cpp" />
     <ClCompile Include="..\Source\UDPServerModule.cpp" />
   </ItemGroup>
@@ -519,6 +520,7 @@
     <ClInclude Include="..\Source\HttpServerChannel.h" />
     <ClInclude Include="..\Source\HttpServerModule.h" />
     <ClInclude Include="..\Source\MainConfig.h" />
+    <ClInclude Include="..\Source\UDPClient.h" />
     <ClInclude Include="..\Source\UDPServerChannel.h" />
     <ClInclude Include="..\Source\UDPServerModule.h" />
   </ItemGroup>
