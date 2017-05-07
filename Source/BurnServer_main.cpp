@@ -23,7 +23,7 @@
 #pragma comment(linker,"/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
 #endif	//defined(_LINUX_)
 
-#include "Bussiness.h"
+#include "Business.h"
 
 #include <iostream>
 
@@ -57,12 +57,12 @@ int RunBurnServer()
 	setrlimit(RLIMIT_CORE, &rl);
 #endif
 
-	CBussiness::Initialize();
+	CBusiness::Initialize();
 	while (true)
 	{
 		Sleep(1);
 	}
-	CBussiness::Uninitialize();
+	CBusiness::Uninitialize();
 
 	return 0;
 }

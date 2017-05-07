@@ -30,7 +30,6 @@ void UDPClient::Init(std::string strIP, int nPort)
 	m_nServerPort = nPort;
 	Poco::Net::SocketAddress sa(m_strServerIP, m_nServerPort);
 	m_socketAddr = sa;
-	//run();
 }
 
 void UDPClient::TestUDPConnect(CString& strRecv)

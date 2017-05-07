@@ -1,5 +1,5 @@
 #include "HttpServerModule.h"
-#include "Bussiness.h"
+#include "Business.h"
 #include "CommonDefine.h"
 #include "jsoncpp/json/json.h"
 #include "MainConfig.h"
@@ -199,6 +199,34 @@ std::string HttpServerModule::ProcessProtocol(std::string sMethod, std::string j
 		{
 			jsonSend = TestProtocol(jsonRecv);
 		}
+		else if (sMethod.compare("getCDRomList") == 0)
+		{
+			jsonSend = GetCDRomList(jsonRecv);
+		}
+		else if (sMethod.compare("startBurn") == 0)
+		{
+			jsonSend = StartBurn(jsonRecv);
+		}
+		else if (sMethod.compare("pauseBurn") == 0)
+		{
+			jsonSend = PauseBurn(jsonRecv);
+		}
+		else if (sMethod.compare("resumeBurn") == 0)
+		{
+			jsonSend = ResumBurn(jsonRecv);
+		}
+		else if (sMethod.compare("stopBurn") == 0)
+		{
+			jsonSend = StopBurn(jsonRecv);
+		}
+		else if (sMethod.compare("getCDRomInfo") == 0)
+		{
+			jsonSend = GetCDRomInfo(jsonRecv);
+		}
+		else if (sMethod.compare("addBurnFile") == 0)
+		{
+			jsonSend = AddBurnFile(jsonRecv);
+		}
 		else if(sMethod == "agentHeartBeat")
         {
             jsonSend = AgentHeartBeat(jsonRecv);
@@ -290,4 +318,299 @@ std::string HttpServerModule::AgentHeartBeat(std::string strIn)
         printf("%s catched\n", __PRETTY_FUNCTION__);
         return "";
     }
+}
+
+std::string HttpServerModule::GetCDRomList(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+		std::string sMethod = jsonValueIn["method"].asString();
+		Json::Value   jsonValueParams = jsonValueIn["params"];
+		int iLogicNo = jsonValueParams["cdRomID"].asInt();
+
+		CBusiness::GetInstance()->GetCDRomList();
+
+		Json::Value     jsonValueRoot;
+		Json::Value     jsonValue1;
+		Json::Value     jsonValue2;
+		jsonValue2["retCode"] = Json::Value(0);
+		jsonValue2["retMessage"] = Json::Value("ok");
+		jsonValue1["method"] = Json::Value(sMethod.c_str());
+		jsonValue1["params"] = jsonValue2;
+		jsonValueRoot["result"] = jsonValue1;
+		string strOut = jsonValueRoot.toStyledString();
+		return strOut;
+		}
+		else
+		{
+		return "";
+		}
+		return "";
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+std::string HttpServerModule::StartBurn(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			BurnTask task;
+			//burnMode
+			task.m_strBurnMode = jsonValueParams["burnMode"].asString();
+			//burnType
+			task.m_strBurnType = jsonValueParams["burnType"].asString();
+			//AlarmSize
+			task.m_nAlarmSize = jsonValueParams["alarmSize"].asInt();
+			//StreamInfo
+			Json::Value	jsonStreamInfo = jsonValueIn["streamInfo"];
+			task.m_burnStreamInfo.m_strBurnFileName = jsonStreamInfo["burnFileName"].asString();
+			task.m_burnStreamInfo.m_strPlayListContent = jsonStreamInfo["playlistInfo"].asString();
+			
+			Json::Value	jsonBurnUrlList = jsonStreamInfo["burnUrlList"];
+			for (int i = 0; i < jsonBurnUrlList.size(); i++)
+			{
+				FileInfo fileInfo;
+				fileInfo.m_nFlag = 0;
+				fileInfo.m_strSrcUrl = jsonBurnUrlList[i]["burnUrl"].asString();
+				fileInfo.m_strDescription = jsonBurnUrlList[i]["urlDescription"].asString();
+			}
+			
+			//fileInfo
+			Json::Value	jsonFileInfo = jsonValueIn["fileInfo"];
+			Json::Value jsonValueFileList = jsonFileInfo["burnFileList"];
+			for (int i = 0; i < jsonValueFileList.size(); i++)
+			{
+				FileInfo fileInfo;
+				fileInfo.m_strFileLocation = jsonValueFileList[i]["fileLocation"].asString();
+				fileInfo.m_strType = jsonValueFileList[i]["fileType"].asString();
+				fileInfo.m_strSrcUrl = jsonValueFileList[i]["burnSrcFilePath"].asString();
+				fileInfo.m_strDestFilePath = jsonValueFileList[i]["burnDstFilePath"].asString();
+				fileInfo.m_strDescription = jsonValueFileList[i]["fileDescription"].asString();
+				task.m_vecBurnFileInfo.push_back(fileInfo);
+			}
+			
+			//burnSpeed
+			task.m_nBurnSpeed = jsonValueIn["burnSpeed"].asInt();
+			Json::Value jsonFeedback = jsonValueIn["feedback"];
+			task.m_burnStateFeedback.m_strNeedFeedback = jsonFeedback["needFeedback"].asString();
+			task.m_burnStateFeedback.m_strFeedbackIP = jsonFeedback["feedbackIP"].asString();
+			task.m_burnStateFeedback.m_nFeedbackPort = jsonFeedback["feedbackPort"].asInt();
+			task.m_burnStateFeedback.m_transType = jsonFeedback["transType"].asString();
+			task.m_burnStateFeedback.m_nFeedbackInterval = jsonFeedback["feedIterval"].asInt();
+			
+			CBusiness::GetInstance()->StartBurn(task);
+			
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+std::string HttpServerModule::PauseBurn(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			std::string strSessionID = jsonValueParams["sessionID"].asString();
+			CBusiness::GetInstance()->PauseBurn(strSessionID);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+std::string HttpServerModule::ResumBurn(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			std::string strSessionID = jsonValueParams["sessionID"].asString();
+			CBusiness::GetInstance()->ResumeBurn(strSessionID);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+std::string HttpServerModule::StopBurn(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			std::string strSessionID = jsonValueParams["sessionID"].asString();
+
+			CBusiness::GetInstance()->StopBurn(strSessionID);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+std::string HttpServerModule::GetCDRomInfo(std::string strIn)
+{
+	std::string strRet;
+	return "";
+}
+
+std::string HttpServerModule::AddBurnFile(std::string strIn)
+{
+	std::string strRet;
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			//sessionID 
+			std::string strSessionID = jsonValueParams["sessionID"].asString();
+			
+			//fileInfo vector
+			std::vector<FileInfo> vecFileInfo;
+			Json::Value jsonValueFileList = jsonValueParams["burnFileList"];
+			for (int i = 0; i < jsonValueFileList.size(); i++)
+			{
+				FileInfo fileInfo;
+				fileInfo.m_strFileLocation = jsonValueFileList[i]["fileLocation"].asString();
+				fileInfo.m_strType = jsonValueFileList[i]["fileType"].asString();
+				fileInfo.m_strSrcUrl = jsonValueFileList[i]["burnSrcFilePath"].asString();
+				fileInfo.m_strDestFilePath = jsonValueFileList[i]["burnDstFilePath"].asString();
+				fileInfo.m_strDescription = jsonValueFileList[i]["fileDescription"].asString();
+				vecFileInfo.push_back(fileInfo);
+			}
+			CBusiness::GetInstance()->AddBurnFile(strSessionID, vecFileInfo);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
 }

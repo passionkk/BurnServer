@@ -160,8 +160,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\Source\BurnServer_main.cpp" />
-    <ClCompile Include="..\Source\Bussiness.cpp" />
+    <ClCompile Include="..\Source\Business.cpp" />
     <ClCompile Include="..\Source\CCBUtility.cpp" />
+    <ClCompile Include="..\Source\HttpClient.cpp" />
     <ClCompile Include="..\Source\HttpServerChannel.cpp" />
     <ClCompile Include="..\Source\HttpServerModule.cpp" />
     <ClCompile Include="..\Source\MainConfig.cpp" />
@@ -514,9 +515,11 @@
     <ClInclude Include="..\Include\Poco\WindowsConsoleChannel.h" />
     <ClInclude Include="..\Include\Poco\zconf.h" />
     <ClInclude Include="..\Include\Poco\zlib.h" />
-    <ClInclude Include="..\Source\Bussiness.h" />
+    <ClInclude Include="..\Source\Business.h" />
     <ClInclude Include="..\Source\CCBUtility.h" />
     <ClInclude Include="..\Source\CommonDefine.h" />
+    <ClInclude Include="..\Source\DataStructDefine.h" />
+    <ClInclude Include="..\Source\HttpClient.h" />
     <ClInclude Include="..\Source\HttpServerChannel.h" />
     <ClInclude Include="..\Source\HttpServerModule.h" />
     <ClInclude Include="..\Source\MainConfig.h" />

@@ -43,27 +43,3 @@ public:
 	int m_iPort;
 	std::string m_strSerialName;
 };
-
-class BurnFileInfo
-{
-public:
-	BurnFileInfo();
-	~BurnFileInfo();
-
-private:
-	std::string m_strFilePath;
-	int			m_nBurnState;//0 Î´¿ÌÂ¼£¬1ÒÑ¿ÌÂ¼
-};
-
-class BurnTask
-{
-public:
-	BurnTask();
-	~BurnTask();
-
-private:
-	std::string m_strTaskID;
-	std::string m_strBurnDevName;
-	std::vector<BurnFileInfo> m_vecBurnFile;
-};
-

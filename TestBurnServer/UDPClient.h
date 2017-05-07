@@ -6,9 +6,8 @@
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Net/Socket.h"
 #include "poco/Foundation.h"
-#include "poco/Runnable.h"
 
-class UDPClient //: public Poco::Runnable
+class UDPClient
 {
 public:
 	UDPClient();
@@ -24,7 +23,6 @@ public:
 	bool		SendProtocol(std::string strSend, std::string& strRecv);
 	bool		Close();
 
-	//virtual	void run();
 public:
 	std::string		m_strServerIP;
 	int				m_nServerPort;

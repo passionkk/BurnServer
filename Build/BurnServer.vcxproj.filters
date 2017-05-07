@@ -63,11 +63,14 @@
     <ClCompile Include="..\Source\UDPServerModule.cpp">
       <Filter>Business\UDPServer</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\Bussiness.cpp">
-      <Filter>Business</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\MainConfig.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Business.cpp">
+      <Filter>Business</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\HttpClient.cpp">
+      <Filter>Business\HttpClient</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\UDPClient.cpp">
       <Filter>Business\UDPClient</Filter>
@@ -1124,14 +1127,20 @@
     <ClInclude Include="..\Source\UDPServerModule.h">
       <Filter>Business\UDPServer</Filter>
     </ClInclude>
-    <ClInclude Include="..\Source\Bussiness.h">
-      <Filter>Business</Filter>
-    </ClInclude>
     <ClInclude Include="..\Source\MainConfig.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="..\Source\Business.h">
+      <Filter>Business</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\HttpClient.h">
+      <Filter>Business\HttpClient</Filter>
+    </ClInclude>
     <ClInclude Include="..\Source\UDPClient.h">
       <Filter>Business\UDPClient</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\DataStructDefine.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
