@@ -196,6 +196,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TestBurnServer.h" />
     <ClInclude Include="TestBurnServerDlg.h" />
+    <ClInclude Include="UDPClient.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="HttpClient.cpp" />
@@ -207,6 +208,7 @@
     </ClCompile>
     <ClCompile Include="TestBurnServer.cpp" />
     <ClCompile Include="TestBurnServerDlg.cpp" />
+    <ClCompile Include="UDPClient.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="TestBurnServer.rc" />

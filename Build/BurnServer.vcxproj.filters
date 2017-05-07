@@ -70,7 +70,7 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\UDPClient.cpp">
-      <Filter>源文件</Filter>
+      <Filter>Business\UDPClient</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1131,7 +1131,7 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\UDPClient.h">
-      <Filter>头文件</Filter>
+      <Filter>Business\UDPClient</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

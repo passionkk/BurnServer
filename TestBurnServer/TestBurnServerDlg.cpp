@@ -49,6 +49,7 @@ END_MESSAGE_MAP()
 
 CTestBurnServerDlg::CTestBurnServerDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CTestBurnServerDlg::IDD, pParent)
+	, m_nServerPort(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -57,6 +58,8 @@ void CTestBurnServerDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_EDIT_RECV, m_editRecvInfo);
+	DDX_Control(pDX, IDC_IPADDRESS_SERVERIP, m_IPAddrCtrl);
+	DDX_Text(pDX, IDC_EDIT_SERVERPORT, m_nServerPort);
 }
 
 BEGIN_MESSAGE_MAP(CTestBurnServerDlg, CDialogEx)
@@ -64,6 +67,7 @@ BEGIN_MESSAGE_MAP(CTestBurnServerDlg, CDialogEx)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_BN_CLICKED(IDC_BTN_TEST, &CTestBurnServerDlg::OnBnClickedBtnTest)
+	ON_BN_CLICKED(IDC_BTN_UDP_TEST, &CTestBurnServerDlg::OnBnClickedBtnUdpTest)
 END_MESSAGE_MAP()
 
 
@@ -99,6 +103,7 @@ BOOL CTestBurnServerDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO:  在此添加额外的初始化代码
+	InitCtrl();
 
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -152,7 +157,22 @@ HCURSOR CTestBurnServerDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+CString CTestBurnServerDlg::GetServerIP()
+{
+	UpdateData(TRUE);
+	BYTE bt1, bt2, bt3, bt4;
+	m_IPAddrCtrl.GetAddress(bt1, bt2, bt3, bt4);
+	CString str;
+	str.Format(L"%d.%d.%d.%d", bt1, bt2, bt3, bt4);//这里的nf得到的值是IP值了.
+	return str;
+}
 
+void CTestBurnServerDlg::InitCtrl()
+{
+	m_IPAddrCtrl.SetAddress(0x7F000001);
+	m_nServerPort = 90;
+	UpdateData(FALSE);
+}
 
 void CTestBurnServerDlg::OnBnClickedBtnTest()
 {
@@ -162,4 +182,22 @@ void CTestBurnServerDlg::OnBnClickedBtnTest()
 	m_httpClient.BurnServerConnect(strRecv);
 	if (!strRecv.IsEmpty())
 		m_editRecvInfo.SetWindowText(strRecv);
+}
+
+
+void CTestBurnServerDlg::OnBnClickedBtnUdpTest()
+{
+	CString strRecv;
+	m_udpClient.TestUDPConnect(strRecv);
+	m_editRecvInfo.Clear();
+	m_editRecvInfo.SetWindowText(strRecv);
+	/*UpdateData(TRUE);
+	CString strIP = GetServerIP();
+	int nPort = m_nServerPort;
+	m_udpClient.Init(strIP, nPort);
+	m_udpClient.ConnectServer();
+	m_udpClient.Bind();
+	std::string strSend;
+	std::string strRecv;
+	m_udpClient.SendProtocol(strSend, strRecv);*/
 }

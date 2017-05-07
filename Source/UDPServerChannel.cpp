@@ -3,7 +3,7 @@
 #include "Poco/Timespan.h"
 #include "Bussiness.h"
 #include "CCBUtility.h"
-
+#include "jsoncpp/json/json.h"
 #include "Poco/Net/StreamSocket.h"
 #include "Poco/Net/NetException.h"
 
@@ -133,7 +133,7 @@ int UDPServerChannel::UdpServerCallBack(char *sRemoteIP, int nRemotePort, Datagr
 {
     UDPServerChannel *pUDPServerChannel = (UDPServerChannel *)pContext;
     pUDPServerChannel->ProcessCmd(sRemoteIP,nRemotePort,localSocket,sData,nData);
-    pUDPServerChannel->DoRetrans(sData,nData);
+    //pUDPServerChannel->DoRetrans(sData,nData);
     return 0;
 }
 
@@ -142,7 +142,7 @@ int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocke
     //¥¶¿Ìudp√¸¡Ó
     try
     {
-        if(localSocket.address().port() == 602)
+        if(localSocket.address().port() == 91)
         {
             char* pData = new char[nData+1];
             memset(pData,0,nData+1);
@@ -248,7 +248,18 @@ int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocke
                     {
                        
                     }  
-                }
+					else if (sMethod == "testProtocol")
+					{
+						printf("recv UDP test protocol.\n");
+						std::string strSendToClient = "server recv u'r test protocol";
+						printf("remoteIP:%s, remotePort:%d.\n", sRemoteIP, nRemotePort);
+						//CCBUtility::UDPSend(sRemoteIP, nRemotePort, strSendToClient, strSendToClient.length());
+						std::string strRemoteIP = sRemoteIP;
+						//char* pStrSend = 
+						Poco::Thread::sleep(5000);
+						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)strSendToClient.c_str(), strSendToClient.length());
+					}
+				}
             }
         }
         else if(localSocket.address().port() == 6180)
@@ -560,4 +571,41 @@ void UDPServerChannel::AddRetransChannel(RetransChannel retransChannel)
 {
     Mutex::ScopedLock   lock(m_mutexRetransChannelsVect);
     m_vectRetransChannels.push_back(retransChannel);
+}
+
+std::string UDPServerChannel::TestProtocol(std::string strSend)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strSend, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+			int iLogicNo = jsonValueParams["logicNo"].asInt();
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("udp test protocol ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+		return "";
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
 }

@@ -4,7 +4,9 @@
 
 #pragma once
 #include "HttpClient.h"
+#include "UDPClient.h"
 #include "afxwin.h"
+#include "afxcmn.h"
 
 // CTestBurnServerDlg ¶Ô»°¿ò
 class CTestBurnServerDlg : public CDialogEx
@@ -29,10 +31,19 @@ protected:
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
-	DECLARE_MESSAGE_MAP()
-public:
 	afx_msg void OnBnClickedBtnTest();
+	afx_msg void OnBnClickedBtnUdpTest();
 
+	DECLARE_MESSAGE_MAP()
+
+
+	CString GetServerIP();
+	void	InitCtrl();
+private:
 	CHttpClient m_httpClient;
 	CEdit		m_editRecvInfo;
+	UDPClient	m_udpClient;
+public:
+	CIPAddressCtrl m_IPAddrCtrl;
+	int m_nServerPort;
 };

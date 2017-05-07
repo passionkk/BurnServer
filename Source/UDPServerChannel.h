@@ -54,6 +54,9 @@ private:
     int ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocket &localSocket, char *sData, int nData);
     void DoRetrans(char *sData, int nData);
 
+	//for test
+	std::string TestProtocol(std::string strIn);
+
 private:
 	UdpServerCallBackFunc   m_CallBackFunc;
     std::vector<CmdListener*>   m_vectListener;

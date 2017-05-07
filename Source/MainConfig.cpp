@@ -28,8 +28,10 @@ void MainConfig::Uninitialize()
 MainConfig* MainConfig::GetInstance()
 {
 	if (m_pInstance == NULL)
+	{
 		m_pInstance = new MainConfig;
-	m_pInstance->Init();
+		m_pInstance->Init();
+	}
 	return m_pInstance;
 }
 

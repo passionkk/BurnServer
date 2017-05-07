@@ -1,5 +1,5 @@
 #include "UDPClient.h"
-
+#include "CommonDefine.h"
 
 UDPClient::UDPClient()
 {
@@ -15,6 +15,14 @@ UDPClient::UDPClient(std::string strServerIP, int nServerPort)
 
 UDPClient::~UDPClient()
 {
+}
+
+void UDPClient::Init(std::string strIP, int nPort)
+{
+	m_strServerIP = strIP;
+	m_nServerPort = nPort;
+	Poco::Net::SocketAddress sa(m_strServerIP, m_nServerPort);
+	m_socketAddr = sa;
 }
 
 bool UDPClient::ConnectServer()

@@ -1,6 +1,7 @@
 #include "Bussiness.h"
 #include "CommonDefine.h"
 #include "HttpServerModule.h"
+#include "UDPServerModule.h"
 
 CBussiness* CBussiness::m_pInstance = NULL;
 
@@ -40,4 +41,5 @@ CBussiness * CBussiness::GetInstance()
 void CBussiness::Init()
 {
 	HttpServerModule::Initialize();
+	UDPServerModule::Initialize();
 }
