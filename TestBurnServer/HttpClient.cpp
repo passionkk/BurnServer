@@ -367,26 +367,26 @@ int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
 		JSON::Array burnUrlArray;
 		Object::Ptr pBurnUrl1 = new Object(true);
 		pBurnUrl1->set("burnUrl", "rtsp://10.1.2.16/1");
-		const char* pSrc = "录制源1";
+		const char* pSrc = "luzhiyuan 1";
 		std::string strUtf8;
 		Poco::UnicodeConverter::toUTF8(pSrc, strUtf8);
 		pBurnUrl1->set("urlDescription", strUtf8);
 		burnUrlArray.add(pBurnUrl1);
 
-		/*Object::Ptr pBurnUrl2 = new Object(true);
+		Object::Ptr pBurnUrl2 = new Object(true);
 		pBurnUrl2->set("burnUrl", "rtsp://10.1.2.16/2");
-		pBurnUrl2->set("urlDescription", "录制源2");
+		pBurnUrl2->set("urlDescription", "luzhiyuan2");
 		burnUrlArray.add(pBurnUrl2);
 
 		Object::Ptr pBurnUrl3 = new Object(true);
 		pBurnUrl3->set("burnUrl", "rtsp://10.1.2.16/3");
-		pBurnUrl3->set("urlDescription", "录制源3");
+		pBurnUrl3->set("urlDescription", "luzhiyuan 3");
 		burnUrlArray.add(pBurnUrl3);
 
 		Object::Ptr pBurnUrl4 = new Object(true);
 		pBurnUrl4->set("burnUrl", "rtsp://10.1.2.16/4");
-		pBurnUrl4->set("urlDescription", "录制源4");
-		burnUrlArray.add(pBurnUrl4);*/
+		pBurnUrl4->set("urlDescription", "luzhiyuan 4");
+		burnUrlArray.add(pBurnUrl4);
 
 		pStreamInfo->set("burnUrlList", burnUrlArray); // add burnUrlList
 		pParams->set("streamInfo", pStreamInfo);
