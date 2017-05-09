@@ -59,12 +59,14 @@ void CTestProtocolDlg::OnBnClickedButtonGetcdromlist()
 	}
 	else
 	{
+		std::string sSend, sRecv;
+		m_udpClient.SendGetCDRomListProtocol(sSend, sRecv);
+		strRecv.Format(L"%s", sSend.c_str());
+		strRecv.Format(L"%s", sRecv.c_str());
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
 }
-
-
 
 void CTestProtocolDlg::OnBnClickedBtnStartburn()
 {
@@ -77,11 +79,14 @@ void CTestProtocolDlg::OnBnClickedBtnStartburn()
 	}
 	else
 	{
+		std::string sSend, sRecv;
+		m_udpClient.SendStartBurnProtocol(sSend, sRecv);
+		strRecv.Format(L"%s", sSend);
+		strRecv.Format(L"%s", sRecv);
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
 }
-
 
 void CTestProtocolDlg::OnBnClickedBtnPauseburn()
 {
@@ -94,11 +99,14 @@ void CTestProtocolDlg::OnBnClickedBtnPauseburn()
 	}
 	else
 	{
+		std::string sSend, sRecv;
+		m_udpClient.SendPauseBurnProtocol(sSend, sRecv);
+		strRecv.Format(L"%s", sSend);
+		strRecv.Format(L"%s", sRecv);
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
 }
-
 
 void CTestProtocolDlg::OnBnClickedBtnResumeburn()
 {
@@ -111,6 +119,10 @@ void CTestProtocolDlg::OnBnClickedBtnResumeburn()
 	}
 	else
 	{
+		std::string sSend, sRecv;
+		m_udpClient.SendRemuseBurnProtocol(sSend, sRecv);
+		strRecv.Format(L"%s", sSend);
+		strRecv.Format(L"%s", sRecv);
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
@@ -128,6 +140,10 @@ void CTestProtocolDlg::OnBnClickedBtnStopburn()
 	}
 	else
 	{
+		std::string sSend, sRecv;
+		m_udpClient.SendStopBurnProtocol(sSend, sRecv);
+		strRecv.Format(L"%s", sSend);
+		strRecv.Format(L"%s", sRecv);
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
@@ -145,6 +161,10 @@ void CTestProtocolDlg::OnBnClickedBtnGetcdrominfo()
 	}
 	else
 	{
+		std::string sSend, sRecv;
+		m_udpClient.SendGetCDRomInfoProtocol(sSend, sRecv);
+		strRecv.Format(L"%s", sSend);
+		strRecv.Format(L"%s", sRecv);
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
@@ -162,6 +182,10 @@ void CTestProtocolDlg::OnBnClickedBtnAddburnfile()
 	}
 	else
 	{
+		std::string sSend, sRecv;
+		m_udpClient.SendAddBurnFileProtocol(sSend, sRecv);
+		strRecv.Format(L"%s", sSend);
+		strRecv.Format(L"%s", sRecv);
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);

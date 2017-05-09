@@ -1,15 +1,4 @@
 ﻿#pragma once
-/*
-class CHttpClient
-{
-public:
-	CHttpClient();
-	virtual ~CHttpClient();
-};
-
-#ifndef __HTTP_CURL_H__
-#define __HTTP_CURL_H__*/
-
 #include <string>
 
 #include "Poco/Mutex.h"

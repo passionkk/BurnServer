@@ -20,8 +20,16 @@ public:
 	//连接服务器
 	bool		ConnectServer();
 	bool		Bind();
-	bool		SendProtocol(std::string strSend, std::string& strRecv);
+	int			SendProtocol(std::string strSend, std::string& strRecv);
 	bool		Close();
+
+	int			SendGetCDRomListProtocol(std::string & strSend, std::string& strRecv);
+	int			SendStartBurnProtocol(std::string & strSend, std::string& strRecv);
+	int			SendPauseBurnProtocol(std::string & strSend, std::string& strRecv);
+	int			SendRemuseBurnProtocol(std::string & strSend, std::string& strRecv);
+	int			SendStopBurnProtocol(std::string & strSend, std::string& strRecv);
+	int			SendGetCDRomInfoProtocol(std::string & strSend, std::string& strRecv);
+	int			SendAddBurnFileProtocol(std::string & strSend, std::string& strRecv);
 
 public:
 	std::string		m_strServerIP;

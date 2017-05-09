@@ -1,19 +1,11 @@
 #include "stdafx.h"
 #include "HttpClient.h"
-
-/*
-CHttpClient::CHttpClient()
-{
-}
-
-
-CHttpClient::~CHttpClient()
-{
-}*/
-
-#include <windows.h>
 #include "libcurl/curl.h"
 #include <string>
+
+#ifdef WIN32
+#include <windows.h>
+#endif
 
 #ifdef DEBUG
 //#pragma comment(lib, "libcurld.lib")     
@@ -367,10 +359,10 @@ int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
 		JSON::Array burnUrlArray;
 		Object::Ptr pBurnUrl1 = new Object(true);
 		pBurnUrl1->set("burnUrl", "rtsp://10.1.2.16/1");
-		const char* pSrc = "luzhiyuan 1";
-		std::string strUtf8;
-		Poco::UnicodeConverter::toUTF8(pSrc, strUtf8);
-		pBurnUrl1->set("urlDescription", strUtf8);
+		//const char* pSrc = "luzhiyuan 1";
+		//std::string strUtf8;
+		//Poco::UnicodeConverter::toUTF8(pSrc, strUtf8);
+		pBurnUrl1->set("urlDescription", "luzhiyuan 1");
 		burnUrlArray.add(pBurnUrl1);
 
 		Object::Ptr pBurnUrl2 = new Object(true);

@@ -237,27 +237,60 @@ int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocke
                             Bussiness::GetInstance()->EnableDHCP(true);
                         }*/
                     }
-                    else if(sMethod == "getUUID")
-                    {
-                        std::string sUUID = ds["params"]["uuid"];
-                        //g_NetLog.Debug("[UDPServerChannel::ProcessCmd] getUUID :%s\n",sUUID.c_str());
-
-                       
-                    }
-                    else if(sMethod == "setUUID")
-                    {
-                       
-                    }  
-					else if (sMethod == "testProtocol")
+                    else if (sMethod == "testProtocol")
 					{
 						printf("recv UDP test protocol.\n");
 						std::string strSendToClient = "server recv u'r test protocol";
 						printf("remoteIP:%s, remotePort:%d.\n", sRemoteIP, nRemotePort);
-						//CCBUtility::UDPSend(sRemoteIP, nRemotePort, strSendToClient, strSendToClient.length());
 						std::string strRemoteIP = sRemoteIP;
-						//char* pStrSend = 
 						Poco::Thread::sleep(5000);
 						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)strSendToClient.c_str(), strSendToClient.length());
+					}
+					else if (sMethod.compare("getCDRomList") == 0)
+					{
+						std::string jsonRecv = GetCDRomList(strData);
+						std::string strRemoteIP = sRemoteIP;
+						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)jsonRecv.c_str(), jsonRecv.length());
+					}
+					else if (sMethod.compare("startBurn") == 0)
+					{
+						std::string jsonRecv = StartBurn(strData);
+						std::string strRemoteIP = sRemoteIP;
+						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)jsonRecv.c_str(), jsonRecv.length());
+					}
+					else if (sMethod.compare("pauseBurn") == 0)
+					{
+						std::string jsonRecv = PauseBurn(strData);
+						std::string strRemoteIP = sRemoteIP;
+						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)jsonRecv.c_str(), jsonRecv.length());
+					}
+					else if (sMethod.compare("resumeBurn") == 0)
+					{
+						std::string jsonRecv = ResumBurn(strData);
+						std::string strRemoteIP = sRemoteIP;
+						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)jsonRecv.c_str(), jsonRecv.length());
+					}
+					else if (sMethod.compare("stopBurn") == 0)
+					{
+						std::string jsonRecv = StopBurn(strData);
+						std::string strRemoteIP = sRemoteIP;
+						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)jsonRecv.c_str(), jsonRecv.length());
+					}
+					else if (sMethod.compare("getCDRomInfo") == 0)
+					{
+						std::string jsonRecv = GetCDRomInfo(strData);
+						std::string strRemoteIP = sRemoteIP;
+						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)jsonRecv.c_str(), jsonRecv.length());
+					}
+					else if (sMethod.compare("addBurnFile") == 0)
+					{
+						std::string jsonRecv;
+						jsonRecv = AddBurnFile(strData);
+						std::string strRemoteIP = sRemoteIP;
+						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)jsonRecv.c_str(), jsonRecv.length());
+					}
+					else
+					{
 					}
 				}
             }
@@ -602,6 +635,351 @@ std::string UDPServerChannel::TestProtocol(std::string strSend)
 			return "";
 		}
 		return "";
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+
+//获取光驱列表
+std::string UDPServerChannel::GetCDRomList(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			CBusiness::GetInstance()->GetCDRomList();
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+		return "";
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+//开始刻录
+std::string UDPServerChannel::StartBurn(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			BurnTask task;
+			//burnMode
+			task.m_strBurnMode = jsonValueParams["burnMode"].asString();
+			//burnType
+			task.m_strBurnType = jsonValueParams["burnType"].asString();
+			//AlarmSize
+			task.m_nAlarmSize = jsonValueParams["alarmSize"].asInt();
+			//StreamInfo
+			Json::Value	jsonStreamInfo = jsonValueParams["streamInfo"];
+			task.m_burnStreamInfo.m_strBurnFileName = jsonStreamInfo["burnFileName"].asString();
+			task.m_burnStreamInfo.m_strPlayListContent = jsonStreamInfo["playlistInfo"].asString();
+
+			Json::Value	jsonBurnUrlList = jsonStreamInfo["burnUrlList"];
+			for (int i = 0; i < jsonBurnUrlList.size(); i++)
+			{
+				FileInfo fileInfo;
+				fileInfo.m_nFlag = 0;
+				fileInfo.m_strSrcUrl = jsonBurnUrlList[i]["burnUrl"].asString();
+				fileInfo.m_strDescription = jsonBurnUrlList[i]["urlDescription"].asString();
+			}
+
+			//fileInfo
+			Json::Value	jsonFileInfo = jsonValueParams["fileInfo"];
+			Json::Value jsonValueFileList = jsonFileInfo["burnFileList"];
+			for (int i = 0; i < jsonValueFileList.size(); i++)
+			{
+				FileInfo fileInfo;
+				fileInfo.m_strFileLocation = jsonValueFileList[i]["fileLocation"].asString();
+				fileInfo.m_strType = jsonValueFileList[i]["fileType"].asString();
+				fileInfo.m_strSrcUrl = jsonValueFileList[i]["burnSrcFilePath"].asString();
+				fileInfo.m_strDestFilePath = jsonValueFileList[i]["burnDstFilePath"].asString();
+				fileInfo.m_strDescription = jsonValueFileList[i]["fileDescription"].asString();
+				task.m_vecBurnFileInfo.push_back(fileInfo);
+			}
+
+			//burnSpeed
+			task.m_nBurnSpeed = jsonValueParams["burnSpeed"].asInt();
+			Json::Value jsonFeedback = jsonValueParams["feedback"];
+			task.m_burnStateFeedback.m_strNeedFeedback = jsonFeedback["needFeedback"].asString();
+			task.m_burnStateFeedback.m_strFeedbackIP = jsonFeedback["feedbackIP"].asString();
+			task.m_burnStateFeedback.m_nFeedbackPort = jsonFeedback["feedbackPort"].asInt();
+			task.m_burnStateFeedback.m_transType = jsonFeedback["transType"].asString();
+			task.m_burnStateFeedback.m_nFeedbackInterval = jsonFeedback["feedIterval"].asInt();
+
+			CBusiness::GetInstance()->StartBurn(task);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+//暂停刻录
+std::string UDPServerChannel::PauseBurn(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			std::string strSessionID = jsonValueParams["sessionID"].asString();
+			CBusiness::GetInstance()->PauseBurn(strSessionID);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+//继续刻录
+std::string UDPServerChannel::ResumBurn(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			std::string strSessionID = jsonValueParams["sessionID"].asString();
+			CBusiness::GetInstance()->ResumeBurn(strSessionID);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+std::string UDPServerChannel::StopBurn(std::string strIn)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			std::string strSessionID = jsonValueParams["sessionID"].asString();
+
+			CBusiness::GetInstance()->StopBurn(strSessionID);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+std::string UDPServerChannel::GetCDRomInfo(std::string strIn)
+{
+	std::string strRet;
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			//sessionID 
+			std::string strCDRomID = jsonValueParams["cdRomID"].asString();
+
+			CBusiness::GetInstance()->GetCDRomInfo(strCDRomID);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+
+			//返回实际光驱信息
+			jsonValue2["cdRomID"] = "CDRom_1";
+			jsonValue2["cdRomName"] = "光驱1";
+			jsonValue2["burnState"] = 0;
+			jsonValue2["burnStateDescription"] = "未刻录";
+			jsonValue2["hasDVD"] = 0;
+			jsonValue2["DVDLeftCapcity"] = "0MB";
+			jsonValue2["DVDTotalCapcity"] = "0MB",
+
+				jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+std::string UDPServerChannel::AddBurnFile(std::string strIn)
+{
+	std::string strRet;
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			//sessionID 
+			std::string strSessionID = jsonValueParams["sessionID"].asString();
+
+			//fileInfo vector
+			std::vector<FileInfo> vecFileInfo;
+			Json::Value jsonValueFileList = jsonValueParams["burnFileList"];
+			for (int i = 0; i < jsonValueFileList.size(); i++)
+			{
+				FileInfo fileInfo;
+				fileInfo.m_nFlag = 1;
+				fileInfo.m_strFileLocation = jsonValueFileList[i]["fileLocation"].asString();
+				fileInfo.m_strType = jsonValueFileList[i]["fileType"].asString();
+				fileInfo.m_strSrcUrl = jsonValueFileList[i]["burnSrcFilePath"].asString();
+				fileInfo.m_strDestFilePath = jsonValueFileList[i]["burnDstFilePath"].asString();
+				fileInfo.m_strDescription = jsonValueFileList[i]["fileDescription"].asString();
+				vecFileInfo.push_back(fileInfo);
+			}
+			CBusiness::GetInstance()->AddBurnFile(strSessionID, vecFileInfo);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
 	}
 	catch (...)
 	{

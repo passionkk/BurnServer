@@ -56,6 +56,21 @@ private:
 
 	//for test
 	std::string TestProtocol(std::string strIn);
+	//获取光驱列表
+	std::string GetCDRomList(std::string strIn);
+	//开始刻录
+	std::string StartBurn(std::string strIn);
+	//暂停刻录
+	std::string PauseBurn(std::string strIn);
+	//继续刻录
+	std::string ResumBurn(std::string strIn);
+	//继续刻录
+	std::string StopBurn(std::string strIn);
+	//获取光驱信息
+	std::string GetCDRomInfo(std::string strIn);
+	//增加刻录文件
+	std::string AddBurnFile(std::string strIn);
+
 
 private:
 	UdpServerCallBackFunc   m_CallBackFunc;
