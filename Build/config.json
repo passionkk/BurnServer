@@ -1,0 +1,14 @@
+{
+    "HttpServer": {
+        "strType": "http", 
+        "IP": "192.168.1.6",
+		"port": 90,
+		"serialName":"channel1"
+    },
+	"UDPServer": {
+        "strType": "udp", 
+        "IP": "192.168.1.6",
+		"port": 91,
+		"serialName":"channel1"
+    }
+}
