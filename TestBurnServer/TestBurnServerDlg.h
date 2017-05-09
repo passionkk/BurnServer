@@ -7,6 +7,7 @@
 #include "UDPClient.h"
 #include "afxwin.h"
 #include "afxcmn.h"
+#include "TestProtocolDlg.h"
 
 // CTestBurnServerDlg ¶Ô»°¿ò
 class CTestBurnServerDlg : public CDialogEx
@@ -41,9 +42,17 @@ protected:
 	void	InitCtrl();
 private:
 	CHttpClient m_httpClient;
-	CEdit		m_editRecvInfo;
 	UDPClient	m_udpClient;
+
+	CTestProtocolDlg	m_UDPPage;
+	CTestProtocolDlg	m_HTTPPage;
+
+	CIPAddressCtrl		m_IPAddrCtrl;
+	CEdit				m_editRecvInfo;
+	CEdit				m_editSendInfo;
+	int					m_nServerPort;
+	CTabCtrl			m_tabCtrl;
+	int					m_nCurTabSel;
 public:
-	CIPAddressCtrl m_IPAddrCtrl;
-	int m_nServerPort;
+	afx_msg void OnSelchangeTabCtrl(NMHDR *pNMHDR, LRESULT *pResult);
 };

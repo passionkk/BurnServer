@@ -1,7 +1,14 @@
 #include "MainConfig.h"
 #include "CommonDefine.h"
 
-const char* g_pConfigPath = "E:\\Work\\GitRepos\\BurnServer\\Bin\\x86\\Debug\\config.json";
+#if defined(_LINUX_)
+#include <unistd.h>
+#else
+#include <direct.h>
+#endif
+
+//const char* g_pConfigPath = "E:\\Work\\GitRepos\\BurnServer\\Bin\\x86\\Debug\\config.json";
+const char* g_pConfigPath = "..\\Bin\\x86\\Debug\\config.json";
 MainConfig *MainConfig::m_pInstance = NULL;
 
 MainConfig::MainConfig()
@@ -39,8 +46,15 @@ void MainConfig::Init()
 {
 	if (m_pInstance)
 	{
-		if (m_pInstance->IsConfigFileRight(g_pConfigPath))
-			m_pInstance->ReadFromFile(g_pConfigPath);
+		char* pPath = new char[MAX_PATH];
+		memset(pPath, 0, MAX_PATH);
+		_getcwd(pPath, MAX_PATH);
+		m_strConfigPath = pPath;
+		delete[] pPath;
+
+		m_strConfigPath += "\\config.json";
+		if (m_pInstance->IsConfigFileRight(m_strConfigPath))
+			m_pInstance->ReadFromFile(m_strConfigPath);
 	}
 }
 
@@ -52,9 +66,10 @@ bool MainConfig::IsConfigFileRight(std::string strFile)
 		if (!file.exists())
 		{
 			//g_NetLog.Debug("[MainConfig::ConfigFileRight] file %s do not exist\n", strFile.c_str());
+			printf("config file : %s not exist.\n", strFile);
 			return false;
 		}
-
+		printf("load config file : %s.\n", strFile.c_str());
 		Parser  parser;
 		Var     result;
 

@@ -18,6 +18,9 @@ public:
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Net/Socket.h"
 #include "poco/Foundation.h"
+#include "poco/UTF8Encoding.h"
+
+using namespace Poco;
 
 class CHttpClient
 {
@@ -66,6 +69,13 @@ public:
 
 	int BurnServerConnect(CString& strRecv);
 
+	int SendGetCDRomListProtocol(CString& strSend, CString& strRecv);
+	int SendStartBurnProtocol(CString& strSend, CString& strRecv);
+	int SendPauseBurnProtocol(CString& strSend, CString& strRecv);
+	int SendRemuseBurnProtocol(CString& strSend, CString& strRecv);
+	int SendStopBurnProtocol(CString& strSend, CString& strRecv);
+	int SendGetCDRomInfoProtocol(CString& strSend, CString& strRecv);
+	int SendAddBurnFileProtocol(CString& strSend, CString& strRecv);
 public:
 	void SetDebug(bool bDebug);
 

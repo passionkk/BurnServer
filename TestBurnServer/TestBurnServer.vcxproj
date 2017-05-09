@@ -97,7 +97,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>../Depends/Poco;../Depends/microhttpd;../Depends/libcurl</AdditionalLibraryDirectories>
       <OutputFile>../Bin/x86/Debug/$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libcurld.lib;PocoFoundationd.lib;PocoJSONd.lib;libmicrohttpd-dll_d.lib</AdditionalDependencies>
+      <AdditionalDependencies>libcurld.lib;PocoFoundationd.lib;PocoJSONd.lib;libmicrohttpd-dll_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -196,6 +196,7 @@
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TestBurnServer.h" />
     <ClInclude Include="TestBurnServerDlg.h" />
+    <ClInclude Include="TestProtocolDlg.h" />
     <ClInclude Include="UDPClient.h" />
   </ItemGroup>
   <ItemGroup>
@@ -208,6 +209,7 @@
     </ClCompile>
     <ClCompile Include="TestBurnServer.cpp" />
     <ClCompile Include="TestBurnServerDlg.cpp" />
+    <ClCompile Include="TestProtocolDlg.cpp" />
     <ClCompile Include="UDPClient.cpp" />
   </ItemGroup>
   <ItemGroup>

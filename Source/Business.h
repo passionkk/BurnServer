@@ -21,6 +21,7 @@ public:
 	bool		PauseBurn(std::string strSessionID);
 	bool		ResumeBurn(std::string strSessionID);
 	bool		StopBurn(std::string strSessionID);
+	void		GetCDRomInfo(std::string strCDRomID);// 这里参数不够，肯定要返回值，没想好是类对象还是string对象
 	void		AddBurnFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo);
 	//主动协议处理
 	//刻录状态反馈协议

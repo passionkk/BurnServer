@@ -329,22 +329,21 @@ std::string HttpServerModule::GetCDRomList(std::string strIn)
 
 		if (jsonReader.parse(strIn, jsonValueIn))
 		{
-		std::string sMethod = jsonValueIn["method"].asString();
-		Json::Value   jsonValueParams = jsonValueIn["params"];
-		int iLogicNo = jsonValueParams["cdRomID"].asInt();
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
 
-		CBusiness::GetInstance()->GetCDRomList();
+			CBusiness::GetInstance()->GetCDRomList();
 
-		Json::Value     jsonValueRoot;
-		Json::Value     jsonValue1;
-		Json::Value     jsonValue2;
-		jsonValue2["retCode"] = Json::Value(0);
-		jsonValue2["retMessage"] = Json::Value("ok");
-		jsonValue1["method"] = Json::Value(sMethod.c_str());
-		jsonValue1["params"] = jsonValue2;
-		jsonValueRoot["result"] = jsonValue1;
-		string strOut = jsonValueRoot.toStyledString();
-		return strOut;
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
 		}
 		else
 		{
@@ -379,7 +378,7 @@ std::string HttpServerModule::StartBurn(std::string strIn)
 			//AlarmSize
 			task.m_nAlarmSize = jsonValueParams["alarmSize"].asInt();
 			//StreamInfo
-			Json::Value	jsonStreamInfo = jsonValueIn["streamInfo"];
+			Json::Value	jsonStreamInfo = jsonValueParams["streamInfo"];
 			task.m_burnStreamInfo.m_strBurnFileName = jsonStreamInfo["burnFileName"].asString();
 			task.m_burnStreamInfo.m_strPlayListContent = jsonStreamInfo["playlistInfo"].asString();
 			
@@ -393,7 +392,7 @@ std::string HttpServerModule::StartBurn(std::string strIn)
 			}
 			
 			//fileInfo
-			Json::Value	jsonFileInfo = jsonValueIn["fileInfo"];
+			Json::Value	jsonFileInfo = jsonValueParams["fileInfo"];
 			Json::Value jsonValueFileList = jsonFileInfo["burnFileList"];
 			for (int i = 0; i < jsonValueFileList.size(); i++)
 			{
@@ -407,8 +406,8 @@ std::string HttpServerModule::StartBurn(std::string strIn)
 			}
 			
 			//burnSpeed
-			task.m_nBurnSpeed = jsonValueIn["burnSpeed"].asInt();
-			Json::Value jsonFeedback = jsonValueIn["feedback"];
+			task.m_nBurnSpeed = jsonValueParams["burnSpeed"].asInt();
+			Json::Value jsonFeedback = jsonValueParams["feedback"];
 			task.m_burnStateFeedback.m_strNeedFeedback = jsonFeedback["needFeedback"].asString();
 			task.m_burnStateFeedback.m_strFeedbackIP = jsonFeedback["feedbackIP"].asString();
 			task.m_burnStateFeedback.m_nFeedbackPort = jsonFeedback["feedbackPort"].asInt();
@@ -558,7 +557,52 @@ std::string HttpServerModule::StopBurn(std::string strIn)
 std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 {
 	std::string strRet;
-	return "";
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			//sessionID 
+			std::string strCDRomID = jsonValueParams["cdRomID"].asString();
+					
+			CBusiness::GetInstance()->GetCDRomInfo(strCDRomID);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+	
+			//返回实际光驱信息
+			jsonValue2["cdRomID"] = "CDRom_1";
+			jsonValue2["cdRomName"] = "光驱1";
+			jsonValue2["burnState"] = 0;
+			jsonValue2["burnStateDescription"] = "未刻录";
+			jsonValue2["hasDVD"] = 0;
+			jsonValue2["DVDLeftCapcity"] = "0MB";
+			jsonValue2["DVDTotalCapcity"] = "0MB",
+
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
 }
 
 std::string HttpServerModule::AddBurnFile(std::string strIn)
@@ -583,6 +627,7 @@ std::string HttpServerModule::AddBurnFile(std::string strIn)
 			for (int i = 0; i < jsonValueFileList.size(); i++)
 			{
 				FileInfo fileInfo;
+				fileInfo.m_nFlag = 1;
 				fileInfo.m_strFileLocation = jsonValueFileList[i]["fileLocation"].asString();
 				fileInfo.m_strType = jsonValueFileList[i]["fileType"].asString();
 				fileInfo.m_strSrcUrl = jsonValueFileList[i]["burnSrcFilePath"].asString();

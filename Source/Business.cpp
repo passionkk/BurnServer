@@ -78,6 +78,11 @@ bool CBusiness::StopBurn(std::string strSessionID)
 	return bRet;
 }
 
+void CBusiness::GetCDRomInfo(std::string strCDRomID)
+{
+
+}
+
 void CBusiness::AddBurnFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo)
 {
 	for (size_t i = 0; i, m_vecBurnTask.size(); i++)

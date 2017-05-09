@@ -39,6 +39,9 @@
     <ClInclude Include="UDPClient.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="TestProtocolDlg.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TestBurnServer.cpp">
@@ -54,6 +57,9 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="UDPClient.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="TestProtocolDlg.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

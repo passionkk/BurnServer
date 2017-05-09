@@ -36,5 +36,6 @@ protected:
 	//udp server config
 	Poco::DynamicStruct			m_dsUDPInfo;
 	RetransChannel				m_chnnelUdp;
+	std::string					m_strConfigPath;
 };
 

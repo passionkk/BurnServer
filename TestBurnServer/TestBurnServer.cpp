@@ -49,6 +49,9 @@ BOOL CTestBurnServerApp::InitInstance()
 	InitCtrls.dwICC = ICC_WIN95_CLASSES;
 	InitCommonControlsEx(&InitCtrls);
 
+	_CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_LEAK_CHECK_DF);
+	//_CrtSetBreakAlloc(149);
+
 	CWinApp::InitInstance();
 
 
