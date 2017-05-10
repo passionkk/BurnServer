@@ -23,10 +23,20 @@
 #include "poco/FileStream.h"
 #include "Poco/UUIDGenerator.h"
 
+#include "../include/Charset/CharsetConvertMFC.h"
+#include "../include/Charset/CharsetConvertSTD.h"
+
 using namespace Poco;
 using namespace Poco::Dynamic;
 using namespace Poco::JSON;
 using namespace Poco::Net;
+
+enum PROTOCOL_MODE
+{
+	HTTP_MODE = 0,
+	UDP_MODE = 1,
+};
+
 
 class RetransChannel
 {

@@ -8,6 +8,7 @@
 #include "afxwin.h"
 #include "afxcmn.h"
 #include "TestProtocolDlg.h"
+#include "TestPtoServerDlg.h"
 
 // CTestBurnServerDlg ¶Ô»°¿ò
 class CTestBurnServerDlg : public CDialogEx
@@ -46,6 +47,9 @@ private:
 
 	CTestProtocolDlg	m_UDPPage;
 	CTestProtocolDlg	m_HTTPPage;
+
+	CTestPtoServerDlg	m_DlgUDPServer;
+	CTestPtoServerDlg	m_DlgHttpServer;
 
 	CIPAddressCtrl		m_IPAddrCtrl;
 	CEdit				m_editRecvInfo;

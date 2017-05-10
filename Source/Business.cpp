@@ -85,9 +85,9 @@ void CBusiness::GetCDRomInfo(std::string strCDRomID)
 
 void CBusiness::AddBurnFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo)
 {
-	for (size_t i = 0; i, m_vecBurnTask.size(); i++)
+	for (size_t i = 0; i< m_vecBurnTask.size(); i++)
 	{
-		if (m_vecBurnTask.at(i).m_strSessionID.compare(strSessionID) == 0)
+		if (!m_vecBurnTask.at(i).m_strSessionID.empty() && m_vecBurnTask.at(i).m_strSessionID.compare(strSessionID) == 0)
 		{
 			m_vecBurnTask.at(i).m_vecBurnFileInfo.resize(m_vecBurnTask.at(i).m_vecBurnFileInfo.size() + vecFileInfo.size());
 			m_vecBurnTask.at(i).m_vecBurnFileInfo.insert(m_vecBurnTask.at(i).m_vecBurnFileInfo.end(), vecFileInfo.begin(), vecFileInfo.end());

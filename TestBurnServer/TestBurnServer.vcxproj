@@ -90,14 +90,14 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_WINDOWS;_DEBUG;_AFXDLL%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>../Include;../include/poco/json;../include/microhttpd;../Include/libcurl</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../Include;../include/poco/json;../include/microhttpd;../Include/libcurl;../Include/jsoncpp</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>../Depends/Poco;../Depends/microhttpd;../Depends/libcurl</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>../Depends/Poco;../Depends/microhttpd;../Depends/libcurl;../Depends/jsoncpp</AdditionalLibraryDirectories>
       <OutputFile>../Bin/x86/Debug/$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalDependencies>libcurld.lib;PocoFoundationd.lib;PocoJSONd.lib;libmicrohttpd-dll_d.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libcurld.lib;PocoFoundationd.lib;PocoJSONd.lib;libmicrohttpd-dll_d.lib;lib_json.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <Midl>
       <MkTypLibCompatible>false</MkTypLibCompatible>
@@ -190,17 +190,41 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Include\Charset\CharsetConvert.h" />
+    <ClInclude Include="..\Include\Charset\CharsetConvertMFC.h" />
+    <ClInclude Include="..\Include\Charset\CharsetConvertSTD.h" />
+    <ClInclude Include="CommonDefine.h" />
     <ClInclude Include="HttpClient.h" />
+    <ClInclude Include="Net\CCBUtility.h" />
+    <ClInclude Include="Net\HttpServerChannel.h" />
+    <ClInclude Include="Net\HttpServerModule.h" />
+    <ClInclude Include="Net\UDPServerChannel.h" />
+    <ClInclude Include="Net\UDPServerModule.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TestBurnServer.h" />
     <ClInclude Include="TestBurnServerDlg.h" />
     <ClInclude Include="TestProtocolDlg.h" />
+    <ClInclude Include="TestPtoServerDlg.h" />
     <ClInclude Include="UDPClient.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Include\Charset\CharsetConvert.cpp" />
+    <ClCompile Include="..\Include\Charset\CharsetConvertMFC.cpp" />
+    <ClCompile Include="..\Include\Charset\CharsetConvertSTD.cpp" />
     <ClCompile Include="HttpClient.cpp" />
+    <ClCompile Include="Net\CCBUtility.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../stdafx.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="Net\HttpServerChannel.cpp" />
+    <ClCompile Include="Net\HttpServerModule.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../stdafx.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="Net\UDPServerChannel.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../stdafx.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="Net\UDPServerModule.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -210,6 +234,7 @@
     <ClCompile Include="TestBurnServer.cpp" />
     <ClCompile Include="TestBurnServerDlg.cpp" />
     <ClCompile Include="TestProtocolDlg.cpp" />
+    <ClCompile Include="TestPtoServerDlg.cpp" />
     <ClCompile Include="UDPClient.cpp" />
   </ItemGroup>
   <ItemGroup>

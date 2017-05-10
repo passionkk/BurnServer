@@ -214,6 +214,8 @@ int CHttpClient::Gets(const std::string & strUrl, std::string & strResponse, con
 	return res;
 }
 
+#include "../include/Charset/CharsetConvertSTD.h"
+
 int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bLog)
 {
 	if (bLog)
@@ -240,8 +242,7 @@ int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bL
 
 		// 设置要POST的JSON数据  
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, sSend.c_str());
-
-
+		
 		res = curl_easy_perform(curl);
 
 		if (res != CURLE_OK)
@@ -268,6 +269,7 @@ int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bL
 			}
 			iRet = 0;
 		}
+
 		curl_easy_cleanup(curl);
 	}
 	return 0;
@@ -431,6 +433,8 @@ int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
 		std::string sRecv = "";
 		if (SendHttpProtocol(sSend, sRecv) == 0)
 		{
+			CString strS(sSend.c_str());
+			strSend = strS; 
 			CString str(sRecv.c_str());
 			strRecv = str;
 		}

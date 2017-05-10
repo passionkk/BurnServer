@@ -59,10 +59,6 @@ CTestBurnServerDlg::CTestBurnServerDlg(CWnd* pParent /*=NULL*/)
 void CTestBurnServerDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
-	DDX_Control(pDX, IDC_EDIT_RECV, m_editRecvInfo);
-	DDX_Control(pDX, IDC_EDIT_SEND, m_editSendInfo);
-	DDX_Control(pDX, IDC_IPADDRESS_SERVERIP, m_IPAddrCtrl);
-	DDX_Text(pDX, IDC_EDIT_SERVERPORT, m_nServerPort);
 	DDX_Control(pDX, IDC_TAB_CTRL, m_tabCtrl);
 }
 
@@ -174,18 +170,24 @@ CString CTestBurnServerDlg::GetServerIP()
 
 void CTestBurnServerDlg::InitCtrl()
 {
-	m_IPAddrCtrl.SetAddress(0x7F000001);
-	m_nServerPort = 90;
+	m_tabCtrl.InsertItem(0, L"HttpClient");
+	m_tabCtrl.InsertItem(1, L"UDPClient");
+	m_tabCtrl.InsertItem(2, L"HttpServer");
+	m_tabCtrl.InsertItem(3, L"UDPServer");
 
-	m_tabCtrl.InsertItem(0, L"Http");
-	m_tabCtrl.InsertItem(1, L"UDP");
-	
-	//创建两个对话框
+	//创建4个对话框
 	m_HTTPPage.Create(CTestProtocolDlg::IDD, &m_tabCtrl);
 	m_HTTPPage.SetProtocolMode(HTTP_MODE);
 
 	m_UDPPage.Create(CTestProtocolDlg::IDD, &m_tabCtrl);
 	m_UDPPage.SetProtocolMode(UDP_MODE);
+
+	m_DlgHttpServer.Create(CTestPtoServerDlg::IDD, &m_tabCtrl);
+	m_DlgHttpServer.SetProtocolMode(HTTP_MODE);
+
+	m_DlgUDPServer.Create(CTestPtoServerDlg::IDD, &m_tabCtrl);
+	m_DlgUDPServer.SetProtocolMode(UDP_MODE);
+
 	//设定在Tab内显示的范围
 	CRect rc;
 	m_tabCtrl.GetClientRect(rc);
@@ -196,9 +198,14 @@ void CTestBurnServerDlg::InitCtrl()
 
 	m_HTTPPage.MoveWindow(&rc);
 	m_UDPPage.MoveWindow(&rc);
+	m_DlgHttpServer.MoveWindow(&rc);
+	m_DlgUDPServer.MoveWindow(&rc);
 
 	m_HTTPPage.ShowWindow(SW_SHOW);
 	m_UDPPage.ShowWindow(SW_HIDE);
+	m_DlgHttpServer.ShowWindow(SW_HIDE);
+	m_DlgUDPServer.ShowWindow(SW_HIDE);
+
 	m_nCurTabSel = 0;
 
 	UpdateData(FALSE);
@@ -238,13 +245,31 @@ void CTestBurnServerDlg::OnSelchangeTabCtrl(NMHDR *pNMHDR, LRESULT *pResult)
 	m_nCurTabSel = m_tabCtrl.GetCurSel();
 	if (m_nCurTabSel == 0)
 	{
-		m_UDPPage.ShowWindow(SW_HIDE);
 		m_HTTPPage.ShowWindow(SW_SHOW);
+		m_UDPPage.ShowWindow(SW_HIDE);
+		m_DlgHttpServer.ShowWindow(SW_HIDE);
+		m_DlgUDPServer.ShowWindow(SW_HIDE);
+	}
+	else if (m_nCurTabSel == 1)
+	{
+		m_HTTPPage.ShowWindow(SW_HIDE);
+		m_UDPPage.ShowWindow(SW_SHOW);
+		m_DlgHttpServer.ShowWindow(SW_HIDE);
+		m_DlgUDPServer.ShowWindow(SW_HIDE);
+	}
+	else if (m_nCurTabSel == 1)
+	{
+		m_HTTPPage.ShowWindow(SW_HIDE);
+		m_UDPPage.ShowWindow(SW_HIDE);
+		m_DlgHttpServer.ShowWindow(SW_SHOW);
+		m_DlgUDPServer.ShowWindow(SW_HIDE);
 	}
 	else
 	{
 		m_HTTPPage.ShowWindow(SW_HIDE);
-		m_UDPPage.ShowWindow(SW_SHOW);
+		m_UDPPage.ShowWindow(SW_HIDE);
+		m_DlgHttpServer.ShowWindow(SW_HIDE);
+		m_DlgUDPServer.ShowWindow(SW_SHOW);
 	}
 	*pResult = 0;
 }

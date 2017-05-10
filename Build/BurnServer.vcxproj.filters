@@ -15,18 +15,6 @@
     <Filter Include="Interface">
       <UniqueIdentifier>{271ea517-87b3-4cbe-b372-5e07aa331471}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Business\HttpServer">
-      <UniqueIdentifier>{bc4deb11-2f61-4b1e-93a4-133aae4d4eff}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Business\UDPServer">
-      <UniqueIdentifier>{4f4966e4-c7da-4f66-a5bd-6e3a43b5c191}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Business\HttpClient">
-      <UniqueIdentifier>{2893cfbb-ee6a-4bbe-9309-bc24075d6841}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Business\UDPClient">
-      <UniqueIdentifier>{db4967c1-e2be-4368-b377-ecc39583f7ae}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Include">
       <UniqueIdentifier>{0dc1a026-379d-4ce0-80aa-7b927dad046c}</UniqueIdentifier>
     </Filter>
@@ -40,6 +28,21 @@
     <Filter Include="Include\Poco\JSON">
       <UniqueIdentifier>{ac3021fc-5dd2-4096-82eb-63b0490160c1}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Net">
+      <UniqueIdentifier>{cdd771f4-6662-4e58-9afb-b80698c5ac98}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Net\HttpClient">
+      <UniqueIdentifier>{2893cfbb-ee6a-4bbe-9309-bc24075d6841}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Net\HttpServer">
+      <UniqueIdentifier>{bc4deb11-2f61-4b1e-93a4-133aae4d4eff}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Net\UDPClient">
+      <UniqueIdentifier>{db4967c1-e2be-4368-b377-ecc39583f7ae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Net\UDPServer">
+      <UniqueIdentifier>{4f4966e4-c7da-4f66-a5bd-6e3a43b5c191}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -49,19 +52,19 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\HttpServerChannel.cpp">
-      <Filter>Business\HttpServer</Filter>
+      <Filter>Net\HttpServer</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\HttpServerModule.cpp">
-      <Filter>Business\HttpServer</Filter>
+      <Filter>Net\HttpServer</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\CCBUtility.cpp">
-      <Filter>Business\UDPServer</Filter>
+      <Filter>Net\UDPServer</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\UDPServerChannel.cpp">
-      <Filter>Business\UDPServer</Filter>
+      <Filter>Net\UDPServer</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\UDPServerModule.cpp">
-      <Filter>Business\UDPServer</Filter>
+      <Filter>Net\UDPServer</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\MainConfig.cpp">
       <Filter>源文件</Filter>
@@ -70,10 +73,10 @@
       <Filter>Business</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\HttpClient.cpp">
-      <Filter>Business\HttpClient</Filter>
+      <Filter>Net\HttpClient</Filter>
     </ClCompile>
     <ClCompile Include="..\Source\UDPClient.cpp">
-      <Filter>Business\UDPClient</Filter>
+      <Filter>Net\UDPClient</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1113,19 +1116,19 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\HttpServerChannel.h">
-      <Filter>Business\HttpServer</Filter>
+      <Filter>Net\HttpServer</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\HttpServerModule.h">
-      <Filter>Business\HttpServer</Filter>
+      <Filter>Net\HttpServer</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\CCBUtility.h">
-      <Filter>Business\UDPServer</Filter>
+      <Filter>Net\UDPServer</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\UDPServerChannel.h">
-      <Filter>Business\UDPServer</Filter>
+      <Filter>Net\UDPServer</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\UDPServerModule.h">
-      <Filter>Business\UDPServer</Filter>
+      <Filter>Net\UDPServer</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\MainConfig.h">
       <Filter>头文件</Filter>
@@ -1134,10 +1137,10 @@
       <Filter>Business</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\HttpClient.h">
-      <Filter>Business\HttpClient</Filter>
+      <Filter>Net\HttpClient</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\UDPClient.h">
-      <Filter>Business\UDPClient</Filter>
+      <Filter>Net\UDPClient</Filter>
     </ClInclude>
     <ClInclude Include="..\Source\DataStructDefine.h">
       <Filter>头文件</Filter>

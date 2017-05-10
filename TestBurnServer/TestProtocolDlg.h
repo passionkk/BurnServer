@@ -2,12 +2,7 @@
 #include "HttpClient.h"
 #include "UDPClient.h"
 
-enum PROTOCOL_MODE
-{
-	HTTP_MODE = 0,
-	UDP_MODE = 1,
-};
-
+#include "CommonDefine.h"
 // CTestProtocolDlg 对话框
 
 class CTestProtocolDlg : public CDialogEx
@@ -23,6 +18,7 @@ public:
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV 支持
+	virtual BOOL OnInitDialog();
 
 	DECLARE_MESSAGE_MAP()
 public:
@@ -32,7 +28,10 @@ public:
 	afx_msg void OnBnClickedBtnResumeburn();
 	afx_msg void OnBnClickedBtnStopburn();
 	afx_msg void OnBnClickedBtnGetcdrominfo();
+	afx_msg void OnBnClickedBtnAddburnfile();
 
+	CString GetServerIP();
+	void	Init();
 	void	SetShowEdit(CEdit& editSend, CEdit& editRecv);
 	void	SetProtocolMode(PROTOCOL_MODE nMode);
 	void	SendGetCDRomListProtocol(CString& strRecv);
@@ -43,5 +42,6 @@ public:
 	UDPClient			m_udpClient;
 	CEdit				m_editRecvInfo;
 	CEdit				m_editSendInfo;
-	afx_msg void OnBnClickedBtnAddburnfile();
+	CIPAddressCtrl		m_IPAddrCtrl;
+	int					m_nServerPort;
 };

@@ -111,10 +111,6 @@ int UDPClient::SendGetCDRomListProtocol(std::string & strSend, std::string& strR
 {
 	try
 	{
-		Poco::Net::SocketAddress sa("127.0.0.1", 91);
-		m_socketAddr = sa;
-		m_udpSocket.connect(m_socketAddr);
-
 		Object::Ptr pObj = new Object(true);
 		pObj->set("method", "getCDRomList");
 		pObj->set("params", "");

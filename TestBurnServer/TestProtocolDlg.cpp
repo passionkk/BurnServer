@@ -6,7 +6,6 @@
 #include "TestProtocolDlg.h"
 #include "afxdialogex.h"
 
-
 // CTestProtocolDlg 对话框
 
 IMPLEMENT_DYNAMIC(CTestProtocolDlg, CDialogEx)
@@ -19,6 +18,7 @@ CTestProtocolDlg::CTestProtocolDlg(CWnd* pParent /*=NULL*/)
 
 CTestProtocolDlg::~CTestProtocolDlg()
 {
+	m_udpClient.Close();
 }
 
 void CTestProtocolDlg::DoDataExchange(CDataExchange* pDX)
@@ -26,6 +26,10 @@ void CTestProtocolDlg::DoDataExchange(CDataExchange* pDX)
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Control(pDX, IDC_EDIT_RECV, m_editRecvInfo);
 	DDX_Control(pDX, IDC_EDIT_SEND, m_editSendInfo);
+	DDX_Control(pDX, IDC_EDIT_RECV, m_editRecvInfo);
+	DDX_Control(pDX, IDC_EDIT_SEND, m_editSendInfo);
+	DDX_Control(pDX, IDC_IPADDRESS_SERVERIP, m_IPAddrCtrl);
+	DDX_Text(pDX, IDC_EDIT_SERVERPORT, m_nServerPort);
 
 }
 
@@ -61,8 +65,8 @@ void CTestProtocolDlg::OnBnClickedButtonGetcdromlist()
 	{
 		std::string sSend, sRecv;
 		m_udpClient.SendGetCDRomListProtocol(sSend, sRecv);
-		strRecv.Format(L"%s", sSend.c_str());
-		strRecv.Format(L"%s", sRecv.c_str());
+		strSend = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length()));
+		strRecv = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length()));
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
@@ -81,8 +85,8 @@ void CTestProtocolDlg::OnBnClickedBtnStartburn()
 	{
 		std::string sSend, sRecv;
 		m_udpClient.SendStartBurnProtocol(sSend, sRecv);
-		strRecv.Format(L"%s", sSend);
-		strRecv.Format(L"%s", sRecv);
+		strSend = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length()));
+		strRecv = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length()));
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
@@ -101,8 +105,8 @@ void CTestProtocolDlg::OnBnClickedBtnPauseburn()
 	{
 		std::string sSend, sRecv;
 		m_udpClient.SendPauseBurnProtocol(sSend, sRecv);
-		strRecv.Format(L"%s", sSend);
-		strRecv.Format(L"%s", sRecv);
+		strSend = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length()));
+		strRecv = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length()));
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
@@ -121,8 +125,8 @@ void CTestProtocolDlg::OnBnClickedBtnResumeburn()
 	{
 		std::string sSend, sRecv;
 		m_udpClient.SendRemuseBurnProtocol(sSend, sRecv);
-		strRecv.Format(L"%s", sSend);
-		strRecv.Format(L"%s", sRecv);
+		strSend = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length()));
+		strRecv = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length()));
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
@@ -142,8 +146,8 @@ void CTestProtocolDlg::OnBnClickedBtnStopburn()
 	{
 		std::string sSend, sRecv;
 		m_udpClient.SendStopBurnProtocol(sSend, sRecv);
-		strRecv.Format(L"%s", sSend);
-		strRecv.Format(L"%s", sRecv);
+		strSend = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length()));
+		strRecv = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length()));
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
@@ -163,8 +167,8 @@ void CTestProtocolDlg::OnBnClickedBtnGetcdrominfo()
 	{
 		std::string sSend, sRecv;
 		m_udpClient.SendGetCDRomInfoProtocol(sSend, sRecv);
-		strRecv.Format(L"%s", sSend);
-		strRecv.Format(L"%s", sRecv);
+		strSend = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length()));
+		strRecv = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length()));
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
@@ -184,9 +188,43 @@ void CTestProtocolDlg::OnBnClickedBtnAddburnfile()
 	{
 		std::string sSend, sRecv;
 		m_udpClient.SendAddBurnFileProtocol(sSend, sRecv);
-		strRecv.Format(L"%s", sSend);
-		strRecv.Format(L"%s", sRecv);
+		strSend = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length()));
+		strRecv = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length()));
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);
+}
+
+
+BOOL CTestProtocolDlg::OnInitDialog()
+{
+	CDialogEx::OnInitDialog();
+
+	// TODO:  在此添加额外的初始化
+	Init();
+
+	return TRUE;  // return TRUE unless you set the focus to a control
+	// 异常:  OCX 属性页应返回 FALSE
+}
+
+CString CTestProtocolDlg::GetServerIP()
+{
+	UpdateData(TRUE);
+	BYTE bt1, bt2, bt3, bt4;
+	m_IPAddrCtrl.GetAddress(bt1, bt2, bt3, bt4);
+	CString str;
+	str.Format(L"%d.%d.%d.%d", bt1, bt2, bt3, bt4);//这里的nf得到的值是IP值了.
+	return str;
+}
+
+void CTestProtocolDlg::Init()
+{
+	m_IPAddrCtrl.SetAddress(0x7F000001);
+	m_nServerPort = 90;
+
+	Poco::Net::SocketAddress sa("127.0.0.1", 91);
+	//m_socketAddr = sa;
+	//m_udpSocket.connect(m_socketAddr);
+	m_udpClient.Init("127.0.0.1", 91);
+	m_udpClient.ConnectServer();
 }

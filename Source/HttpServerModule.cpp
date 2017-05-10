@@ -414,6 +414,9 @@ std::string HttpServerModule::StartBurn(std::string strIn)
 			task.m_burnStateFeedback.m_transType = jsonFeedback["transType"].asString();
 			task.m_burnStateFeedback.m_nFeedbackInterval = jsonFeedback["feedIterval"].asInt();
 			
+			Poco::UUIDGenerator& gen = Poco::UUIDGenerator::defaultGenerator();
+			Poco::UUID uSessionID = gen.createRandom();
+			task.m_strSessionID = uSessionID.toString();
 			CBusiness::GetInstance()->StartBurn(task);
 			
 			Json::Value     jsonValueRoot;
@@ -421,6 +424,7 @@ std::string HttpServerModule::StartBurn(std::string strIn)
 			Json::Value     jsonValue2;
 			jsonValue2["retCode"] = Json::Value(0);
 			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue2["sessionID"] = Json::Value(task.m_strSessionID);
 			jsonValue1["method"] = Json::Value(sMethod.c_str());
 			jsonValue1["params"] = jsonValue2;
 			jsonValueRoot["result"] = jsonValue1;
