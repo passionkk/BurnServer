@@ -27,7 +27,7 @@ public:
 	//刻录状态反馈协议
 	void		BurnStateFeedback();
 	//封盘前刻录状态反馈协议
-	void		closeDiscFeedback();
+	void		CloseDiscFeedback();
 
 private:
 	void Init();

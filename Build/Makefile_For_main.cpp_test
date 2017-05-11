@@ -1,0 +1,44 @@
+# Makefile for BurnServer
+
+COMPILER_FLAGS	+= -D_LINUX_ -D_LINUX
+
+COMPILER_FLAGS	+= -D_REENTRANT -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE64_SOURCE -D__USE_POSIX
+
+COMPILER_FLAGS	+= -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -march=native -mtune=generic -pipe -ffast-math -fomit-frame-pointer
+
+C++		=	g++
+CC		=	gcc
+CCFLAGS	+= $(COMPILER_FLAGS)  -g 
+#CCFLAGS	+= $(COMPILER_FLAGS)
+C++LINK = g++
+
+# EACH DIRECTORY WITH HEADERS MUST BE APPENDED IN THIS MANNER TO THE CCFLAGS
+
+CCFLAGS += -I../Include/poco
+
+C++FLAGS	= $(CCFLAGS)
+
+CPPFILES	= ./main.cpp \
+
+# DEPEND LIB PATH
+LIBFILES = 	\
+../Depends/poco/libPocoFoundation.so \
+
+CORE_LINK_LIBS = -lpthread -lrt -ldl -lstdc++ -lm -lcrypt
+		 
+LIBS = -lPocoFoundation $(CORE_LINK_LIBS)
+
+LINKPATH = \
+-L../Depends/poco/
+
+BurnServer : $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) 
+	$(C++LINK) -o BurnServer.out $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) $(C++FLAGS) $(LINKPATH) $(LIBS)
+
+clean:
+	rm -f *.out *.log $(CFILES:.c=.o) $(CPPFILES:.cpp=.o)
+
+.cpp.o:
+	$(C++) -c -o $*.o $(C++FLAGS) $*.cpp
+
+.c.o:
+	$(CC) -c -o $*.o $(CCFLAGS) $*.c

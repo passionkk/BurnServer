@@ -98,37 +98,46 @@ void CBusiness::AddBurnFile(std::string strSessionID, std::vector<FileInfo>& vec
 
 void CBusiness::BurnStateFeedback()
 {
-	if (m_burnTask.m_burnStateFeedback.m_strNeedFeedback.compare("yes") == 0)
+	try
 	{
-		m_burnTask;
-		std::string		sMethod = "burnStateFeedback";
-		Json::Value     jsonValueRoot;
-		Json::Value     jsonValue1;
-		Json::Value     jsonValue2;
-		jsonValue2["cdRomID"] = Json::Value(m_burnTask.m_strCDRomID);
-		jsonValue2["cdRomName"] = Json::Value(m_burnTask.m_strCDRomName);
-		jsonValue2["sessionID"] = Json::Value(m_burnTask.m_strSessionID);
+		if (m_burnTask.m_burnStateFeedback.m_strNeedFeedback.compare("yes") == 0)
+		{
+			m_burnTask;
+			std::string		sMethod = "burnStateFeedback";
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["cdRomID"] = Json::Value(m_burnTask.m_strCDRomID);
+			jsonValue2["cdRomName"] = Json::Value(m_burnTask.m_strCDRomName);
+			jsonValue2["sessionID"] = Json::Value(m_burnTask.m_strSessionID);
 #if 0 // 调用底层接口
-		jsonValue2["burnState"] = Json::Value(m_burnTask.m_strSessionID);
-		jsonValue2["burnStateDescription"] = Json::Value(m_burnTask.m_strSessionID);
-		jsonValue2["hasDVD"] = Json::Value(m_burnTask.m_strSessionID);
-		jsonValue2["DVDLeftCapcity"] = Json::Value(m_burnTask.m_strSessionID);
-		jsonValue2["DVDTotalCapcity"] = Json::Value(m_burnTask.m_strSessionID);
+			jsonValue2["burnState"] = Json::Value(m_burnTask.m_strSessionID);
+			jsonValue2["burnStateDescription"] = Json::Value(m_burnTask.m_strSessionID);
+			jsonValue2["hasDVD"] = Json::Value(m_burnTask.m_strSessionID);
+			jsonValue2["DVDLeftCapcity"] = Json::Value(m_burnTask.m_strSessionID);
+			jsonValue2["DVDTotalCapcity"] = Json::Value(m_burnTask.m_strSessionID);
 #endif
-		jsonValue1["method"] = Json::Value(sMethod.c_str());
-		jsonValue1["params"] = jsonValue2;
-		jsonValueRoot["result"] = jsonValue1;
-		string strOut = jsonValueRoot.toStyledString();
-		UDPClient client;
-		client.Init(m_burnTask.m_burnStateFeedback.m_strFeedbackIP, m_burnTask.m_burnStateFeedback.m_nFeedbackPort);
-		client.ConnectServer();
-		std::string strRecv;
-		client.SendProtocol(strOut, strRecv);
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			UDPClient client;
+			client.Init(m_burnTask.m_burnStateFeedback.m_strFeedbackIP, m_burnTask.m_burnStateFeedback.m_nFeedbackPort);
+			client.ConnectServer();
+			std::string strRecv;
+			client.SendProtocol(strOut, strRecv);
+			client.Close();
+		}
 	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+	}
+
 }
 
 //封盘前刻录状态反馈协议
-void CBusiness::closeDiscFeedback()
+void CBusiness::CloseDiscFeedback()
 {
 	try
 	{

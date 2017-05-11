@@ -1,0 +1,7 @@
+
+COMPILER_FLAGS	+= -Wall -march=x86-64 -Wno-switch -Wpointer-arith -Wredundant-decls -march=pentium-m -mtune=pentium-m -pipe -ffast-math -fomit-frame-pointer
+
+-march  -mtune 两个参数改为 native
+
+
+_For_main.cpp_test

@@ -43,3 +43,9 @@ bool UDPClient::SendProtocol(std::string strSend, std::string& strRecv)
 	m_udpSocket.sendBytes(strSend.c_str(), strSend.length());
 	return false;
 }
+
+bool UDPClient::Close()
+{
+	m_udpSocket.close();
+	return true;
+}
