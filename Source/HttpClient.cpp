@@ -1,16 +1,7 @@
 #include "HttpClient.h"
-
-/*
-CHttpClient::CHttpClient()
-{
-}
-
-
-CHttpClient::~CHttpClient()
-{
-}*/
-
+#ifdef WIN32
 #include <windows.h>
+#endif
 #include "libcurl/curl.h"
 #include <string>
 

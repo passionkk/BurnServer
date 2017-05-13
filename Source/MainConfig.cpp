@@ -7,6 +7,10 @@
 #include <direct.h>
 #endif
 
+#include <stdio.h>
+#ifndef MAX_PATH
+#define  MAX_PATH 256
+#endif
 //const char* g_pConfigPath = "E:\\Work\\GitRepos\\BurnServer\\Bin\\x86\\Debug\\config.json";
 const char* g_pConfigPath = "..\\Bin\\x86\\Debug\\config.json";
 MainConfig *MainConfig::m_pInstance = NULL;
@@ -48,7 +52,11 @@ void MainConfig::Init()
 	{
 		char* pPath = new char[MAX_PATH];
 		memset(pPath, 0, MAX_PATH);
+#if defined(_LINUX_)
+		getcwd(pPath, MAX_PATH);
+#else
 		_getcwd(pPath, MAX_PATH);
+#endif
 		m_strConfigPath = pPath;
 		delete[] pPath;
 

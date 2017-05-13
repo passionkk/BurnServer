@@ -23,7 +23,7 @@
 #pragma comment(linker,"/subsystem:\"windows\" /entry:\"mainCRTStartup\"")
 #endif	//defined(_LINUX_)
 
-//#include "Business.h"
+#include "Business.h"
 
 #include <iostream>
 
@@ -146,25 +146,25 @@ int RunDaemon()
 
 #endif	//
 
+#include "Poco/Poco.h"
 #include "Poco/JSON/Parser.h"
-//#include "Poco/Poco.h"
 using namespace Poco::Dynamic;
 using namespace Poco;
-//using std::string;
+using std::string;
 
-//#include "Poco/DateTime.h"
+#include "Poco/DateTime.h"
 //using Poco::DateTime;
 
 int main(int argc, char *argv[])
 {
 
-	//DateTime now;
-	//cout << "data time is :" << now.day() << endl;
+	Poco::DateTime now;
+	cout << "data time is :" << now.day() << endl;
 
 	string jsonString = "{ \"name\" : \"ÎÒ\" }";
-	/*JSON::Parser parser;
+	JSON::Parser parser;
 	Dynamic::Var result;
-	parser.reset();*/
+	parser.reset();
 
 #ifdef WIN32
 #else

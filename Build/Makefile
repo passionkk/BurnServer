@@ -14,59 +14,45 @@ C++LINK = g++
 
 # EACH DIRECTORY WITH HEADERS MUST BE APPENDED IN THIS MANNER TO THE CCFLAGS
 
-#CCFLAGS += -I../Include
-#CCFLAGS += -I../Include/Charset
-#CCFLAGS += -I../Include/jsoncpp/json
-#CCFLAGS += -I../Include/libcurl
-#CCFLAGS += -I../Include/microhttpd
-CCFLAGS += -I../Include/poco
-#CCFLAGS += -I../Include/poco/Net
+CCFLAGS += -I../Include
+CCFLAGS += -I../Include/libcurl
+CCFLAGS += -I../Include/microhttpd_linux
+CCFLAGS += -I../Include/poco/Net
 CCFLAGS += -I../Include/poco/JSON
 CCFLAGS += -I../Include/poco/Dynamic
+#CCFLAGS += -I../Include/Charset
+#CCFLAGS += -I../Include/jsoncpp/json
+#CCFLAGS += -I../Include/poco
 
 C++FLAGS	= $(CCFLAGS)
 
 CPPFILES	= ../Source/BurnServer_main.cpp \
-#../Source/Business.cpp \
-#../Source/CCBUtility.cpp \
-#../Source/InterfaceProtocol.cpp \
-#../Source/HttpClient.cpp \
-#../Source/BurnTask.cpp \
-#../Source/HttpServerChannel.cpp \
-#../Source/HttpServerModule.cpp \
-#../Source/MainConfig.cpp \
-#../Source/UDPClient.cpp \
-#../Source/UDPServerChannel.cpp \
-#../Source/UDPServerModule.cpp 
-
-# DEPEND LIB PATH
-LIBFILES = 	\
-#../Depends/jsoncpp/libjson_linux-gcc-5.4.0_libmt.so \
-#../Depends/libcurl/libcurl.so \
-#../Depends/microhttpd/libmicrohttpd.so \
-#../Depends/poco/libPocoCrypto.so \
-#../Depends/poco/libPocoData.so \
-../Depends/poco/libPocoFoundation.so \
-../Depends/poco/libPocoJSON.so \
-#../Depends/poco/libPocoNet.so \
-#../Depends/poco/libPocoNetSSL.so \
-#../Depends/poco/libPocoUtil.so \
-#../Depends/poco/libPocoXML.so \
-#../Depends/poco/libPocoZip.so \
-
+../Source/Business.cpp \
+../Source/CCBUtility.cpp \
+../Source/HttpClient.cpp \
+../Source/HttpServerChannel.cpp \
+../Source/HttpServerModule.cpp \
+../Source/MainConfig.cpp \
+../Source/UDPClient.cpp \
+../Source/UDPServerChannel.cpp \
+../Source/UDPServerModule.cpp 
 
 CORE_LINK_LIBS = -lpthread -lrt -ldl -lstdc++ -lm -lcrypt
 
 #LIBS = -ljson_linux-gcc-5.4.0_libmt -lcurl -lmicrohttpd -lPocoCrypto -lPocoData -lPocoFoundation -lPocoJSON -lPocoNet \
 #	   -lPocoNetSSL -lPocoUtil -lPocoXML -lPocoZip $(CORE_LINK_LIBS)
 
-LIBS =   $(CORE_LINK_LIBS)
-
+LIBS = -ljson_linux-gcc-5_libmt -lcurl -lmicrohttpd -lPocoJSON -lPocoNet -lPocoFoundation $(CORE_LINK_LIBS)
+	   
 LINKPATH = \
-#-L../Depends/jsoncpp/ \
+-L/usr/local/BurnServer/poco/lib/ \
+-L/usr/local/BurnServer/curl/lib/ \
+-L/usr/local/BurnServer/microhttpd/lib/ \
+-L/media/sf_OpenSource/jsoncpp/buildscons/linux-gcc-5/src/lib_json/
+#-L../Depends/poco/ \
 #-L../Depends/libcurl/ \
 #-L../Depends/microhttpd/ \
--L../Depends/poco/
+#-L../Depends/jsoncpp/
 	
 BurnServer : $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) 
 	$(C++LINK) -o BurnServer.out $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) $(C++FLAGS) $(LINKPATH) $(LIBS)

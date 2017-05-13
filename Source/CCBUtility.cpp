@@ -2,6 +2,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <stdio.h>
 #if defined(_LINUX_)
 #include <ifaddrs.h>
 #include <arpa/inet.h>
@@ -41,7 +42,7 @@ std::string CCBUtility::GetIP(std::string sEthName)
             char addressBuffer[INET_ADDRSTRLEN];
             memset(addressBuffer, 0, INET_ADDRSTRLEN);
             inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
-            g_NetLog.Debug("%s IPV4 Address %s\n", ifAddrStruct->ifa_name, addressBuffer);
+            //g_NetLog.Debug("%s IPV4 Address %s\n", ifAddrStruct->ifa_name, addressBuffer);
             std::string sName(ifAddrStruct->ifa_name);
             std::string sAddress(addressBuffer);
             if (sEthName == sName)
@@ -133,7 +134,7 @@ int CCBUtility::ExecuteCMD(const char *cmd, char *result)
     }    
     else   
     {    
-        g_NetLog.Debug("popen %s error\n", ps);  
+        //g_NetLog.Debug("popen %s error\n", ps);  
         iRet = -1;
     }
 #endif

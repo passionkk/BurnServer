@@ -5,3 +5,7 @@ COMPILER_FLAGS	+= -Wall -march=x86-64 -Wno-switch -Wpointer-arith -Wredundant-de
 
 
 _For_main.cpp_test
+
+
+export LD_LIBRARY_PATH=/usr/local/BurnServer/poco/lib:$LD_LIBRARY_PATH
+加到环境变量
