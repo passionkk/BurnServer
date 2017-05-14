@@ -276,12 +276,13 @@ int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bL
 }
 
 
-int CHttpClient::BurnServerConnect(CString& strRecv)
+int CHttpClient::BurnServerConnect(CString& strRecv, int nCallCloseDisk)
 {
 	try
 	{
 		Object::Ptr pObj = new Object(true);
 		Object::Ptr pObj1 = new Object(true);
+		pObj1->set("CloseDisk", nCallCloseDisk);
 		pObj1->set("videoEncodeType", 8);
 		pObj1->set("logicNo", 88);
 		pObj->set("params", pObj1);

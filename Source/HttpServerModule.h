@@ -27,6 +27,8 @@ public:
 private:
 
 	std::string TestProtocol(std::string strIn);
+	std::string TestCallBurnStateFeedbackProtocol(std::string strIn);
+	std::string TestCallCloseDiskProtocol(std::string strIn);
 	std::string AgentHeartBeat(std::string strIn);
 	
 	//获取光驱列表

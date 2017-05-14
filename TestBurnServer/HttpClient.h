@@ -56,7 +56,7 @@ public:
 
 	int SendHttpProtocol(std::string sSend, std::string &sRecv, bool bLog = true);
 
-	int BurnServerConnect(CString& strRecv);
+	int BurnServerConnect(CString& strRecv, int nCallCloseDisk = 0);
 
 	int SendGetCDRomListProtocol(CString& strSend, CString& strRecv);
 	int SendStartBurnProtocol(CString& strSend, CString& strRecv);

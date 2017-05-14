@@ -29,7 +29,7 @@
       <UniqueIdentifier>{ac3021fc-5dd2-4096-82eb-63b0490160c1}</UniqueIdentifier>
     </Filter>
     <Filter Include="Net">
-      <UniqueIdentifier>{cdd771f4-6662-4e58-9afb-b80698c5ac98}</UniqueIdentifier>
+      <UniqueIdentifier>{a3714948-043e-4d67-b55c-3fd628c7b02c}</UniqueIdentifier>
     </Filter>
     <Filter Include="Net\HttpClient">
       <UniqueIdentifier>{2893cfbb-ee6a-4bbe-9309-bc24075d6841}</UniqueIdentifier>

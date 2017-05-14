@@ -255,6 +255,13 @@ std::string HttpServerModule::TestProtocol(std::string strIn)
 		{
 			std::string sMethod = jsonValueIn["method"].asString();
 			Json::Value   jsonValueParams = jsonValueIn["params"];
+			
+			int nCloseDisk = jsonValueParams["CloseDisk"].asInt();
+			if (nCloseDisk == 1)
+				CBusiness::GetInstance()->CloseDiscFeedback();
+			else
+				CBusiness::GetInstance()->BurnStateFeedback();
+
 			int iLogicNo = jsonValueParams["logicNo"].asInt();
 
 			Json::Value     jsonValueRoot;
@@ -280,6 +287,8 @@ std::string HttpServerModule::TestProtocol(std::string strIn)
 		return "";
 	}
 }
+
+
 
 std::string HttpServerModule::AgentHeartBeat(std::string strIn)
 {
