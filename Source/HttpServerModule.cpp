@@ -341,11 +341,22 @@ std::string HttpServerModule::GetCDRomList(std::string strIn)
 			std::string sMethod = jsonValueIn["method"].asString();
 			Json::Value   jsonValueParams = jsonValueIn["params"];
 
-			CBusiness::GetInstance()->GetCDRomList();
+			std::vector<CDRomInfo> vecCDRomInfo;
+			CBusiness::GetInstance()->GetCDRomList(vecCDRomInfo);
 
 			Json::Value     jsonValueRoot;
 			Json::Value     jsonValue1;
 			Json::Value     jsonValue2;
+			Json::Value		jsonCDRomList;
+			Json::Value		jsonCDRomInfo;
+			for (int i = 0; i < vecCDRomInfo.size(); i++)
+			{
+				jsonCDRomInfo["cdRomID"] = vecCDRomInfo.at(i).m_strCDRomID;
+				jsonCDRomInfo["cdRomName"] = vecCDRomInfo.at(i).m_strCDRomName;
+				jsonCDRomList.append(jsonCDRomInfo);
+			}
+
+			jsonValue2["listInfo"] = jsonCDRomList;
 			jsonValue2["retCode"] = Json::Value(0);
 			jsonValue2["retMessage"] = Json::Value("ok");
 			jsonValue1["method"] = Json::Value(sMethod.c_str());

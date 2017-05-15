@@ -1,5 +1,4 @@
 #include "Business.h"
-#include "CommonDefine.h"
 #include "HttpServerModule.h"
 #include "UDPServerModule.h"
 #include "jsoncpp/json/json.h"
@@ -7,7 +6,10 @@
 
 CBusiness* CBusiness::m_pInstance = NULL;
 
-CBusiness::CBusiness()
+CBusiness::CBusiness() :Runnable(),
+	m_thread("CBusiness"),
+	m_ready(),
+	m_bStop(true)
 {
 }
 
@@ -15,7 +17,7 @@ CBusiness::~CBusiness()
 {
 }
 
-CBusiness * CBusiness::Initialize()
+CBusiness* CBusiness::Initialize()
 {
 	return CBusiness::GetInstance();
 }
@@ -29,7 +31,7 @@ void CBusiness::Uninitialize()
 	}
 }
 
-CBusiness * CBusiness::GetInstance()
+CBusiness* CBusiness::GetInstance()
 {
 	if (m_pInstance == NULL)
 	{
@@ -40,17 +42,141 @@ CBusiness * CBusiness::GetInstance()
 	return m_pInstance;
 }
 
+void CBusiness::run()
+{
+	m_ready.set();
+	Poco::Timespan span(200 * 1000);
+	while (!m_bStop)
+	{
+		try
+		{
+
+		}
+		catch (Poco::Net::NetException & exc)
+		{
+			//NetException
+		}
+		catch (...)
+		{
+			//g_NetLog.Debug("[UDPServerChannel::run] catch!\n");
+		}
+	}
+}
+
 void CBusiness::Init()
 {
 	HttpServerModule::Initialize();
 	UDPServerModule::Initialize();
+	m_bStop = false;
+	m_thread.start(*this);
+	m_ready.wait();
 }
 
-std::string CBusiness::GetCDRomList()
+int CBusiness::GetCDRomListFromFile(const char* pFilePath)
 {
-	std::string strCDRomList;
+	char buf[2000];
+	int size;
+	FILE *fd;
+
+	fd = fopen(pFilePath, "r");
+	if (fd == NULL)
+	{
+		printf("open file error!\n");
+		return -1;
+	}
+	size = fread(buf, 1, 1024, fd);
+	if (size <= 0)
+	{
+		printf("read file error!\n");
+		fclose(fd);
+		return -1;
+	}
+	buf[size] = '\0';
+	fclose(fd);
+
+	m_vecCDRomInfo.clear();
+	char dev[200];
+	memset(dev, 0, 200);
+	if (ExtractString("<dev1>", "</dev1>", buf, dev) == 0)
+	{
+		CDRomInfo info;
+		info.m_strCDRomName = "光驱1";
+		info.m_strCDRomID = dev;
+		m_vecCDRomInfo.push_back(info);
+		printf("dev1 = %s\n", dev);
+	}
+	memset(dev, 0, 200);
+	if (ExtractString("<dev2>", "</dev2>", buf, dev) == 0)
+	{
+		CDRomInfo info;
+		info.m_strCDRomName = "光驱2";
+		info.m_strCDRomID = dev;
+		m_vecCDRomInfo.push_back(info);
+		printf("dev2 = %s\n", dev);
+	}
+	memset(dev, 0, 200);
+	if (ExtractString("<dev3>", "</dev3>", buf, dev) == 0)
+	{
+		CDRomInfo info;
+		info.m_strCDRomName = "光驱3";
+		info.m_strCDRomID = dev;
+		m_vecCDRomInfo.push_back(info);
+		printf("dev3 = %s\n", dev);
+	}
+	memset(dev, 0, 200);
+	if (ExtractString("<dev4>", "</dev4>", buf, dev) == 0)
+	{
+		CDRomInfo info;
+		info.m_strCDRomName = "光驱4";
+		info.m_strCDRomID = dev;
+		m_vecCDRomInfo.push_back(info);
+		printf("dev3 = %s\n", dev);
+	}
+	return 0;
+}
+
+int	CBusiness::ExtractString(const char *head, char *end,
+				   char *src, char *buffer)
+{
+	int i = 0;
+	int hn = 0, en = 0, sn = 0;
+	char *hp, *ep;
+
+	hn = strlen(head);
+	en = strlen(end);
+	sn = strlen(src);
+	hp = strstr(src, head);
+	ep = strstr(src, end);
+
+	if ((hp != NULL) && (ep != NULL) && (hp < ep))
+	{
+		hp = hp + hn;
+		while (hp < ep)
+		{
+			*(buffer + i) = *(hp++);
+			i++;
+		}
+	}
+	else
+	{
+		printf("error :strings head or end \n");
+		return -1;
+	}
+
+	*(buffer + i) = '\0';
+
+	return 0;
+}
+
+void CBusiness::GetCDRomList(std::vector<CDRomInfo>& vecCDRomInfo)
+{
 	// 调用shell脚本获取光驱列表
-	return strCDRomList;
+	printf("GetCDRomList.\n");
+	system("./Get_CDRom_Dev_Info.sh");
+	GetCDRomListFromFile("CDRomList");
+	vecCDRomInfo.clear();
+	for (int i = 0; i < m_vecCDRomInfo.size(); i++)
+		vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
 }
 
 bool CBusiness::StartBurn(BurnTask& task)
@@ -102,7 +228,6 @@ void CBusiness::BurnStateFeedback()
 	{
 		if (m_burnTask.m_burnStateFeedback.m_strNeedFeedback.compare("yes") == 0)
 		{
-			m_burnTask;
 			std::string		sMethod = "burnStateFeedback";
 			Json::Value     jsonValueRoot;
 			Json::Value     jsonValue1;
@@ -141,7 +266,6 @@ void CBusiness::CloseDiscFeedback()
 {
 	try
 	{
-		m_burnTask;
 		std::string		sMethod = "closeDiscFeedback";
 		Json::Value     jsonValueRoot;
 		Json::Value     jsonValue1;

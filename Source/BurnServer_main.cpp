@@ -57,7 +57,7 @@ int RunBurnServer()
 	setrlimit(RLIMIT_CORE, &rl);
 #endif
 
-	//CBusiness::Initialize();
+	CBusiness::Initialize();
 	while (true)
 	{
 #if defined(_LINUX_)
@@ -66,7 +66,7 @@ int RunBurnServer()
 		Sleep(1);
 #endif
 	}
-	//CBusiness::Uninitialize();
+	CBusiness::Uninitialize();
 
 	return 0;
 }

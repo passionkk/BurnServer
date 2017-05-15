@@ -3,8 +3,12 @@
 #include <string>
 #include "DataStructDefine.h"
 #include <vector>
+//#include "CommonDefine.h"
+#include "poco/Runnable.h"
+#include "poco/Thread.h"
+#include "Poco/Event.h"
 
-class CBusiness
+class CBusiness : public Poco::Runnable
 {
 public:
 	CBusiness();
@@ -14,9 +18,10 @@ public:
 	static void Uninitialize();
 	static CBusiness *GetInstance();
 
+	virtual void run();
 public:
 	//被动协议处理
-	std::string GetCDRomList();
+	void		GetCDRomList(std::vector<CDRomInfo>& vecCDRomInfo);
 	bool		StartBurn(BurnTask& task);
 	bool		PauseBurn(std::string strSessionID);
 	bool		ResumeBurn(std::string strSessionID);
@@ -29,16 +34,25 @@ public:
 	//封盘前刻录状态反馈协议
 	void		CloseDiscFeedback();
 
+	//
+
 private:
 	void Init();
 
+	int  GetCDRomListFromFile(const char* pFilePath);
+	int	 ExtractString(const char *head, char *end,
+					   char *src, char *buffer);
 public:
 	static CBusiness* m_pInstance;
 
 private:
 	std::vector<CDRomInfo>	m_vecCDRomInfo;
 	BurnTask				m_burnTask;				//正在执行的刻录任务
-	std::vector<BurnTask>	m_vecBurnTask;			//保存未完成的刻录任务
+	std::vector<BurnTask>	m_vecBurnTask;			//保存未执行的刻录任务
+	std::vector<BurnTask>	m_vecBurningTask;		//保存正在执行的刻录任务
 	std::vector<BurnTask>	m_vecFinishedTask;		//保存已完成的task
+	Poco::Thread			m_thread;
+	Poco::Event				m_ready;
+	bool					m_bStop;
 };
 
