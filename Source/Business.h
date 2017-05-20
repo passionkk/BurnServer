@@ -20,6 +20,7 @@ public:
 
 	virtual void run();
 public:
+	//协议处理
 	//被动协议处理
 	void		GetCDRomList(std::vector<CDRomInfo>& vecCDRomInfo);
 	bool		StartBurn(BurnTask& task);
@@ -34,11 +35,19 @@ public:
 	//封盘前刻录状态反馈协议
 	void		CloseDiscFeedback();
 
-	//
+	//业务逻辑
+	int			CheckUnusedCDRom();
+	int			GetUndoTask(BurnTask& task);
+	void		DoTask(const BurnTask& task);
+
+	int			CheckCDDriveState(const char* pCDRomID);
+	void		BurnStreamInfoToFile(const BurnTask& task);
+	void		BurnFileToFile(const BurnTask& task);
 
 private:
 	void Init();
 
+	static std::string GetCurDir();
 	int  GetCDRomListFromFile(const char* pFilePath);
 	int	 ExtractString(const char *head, char *end,
 					   char *src, char *buffer);
@@ -46,11 +55,13 @@ public:
 	static CBusiness* m_pInstance;
 
 private:
+	Poco::Mutex				m_mutexCDRomInfoVec;
 	std::vector<CDRomInfo>	m_vecCDRomInfo;
 	BurnTask				m_burnTask;				//正在执行的刻录任务
 	std::vector<BurnTask>	m_vecBurnTask;			//保存未执行的刻录任务
 	std::vector<BurnTask>	m_vecBurningTask;		//保存正在执行的刻录任务
 	std::vector<BurnTask>	m_vecFinishedTask;		//保存已完成的task
+	Poco::Mutex				m_mutexBurnTaskVec;
 	Poco::Thread			m_thread;
 	Poco::Event				m_ready;
 	bool					m_bStop;

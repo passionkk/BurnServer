@@ -171,6 +171,7 @@
     <ClCompile Include="..\Source\UDPServerModule.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Include\BurnCore\LibDVDSDK.h" />
     <ClInclude Include="..\Include\Poco\AbstractCache.h" />
     <ClInclude Include="..\Include\Poco\AbstractDelegate.h" />
     <ClInclude Include="..\Include\Poco\AbstractEvent.h" />

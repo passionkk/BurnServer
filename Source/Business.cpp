@@ -3,6 +3,8 @@
 #include "UDPServerModule.h"
 #include "jsoncpp/json/json.h"
 #include "UDPClient.h"
+#include "poco/net/NetException.h"
+#include "BurnCore/LibDVDSDK.h"
 
 CBusiness* CBusiness::m_pInstance = NULL;
 
@@ -45,12 +47,23 @@ CBusiness* CBusiness::GetInstance()
 void CBusiness::run()
 {
 	m_ready.set();
-	Poco::Timespan span(200 * 1000);
 	while (!m_bStop)
 	{
 		try
 		{
-
+			//1.检测光驱状态，
+			//2.如果第一个光驱处于空闲状态，取一个 使用第一个光驱刻录的任务
+			//3.如果第二个光驱处于空闲状态，取一个 使用第二个光驱刻录的任务
+			//依次类推
+			//遇到双盘刻录任务，
+			//4.双盘续刻 则等待直到其中某个处于空闲状态等待直到
+			//5.双盘同刻，则等待直到两个光驱都空闲再执行刻录
+			BurnTask task;
+			if (0== GetUndoTask(task))
+				DoTask(task);
+#if defined (_LINUX_)
+			sleep(50);
+#endif 
 		}
 		catch (Poco::Net::NetException & exc)
 		{
@@ -65,6 +78,15 @@ void CBusiness::run()
 
 void CBusiness::Init()
 {
+	std::string strCurPath = CBusiness::GetCurDir();
+#if defined(_LINUX_)
+	chdir(strCurPath.c_str());
+#endif
+	GetCDRomListFromFile("./CDRom_List");
+	for (int i = 0; i < m_vecCDRomInfo.size(); i++)
+	{
+		printf("cdrom :%d, cdromID:%s, cdromName:%s.\n", i, m_vecCDRomInfo.at(i).m_strCDRomID, m_vecCDRomInfo.at(i).m_strCDRomName);
+	}
 	HttpServerModule::Initialize();
 	UDPServerModule::Initialize();
 	m_bStop = false;
@@ -72,12 +94,48 @@ void CBusiness::Init()
 	m_ready.wait();
 }
 
+std::string CBusiness::GetCurDir()
+{
+	char szCwd[1024] = { 0 };
+
+#ifdef WIN32
+	GetModuleFileNameA(NULL, szCwd, sizeof(szCwd) / sizeof(char));
+
+	int nLen = strlen(szCwd);
+	while (nLen > 0 &&
+		   szCwd[nLen - 1] != '\\')
+	{
+		szCwd[nLen - 1] = '\0';
+		nLen = strlen(szCwd);
+	}
+#else
+	int nLen = readlink("/proc/self/exe", szCwd, sizeof(szCwd));
+	if (nLen > 0)
+	{
+		szCwd[nLen] = '\0';
+
+		while (nLen > 0 &&
+			   szCwd[nLen - 1] != '/')
+		{
+			szCwd[nLen - 1] = '\0';
+
+			nLen = strlen(szCwd);
+		}
+	}
+#endif
+
+	return std::string(szCwd);
+}
+
+//协议处理
 int CBusiness::GetCDRomListFromFile(const char* pFilePath)
 {
+	if (m_vecCDRomInfo.size() > 0)
+		return 0;
 	char buf[2000];
 	int size;
 	FILE *fd;
-
+	system("./Get_CDRom_Dev_Info.sh");
 	fd = fopen(pFilePath, "r");
 	if (fd == NULL)
 	{
@@ -95,6 +153,7 @@ int CBusiness::GetCDRomListFromFile(const char* pFilePath)
 	fclose(fd);
 
 	m_vecCDRomInfo.clear();
+	std::vector<CDRomInfo> vecCDRomInfoTmp;
 	char dev[200];
 	memset(dev, 0, 200);
 	if (ExtractString("<dev1>", "</dev1>", buf, dev) == 0)
@@ -132,6 +191,37 @@ int CBusiness::GetCDRomListFromFile(const char* pFilePath)
 		m_vecCDRomInfo.push_back(info);
 		printf("dev3 = %s\n", dev);
 	}
+
+#if 0
+	if (m_vecCDRomInfo.size() == 0)
+	{
+		for (int i = 0; i < vecCDRomInfoTmp.size(); i++)
+		{
+			m_vecCDRomInfo.push_back(vecCDRomInfoTmp.at(i));
+		}
+	}
+	else
+	{	//剔除无效的光驱
+		std::vector<int> vecIndexAdd;
+		bool bExist = false;
+		for (int i = 0; i < m_vecCDRomInfo.size(); i++)
+		{
+			CDRomInfo cdRomInfo = m_vecCDRomInfo.at(i);
+			bExist = false
+			for(int j = 0; j < vecCDRomInfoTmp.size(); j++)
+			{
+				if (cdRomInfo.m_strCDRomID.compare(vecCDRomInfoTmp.at(j).m_strCDRomID) == 0)
+				{
+					bExist = true;
+					vecIndexAdd.push_back(j);
+					break;
+				}
+				if (j == vecCDRomInfoTmp.size() - 1)
+
+			}
+		}
+	}
+#endif
 	return 0;
 }
 
@@ -182,6 +272,7 @@ void CBusiness::GetCDRomList(std::vector<CDRomInfo>& vecCDRomInfo)
 bool CBusiness::StartBurn(BurnTask& task)
 {
 	bool bRet = true;
+	Mutex::ScopedLock lock(m_mutexBurnTaskVec);
 	m_vecBurnTask.push_back(task);
 	return bRet;
 }
@@ -206,7 +297,8 @@ bool CBusiness::StopBurn(std::string strSessionID)
 
 void CBusiness::GetCDRomInfo(std::string strCDRomID)
 {
-
+	Mutex::ScopedLock lock(m_mutexCDRomInfoVec);
+	//调底层接口获取光驱信息
 }
 
 void CBusiness::AddBurnFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo)
@@ -324,4 +416,52 @@ void CBusiness::CloseDiscFeedback()
 	{
 		printf("%s catched\n", __PRETTY_FUNCTION__);
 	}
+}
+
+
+//业务处理
+int CBusiness::GetUndoTask(BurnTask& task)
+{
+	int nRet = -1;
+	Mutex::ScopedLock   lock(m_mutexBurnTaskVec);
+	if (m_vecBurnTask.size() > 0)
+	{
+		task = m_vecBurnTask.at(0);
+		m_vecBurnTask.erase(m_vecBurnTask.begin());
+		nRet = 0;
+	}
+	return nRet;
+}
+
+void CBusiness::DoTask(const BurnTask& task)
+{
+	std::string strBurnCDRomID = task.m_strCDRomID;
+	if (0 == CheckCDDriveState(strBurnCDRomID.c_str()))
+	{
+		BurnStreamInfoToFile(task);
+		BurnFileToFile(task);
+	}
+}
+
+int CBusiness::CheckCDDriveState(const char* pCDRomID)
+{
+	int nRet = -1;
+	DVDSDKInterface dvdInterface;
+	DVDDRV_HANDLE hDvD = dvdInterface.DVDSDK_Load(pCDRomID);
+	if (hDvD != NULL)
+	{
+		
+		nRet = 0;
+	}
+	return nRet;
+}
+
+void CBusiness::BurnStreamInfoToFile(const BurnTask& task)
+{
+
+}
+
+void CBusiness::BurnFileToFile(const BurnTask& task)
+{
+
 }

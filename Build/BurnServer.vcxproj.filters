@@ -46,6 +46,9 @@
     <Filter Include="Util">
       <UniqueIdentifier>{d14a0224-2baf-46da-b5f5-e582a5c269fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Include\BurnCore">
+      <UniqueIdentifier>{f1b6f335-ff3a-477a-94f7-1c5f6b132ba7}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -1147,6 +1150,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\DataStructDefine.h">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Include\BurnCore\LibDVDSDK.h">
+      <Filter>Include\BurnCore</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
