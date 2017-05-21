@@ -2,6 +2,7 @@
 //#include <iostream>
 #include <string>
 #include <vector>
+#include "Poco/Mutex.h"
 
 class CDRomInfo
 {
@@ -15,8 +16,31 @@ public:
 	virtual ~CDRomInfo(){};
 
 public:
-	std::string		m_strCDRomName;
-	std::string		m_strCDRomID;
+	std::string		m_strCDRomName;		//光驱名: 光驱1
+	std::string		m_strCDRomID;		//光驱ID: /dev/sr0
+	int				m_nWorkState;		//光驱工作状态  0，未工作 1，工作中
+};
+
+class DiskInfo
+{
+public:
+	DiskInfo()
+	{
+		ntype = 0;
+		maxpeed = 16;
+		discsize = 0;
+		usedsize = 0;
+		freesize = 0;
+	};
+
+	virtual ~DiskInfo(){};
+
+public:
+	int 	 	 ntype;			// 光盘类型	DISC_TYPE
+	int			 maxpeed;		// 最大速度(写速度)
+	unsigned int discsize;		// 光盘容量(MB)
+	unsigned int usedsize;		// 已使用的大小(MB)	
+	unsigned int freesize;		// 可用大小(MB)
 };
 
 class FileInfo
@@ -83,10 +107,16 @@ class BurnTask
 public:
 	BurnTask()
 	{
+		m_strCDRomID = "";
+		m_strCDRomName = "";
+		m_vecCDRomInfo.clear();
+		m_vecDVDHandle.clear();
 		m_strBurnMode = "";
 		m_strBurnType = "";
+		m_ullBurnedSize = 0;
 		m_nAlarmSize = 0;
 		m_vecBurnFileInfo.clear();
+		m_nCurBurnFileIndex = 0;
 		m_nBurnSpeed = 0;
 		m_strSessionID = "";
 	};
@@ -94,11 +124,16 @@ public:
 public:
 	std::string					m_strCDRomID;
 	std::string					m_strCDRomName;
-	std::string					m_strBurnMode;		//"singleBurn" "doubleParallelBurn" "DoubleRelayBurn" 
+	std::vector<CDRomInfo>		m_vecCDRomInfo;
+	std::vector<void*>			m_vecDVDHandle;
+	DiskInfo					m_diskInfo;			//光盘信息，包含光盘类型，大小等。
+	unsigned long long			m_ullBurnedSize;	//已刻录大小
+	int							m_nAlarmSize;		//报警大小阈值
+	std::string					m_strBurnMode;		//"singleBurn" "doubleParallelBurn" "doubleRelayBurn" 
 	std::string					m_strBurnType;		//"realTimeBurn" ”pseudoRealTimeBurn” ”fileBurn”
-	int							m_nAlarmSize;
 	BurnStreamInfo				m_burnStreamInfo;
 	std::vector<FileInfo>		m_vecBurnFileInfo;
+	int							m_nCurBurnFileIndex;	//当前刻录文件索引
 	int							m_nBurnSpeed;		//光驱刻录速度
 	BurnStateFeedbcak			m_burnStateFeedback;
 	std::string					m_strSessionID;

@@ -7,6 +7,7 @@
 #include "poco/Runnable.h"
 #include "poco/Thread.h"
 #include "Poco/Event.h"
+#include "Poco/Mutex.h"
 
 class CBusiness : public Poco::Runnable
 {
@@ -38,12 +39,19 @@ public:
 	//业务逻辑
 	int			CheckUnusedCDRom();
 	int			GetUndoTask(BurnTask& task);
-	void		DoTask(const BurnTask& task);
+	void		DoTask(BurnTask& task);
 
-	int			CheckCDDriveState(const char* pCDRomID);
-	void		BurnStreamInfoToFile(const BurnTask& task);
-	void		BurnFileToFile(const BurnTask& task);
+	void		SetCDRomWorkState(std::string strCDRomID);
+	int			ChooseCDRomToBurn(BurnTask& task);
+	int			InitCDRom(BurnTask& task);
+	void		BurnStreamInfoToDisk(const BurnTask& task);
+	void		BurnFileToDisk(BurnTask& task);
 
+	//下载远端文件或目录 strType: "file" or "dir"; strSrcUrl:源文件或文件夹路径 如 http://192.168.1.1:8080/download/a.mp4
+	//											   strDestUrl:目标文件或文件夹路径,默认从配置文件中读取目标文件夹，后跟文件名如 /media/BurnServer/Download/a.mp4											
+	static void		Download(std::string strType, std::string strSrcUrl, std::string strDestUrl = "");
+	//根据原目标地址生成本地目标地址，用于下载时目标文件的生成
+	void		GenerateLocalPath(std::string strSrcUrl, std::string& localPath);
 private:
 	void Init();
 
@@ -62,6 +70,7 @@ private:
 	std::vector<BurnTask>	m_vecBurningTask;		//保存正在执行的刻录任务
 	std::vector<BurnTask>	m_vecFinishedTask;		//保存已完成的task
 	Poco::Mutex				m_mutexBurnTaskVec;
+	Poco::Mutex				m_mutexVecBurnFileInfo;
 	Poco::Thread			m_thread;
 	Poco::Event				m_ready;
 	bool					m_bStop;

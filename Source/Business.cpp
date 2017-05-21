@@ -433,35 +433,173 @@ int CBusiness::GetUndoTask(BurnTask& task)
 	return nRet;
 }
 
-void CBusiness::DoTask(const BurnTask& task)
+void CBusiness::DoTask(BurnTask& task)
 {
 	std::string strBurnCDRomID = task.m_strCDRomID;
-	if (0 == CheckCDDriveState(strBurnCDRomID.c_str()))
+	if (0 != ChooseCDRomToBurn(task))
 	{
-		BurnStreamInfoToFile(task);
-		BurnFileToFile(task);
+		printf("Choose CDRom fail.\n");
+	}
+	if (0 != InitCDRom(task))
+	{
+		printf("Init CDRom fail.\n");
+	}
+	BurnStreamInfoToDisk(task);
+	BurnFileToDisk(task);
+}
+
+void CBusiness::SetCDRomWorkState(std::string strCDRomID)
+{
+	for (int i = 0; i < m_vecCDRomInfo.size(); i++)
+	{
+		if (m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0)
+		{
+			m_vecCDRomInfo.at(i).m_nWorkState = 1;
+			break;
+		}
 	}
 }
 
-int CBusiness::CheckCDDriveState(const char* pCDRomID)
+int CBusiness::ChooseCDRomToBurn(BurnTask& task)
+{
+	int nRet = -1;
+
+	int nNeedCDRomCount = 0;
+	if (task.m_strBurnMode.compare("singleBurn") == 0)
+		nNeedCDRomCount = 1;
+	else if (task.m_strBurnMode.compare("doubleParallelBurn") == 0 || task.m_strBurnMode.compare("doubleRelayBurn") == 0)
+		nNeedCDRomCount = 2;
+	else
+		nNeedCDRomCount = 1;
+	if (m_vecCDRomInfo.size() < nNeedCDRomCount)	//光驱数量不足
+	{
+		printf("count of cdRom is %d, need cdRom is %d, ChooseCDRomToBurn faile.\n", m_vecCDRomInfo.size(), nNeedCDRomCount);
+		return nRet;
+	}
+	for (int i = 0; i < nNeedCDRomCount; i++)
+	{
+		if (m_vecCDRomInfo.at(i).m_nWorkState == 0)
+			task.m_vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
+	}
+	if (task.m_vecCDRomInfo.size() < nNeedCDRomCount)
+	{
+		printf("task can use CDRom Num is %d, need cdRom is %d, ChooseCDRomToBurn faile.\n", task.m_vecCDRomInfo.size(), nNeedCDRomCount);
+		return nRet;
+	}
+
+	int nErroNo = 0;
+	task.m_vecDVDHandle.clear();
+	DVDSDKInterface dvdInterface;
+	for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+	{
+		std::string strCDRomID = task.m_vecCDRomInfo.at(i).m_strCDRomID;
+		DVDDRV_HANDLE hDvD = dvdInterface.DVDSDK_Load(strCDRomID.c_str());
+		if (hDvD != NULL)
+		{
+			task.m_vecDVDHandle.push_back(hDvD);
+			if (dvdInterface.DVDSDK_GetTrayState(hDvD) == 1)
+			{
+				dvdInterface.DVDSDK_Tray(hDvD, 0);
+				if (dvdInterface.DVDSDK_GetTrayState(hDvD) == 1)
+				{
+					printf("close disk faile, please close the disk manual.\n");
+				}
+			}
+			if (dvdInterface.DVDSDK_HaveDisc(hDvD) == 0)
+				printf("cdrom %s has no disk.\n", strCDRomID);
+			if ((nErroNo = dvdInterface.DVDSDK_LoadDisc(hDvD)) != 0)
+				printf("cdrom load disk fail, error number is %d", nErroNo);
+			dvdInterface.DVDSDK_LockDoor(hDvD, 1);
+		}
+		if (task.m_strBurnMode.compare("doubleRelayBurn") == 0 || task.m_strBurnMode.compare("singleBurn") == 0)
+			break;
+	}
+	nRet = 0;
+	return nRet;
+}
+
+int CBusiness::InitCDRom(BurnTask& task)
 {
 	int nRet = -1;
 	DVDSDKInterface dvdInterface;
-	DVDDRV_HANDLE hDvD = dvdInterface.DVDSDK_Load(pCDRomID);
-	if (hDvD != NULL)
+	for (int i = 0; i < task.m_vecDVDHandle.size(); i++)
 	{
-		
+		DVDDRV_HANDLE hDvD = task.m_vecDVDHandle.at(i);;
+		if (hDvD != NULL)
+		{
+			DVD_DISC_INFO_T diskType;
+			dvdInterface.DVDSDK_GetDiscInfo(hDvD, &diskType);
+			task.m_diskInfo.ntype = diskType.ntype;
+			task.m_diskInfo.maxpeed = diskType.maxpeed;
+			task.m_diskInfo.discsize = diskType.discsize;
+			task.m_diskInfo.usedsize = diskType.usedsize;
+			task.m_diskInfo.freesize = diskType.freesize;
+
+			if (dvdInterface.DVDSDK_DiscCanWrite(hDvD) != ERROR_DVD_OK)
+			{
+				printf("Disc Can not be Writed! \n");
+				break;
+			}
+			if (task.m_nBurnSpeed != 8) //默认写入速度是8X
+				dvdInterface.DVDSDK_SetWriteSpeed(hDvD, task.m_nBurnSpeed, diskType.ntype);
+			dvdInterface.DVDSDK_FormatDisc(hDvD, (char*)task.m_strSessionID.c_str());//光盘名称 协议里是否需要涉及
+			task.m_vecCDRomInfo.at(i).m_nWorkState = 1;//置此光驱为工作状态
+			SetCDRomWorkState(task.m_vecCDRomInfo.at(i).m_strCDRomID);
+			if (task.m_strBurnMode.compare("doubleRelayBurn") == 0 || task.m_strBurnMode.compare("singleBurn") == 0)
+				break;
+		}
 		nRet = 0;
 	}
 	return nRet;
 }
 
-void CBusiness::BurnStreamInfoToFile(const BurnTask& task)
+void CBusiness::BurnStreamInfoToDisk(const BurnTask& task)
 {
 
 }
 
-void CBusiness::BurnFileToFile(const BurnTask& task)
+void CBusiness::BurnFileToDisk(BurnTask& task)
+{
+	m_mutexVecBurnFileInfo.lock();
+	int nFileCount = task.m_vecCDRomInfo.size();
+	m_mutexVecBurnFileInfo.unlock();
+	if (nFileCount <= 0)
+	{
+		printf("No file to Burn.\n");
+		return;
+	}
+	do 
+	{
+		m_mutexVecBurnFileInfo.lock();
+		FileInfo fileInfo = task.m_vecBurnFileInfo.at(task.m_nCurBurnFileIndex);
+		m_mutexVecBurnFileInfo.unlock();
+		std::string strLocalPath = "";
+		if (fileInfo.m_strFileLocation.compare("remote") == 0)
+		{	//远端
+			Download(fileInfo.m_strType, fileInfo.m_strSrcUrl);
+		}
+		if (fileInfo.m_strType.compare("file") == 0)
+		{	//文件
+		}
+		else{
+			//目录 
+		}
+	} while (++task.m_nCurBurnFileIndex < nFileCount);
+}
+
+void CBusiness::Download(std::string strType, std::string strSrcUrl, std::string strDestUrl)
+{
+	if (strType.compare("file") == 0)
+	{	//文件
+
+	}
+	else
+	{	//文件
+
+	}
+}
+
+void CBusiness::GenerateLocalPath(std::string strSrcUrl, std::string& localPath)
 {
 
 }
