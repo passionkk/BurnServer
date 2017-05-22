@@ -41,5 +41,5 @@ int DownloadFile::CurlDownloadDir(std::string strSrcUrl, std::string strDestUrl)
 
 size_t	DownloadFile::WriteFileData(void *ptr, size_t size, size_t nmemb, FILE *stream)
 {
-
+	return fwrite((const char*)ptr, size, nmemb, (FILE*)stream);
 }

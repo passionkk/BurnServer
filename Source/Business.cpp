@@ -6,6 +6,10 @@
 #include "poco/net/NetException.h"
 #include "BurnCore/LibDVDSDK.h"
 #include "libcurl/curl.h"
+#include "../Depends/FileSys/FileUtil.h"
+#include "../Depends/FileSys/DirectoryUtil.h"
+#include "MainConfig.h"
+#include "DownloadFile.h"
 
 CBusiness* CBusiness::m_pInstance = NULL;
 
@@ -587,8 +591,10 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 		//开始刻录
 		if (fileInfo.m_strType.compare("file") == 0)
 		{	//文件
+			
 		}
-		else{
+		else
+		{
 			//目录 
 		}
 	} while (++task.m_nCurBurnFileIndex < nFileCount);
@@ -598,15 +604,23 @@ void CBusiness::Download(std::string strType, std::string strSrcUrl, std::string
 {
 	if (strType.compare("file") == 0)
 	{	//文件
-
+		if (strDestUrl.empty())
+		{
+			CBusiness::GenerateLocalPath(strSrcUrl, strDestUrl);
+		}
+		DownloadFile download;
+		download.CurlDownloadFile(strSrcUrl, strDestUrl);
 	}
 	else
-	{	//文件
+	{	//目录 
 
 	}
 }
 
 void CBusiness::GenerateLocalPath(std::string strSrcUrl, std::string& localPath)
 {
-
+	std::string strDownloadDir = MainConfig::GetInstance()->GetDownloadDir();
+	std::string strFileName = FileUtil::GetFileName(strSrcUrl);
+	localPath = DirectoryUtil::EnsureSlashEnd(strDownloadDir) + strFileName;
+	printf("[CBusiness::GenerateLocalPath]strDownloadDir is %s, strFileName is %s, localPath is %s.\n", strDownloadDir, strFileName, localPath);
 }

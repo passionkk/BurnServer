@@ -16,7 +16,7 @@ public:
 	RetransChannel GetServerConfigInfo(int nServerType);
 	//int GetHttpServerConfigInfo();
 	//int GetUDPServerConfigInfo();
-
+	std::string GetDownloadDir();
 public:
 	MainConfig();
 	virtual ~MainConfig();

@@ -173,3 +173,20 @@ RetransChannel MainConfig::GetServerConfigInfo(int nServerType)
 	RetransChannel channel;
 	return channel;
 }
+
+std::string MainConfig::GetDownloadDir()
+{
+	try
+	{
+		Object::Ptr obj = m_varFullConfig.extract<Object::Ptr>();
+
+		m_dsHttpInfo = Object::makeStruct(obj->getObject("DownloadDir"));
+		std::string strDownloadDir = m_dsHttpInfo["DefaultDir"].toString();
+		return strDownloadDir;
+	}
+	catch (...)
+	{
+		//g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
+	}
+	return "";
+}

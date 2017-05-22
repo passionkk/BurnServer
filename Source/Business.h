@@ -51,7 +51,7 @@ public:
 	//											   strDestUrl:目标文件或文件夹路径,默认从配置文件中读取目标文件夹，后跟文件名如 /media/BurnServer/Download/a.mp4											
 	static void		Download(std::string strType, std::string strSrcUrl, std::string strDestUrl = "");
 	//根据原目标地址生成本地目标地址，用于下载时目标文件的生成
-	void		GenerateLocalPath(std::string strSrcUrl, std::string& localPath);
+	static void		GenerateLocalPath(std::string strSrcUrl, std::string& localPath);
 private:
 	void Init();
 
