@@ -49,6 +49,9 @@
     <Filter Include="Include\BurnCore">
       <UniqueIdentifier>{f1b6f335-ff3a-477a-94f7-1c5f6b132ba7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Net\Download">
+      <UniqueIdentifier>{48cb173f-c319-46dc-9c22-d05fe5374146}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -83,6 +86,9 @@
     </ClCompile>
     <ClCompile Include="..\Source\UDPClient.cpp">
       <Filter>Net\UDPClient</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\DownloadFile.cpp">
+      <Filter>Net\Download</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1153,6 +1159,9 @@
     </ClInclude>
     <ClInclude Include="..\Include\BurnCore\LibDVDSDK.h">
       <Filter>Include\BurnCore</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\DownloadFile.h">
+      <Filter>Net\Download</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -162,6 +162,7 @@
     <ClCompile Include="..\Source\BurnServer_main.cpp" />
     <ClCompile Include="..\Source\Business.cpp" />
     <ClCompile Include="..\Source\CCBUtility.cpp" />
+    <ClCompile Include="..\Source\DownloadFile.cpp" />
     <ClCompile Include="..\Source\HttpClient.cpp" />
     <ClCompile Include="..\Source\HttpServerChannel.cpp" />
     <ClCompile Include="..\Source\HttpServerModule.cpp" />
@@ -520,6 +521,7 @@
     <ClInclude Include="..\Source\CCBUtility.h" />
     <ClInclude Include="..\Source\CommonDefine.h" />
     <ClInclude Include="..\Source\DataStructDefine.h" />
+    <ClInclude Include="..\Source\DownloadFile.h" />
     <ClInclude Include="..\Source\HttpClient.h" />
     <ClInclude Include="..\Source\HttpServerChannel.h" />
     <ClInclude Include="..\Source\HttpServerModule.h" />

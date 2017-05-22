@@ -10,5 +10,9 @@
         "IP": "192.168.1.6",
 		"port": 91,
 		"serialName":"channel1"
-    }
+    },
+	"DownloadDir":
+	{
+		"DefaultDir":"/media/BurnServer/Download/"
+	}
 }

@@ -5,6 +5,7 @@
 #include "UDPClient.h"
 #include "poco/net/NetException.h"
 #include "BurnCore/LibDVDSDK.h"
+#include "libcurl/curl.h"
 
 CBusiness* CBusiness::m_pInstance = NULL;
 
@@ -28,6 +29,9 @@ void CBusiness::Uninitialize()
 {
 	if (m_pInstance != NULL)
 	{
+		UDPServerModule::Uninitialize();
+		HttpServerModule::Uninitialize();
+		curl_global_cleanup();
 		delete m_pInstance;
 		m_pInstance = NULL;
 	}
@@ -87,6 +91,8 @@ void CBusiness::Init()
 	{
 		printf("cdrom :%d, cdromID:%s, cdromName:%s.\n", i, m_vecCDRomInfo.at(i).m_strCDRomID, m_vecCDRomInfo.at(i).m_strCDRomName);
 	}
+	//初始化CURL
+	curl_global_init(CURL_GLOBAL_ALL);
 	HttpServerModule::Initialize();
 	UDPServerModule::Initialize();
 	m_bStop = false;
@@ -578,6 +584,7 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 		{	//远端
 			Download(fileInfo.m_strType, fileInfo.m_strSrcUrl);
 		}
+		//开始刻录
 		if (fileInfo.m_strType.compare("file") == 0)
 		{	//文件
 		}
