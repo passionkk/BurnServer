@@ -506,6 +506,7 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 		DVDDRV_HANDLE hDvD = dvdInterface.DVDSDK_Load(strCDRomID.c_str());
 		if (hDvD != NULL)
 		{
+			task.m_vecCDRomInfo.at(i).m_pDVDHandle = hDvD;
 			task.m_vecDVDHandle.push_back(hDvD);
 			if (dvdInterface.DVDSDK_GetTrayState(hDvD) == 1)
 			{
@@ -537,13 +538,13 @@ int CBusiness::InitCDRom(BurnTask& task)
 		DVDDRV_HANDLE hDvD = task.m_vecDVDHandle.at(i);;
 		if (hDvD != NULL)
 		{
-			DVD_DISC_INFO_T diskType;
-			dvdInterface.DVDSDK_GetDiscInfo(hDvD, &diskType);
-			task.m_diskInfo.ntype = diskType.ntype;
-			task.m_diskInfo.maxpeed = diskType.maxpeed;
-			task.m_diskInfo.discsize = diskType.discsize;
-			task.m_diskInfo.usedsize = diskType.usedsize;
-			task.m_diskInfo.freesize = diskType.freesize;
+			DVD_DISC_INFO_T diskInfo;
+			dvdInterface.DVDSDK_GetDiscInfo(hDvD, &diskInfo);
+			task.m_diskInfo.ntype = diskInfo.ntype;
+			task.m_diskInfo.maxpeed = diskInfo.maxpeed;
+			task.m_diskInfo.discsize = diskInfo.discsize;
+			task.m_diskInfo.usedsize = diskInfo.usedsize;
+			task.m_diskInfo.freesize = diskInfo.freesize;
 
 			if (dvdInterface.DVDSDK_DiscCanWrite(hDvD) != ERROR_DVD_OK)
 			{
@@ -551,7 +552,7 @@ int CBusiness::InitCDRom(BurnTask& task)
 				break;
 			}
 			if (task.m_nBurnSpeed != 8) //默认写入速度是8X
-				dvdInterface.DVDSDK_SetWriteSpeed(hDvD, task.m_nBurnSpeed, diskType.ntype);
+				dvdInterface.DVDSDK_SetWriteSpeed(hDvD, task.m_nBurnSpeed, diskInfo.ntype);
 			dvdInterface.DVDSDK_FormatDisc(hDvD, (char*)task.m_strSessionID.c_str());//光盘名称 协议里是否需要涉及
 			task.m_vecCDRomInfo.at(i).m_nWorkState = 1;//置此光驱为工作状态
 			SetCDRomWorkState(task.m_vecCDRomInfo.at(i).m_strCDRomID);
@@ -578,6 +579,7 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 		printf("No file to Burn.\n");
 		return;
 	}
+	DVDSDKInterface dvdInterface;
 	do 
 	{
 		m_mutexVecBurnFileInfo.lock();
@@ -586,12 +588,17 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 		std::string strLocalPath = "";
 		if (fileInfo.m_strFileLocation.compare("remote") == 0)
 		{	//远端
-			Download(fileInfo.m_strType, fileInfo.m_strSrcUrl);
+			std::string strLocalPath = Download(fileInfo.m_strType, fileInfo.m_strSrcUrl);
+			m_mutexVecBurnFileInfo.lock();
+			task.m_vecBurnFileInfo.at(task.m_nCurBurnFileIndex).m_strRemoteFileLocalPath = strLocalPath;
+			fileInfo.m_strRemoteFileLocalPath = strLocalPath;
+			m_mutexVecBurnFileInfo.unlock();
 		}
 		//开始刻录
 		if (fileInfo.m_strType.compare("file") == 0)
 		{	//文件
-			
+			dvdInterface.DVDSDK_CreateFile()
+			dvdInterface.DVDSDK_CopyDisc(task.)
 		}
 		else
 		{
@@ -600,7 +607,7 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 	} while (++task.m_nCurBurnFileIndex < nFileCount);
 }
 
-void CBusiness::Download(std::string strType, std::string strSrcUrl, std::string strDestUrl)
+std::string CBusiness::Download(std::string strType, std::string strSrcUrl, std::string strDestUrl)
 {
 	if (strType.compare("file") == 0)
 	{	//文件
@@ -615,6 +622,7 @@ void CBusiness::Download(std::string strType, std::string strSrcUrl, std::string
 	{	//目录 
 
 	}
+	return strDestUrl;
 }
 
 void CBusiness::GenerateLocalPath(std::string strSrcUrl, std::string& localPath)
