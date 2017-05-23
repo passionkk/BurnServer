@@ -4,6 +4,14 @@
 #include <vector>
 #include "Poco/Mutex.h"
 
+enum CDROMSTATE
+{
+	CDROM_INIT = 0,
+	CDROM_READY,
+	CDROM_WORKING,
+	CDROM_UNINIT
+};
+
 class CDRomInfo
 {
 public:
@@ -11,6 +19,8 @@ public:
 	{
 		m_strCDRomName = "";
 		m_strCDRomID = "";
+		m_euWorkState = CDROM_UNINIT;
+		m_pDVDHandle = NULL;
 	};
 
 	virtual ~CDRomInfo(){};
@@ -18,7 +28,7 @@ public:
 public:
 	std::string		m_strCDRomName;		//光驱名: 光驱1
 	std::string		m_strCDRomID;		//光驱ID: /dev/sr0
-	int				m_nWorkState;		//光驱工作状态  0，未工作 1，工作中
+	CDROMSTATE		m_euWorkState;		//光驱工作状态
 	void*			m_pDVDHandle;		//光驱Handle
 };
 
@@ -64,7 +74,7 @@ public:
 	std::string		m_strType;			//文件类型，目录：dir || 文件：file
 	std::string		m_strSrcUrl;		//刻录流源地址或者文件源路径
 	std::string		m_strDestFilePath;	//
-	std::string		m_strRemoteFileLocalPath;
+	std::string		m_strRemoteFileLocalPath;	//下载远端文件成功后的本地存储路径
 	std::string		m_strDescription;
 };
 

@@ -34,18 +34,20 @@ public:
 	//刻录状态反馈协议
 	void		BurnStateFeedback();
 	//封盘前刻录状态反馈协议
-	void		CloseDiscFeedback();
+	void		CloseDiscFeedback();//这个接口应该传给task作为参数
 
 	//业务逻辑
 	int			CheckUnusedCDRom();
 	int			GetUndoTask(BurnTask& task);
 	void		DoTask(BurnTask& task);
 
-	void		SetCDRomWorkState(std::string strCDRomID);
+	void		SetCDRomState(std::string strCDRomID, CDROMSTATE state);
+	void*		GetIdleCDRom(BurnTask& task, std::string& strCDRomID, int& nCDRomIndex);
 	int			ChooseCDRomToBurn(BurnTask& task);
 	int			InitCDRom(BurnTask& task);
 	void		BurnStreamInfoToDisk(const BurnTask& task);
 	void		BurnFileToDisk(BurnTask& task);
+	int			WriteFileToDisk(void* pHandle, void* pFileHandle, std::string strLocalPath);
 
 	//下载远端文件或目录 strType: "file" or "dir"; strSrcUrl:源文件或文件夹路径 如 http://192.168.1.1:8080/download/a.mp4
 	//											   strDestUrl:目标文件或文件夹路径,默认从配置文件中读取目标文件夹，后跟文件名如 /media/BurnServer/Download/a.mp4											

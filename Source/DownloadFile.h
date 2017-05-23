@@ -11,6 +11,9 @@ public:
 	int CurlDownloadFile(std::string strSrcUrl, std::string strDestUrl);
 	int CurlDownloadDir(std::string strSrcUrl, std::string strDestUrl);
 
-	size_t	WriteFileData(void *ptr, size_t size, size_t nmemb, FILE *stream);
+	static size_t	WriteFileData(void *ptr, size_t size, size_t nmemb, DownloadFile *stream);
+	size_t DoWriteFileData(void *ptr, size_t size, size_t nmemb);
+private:
+	FILE* m_pFile;
 };
 
