@@ -29,7 +29,7 @@
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v120</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
-    <UseOfMfc>Static</UseOfMfc>
+    <UseOfMfc>Dynamic</UseOfMfc>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -159,6 +159,8 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\Depends\FileSys\DirectoryUtil.cpp" />
+    <ClCompile Include="..\Depends\FileSys\FileUtil.cpp" />
     <ClCompile Include="..\Source\BurnServer_main.cpp" />
     <ClCompile Include="..\Source\Business.cpp" />
     <ClCompile Include="..\Source\CCBUtility.cpp" />
@@ -172,6 +174,8 @@
     <ClCompile Include="..\Source\UDPServerModule.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\Depends\FileSys\DirectoryUtil.h" />
+    <ClInclude Include="..\Depends\FileSys\FileUtil.h" />
     <ClInclude Include="..\Include\BurnCore\LibDVDSDK.h" />
     <ClInclude Include="..\Include\Poco\AbstractCache.h" />
     <ClInclude Include="..\Include\Poco\AbstractDelegate.h" />

@@ -1,4 +1,4 @@
-// BurnServer.cpp : ¶¨Òå¿ØÖÆÌ¨Ó¦ÓÃ³ÌĞòµÄÈë¿Úµã¡£
+// BurnServer.cpp : å®šä¹‰æ§åˆ¶å°åº”ç”¨ç¨‹åºçš„å…¥å£ç‚¹ã€‚
 //
 #if defined(_LINUX_)
 #include <signal.h>
@@ -61,9 +61,9 @@ int RunBurnServer()
 	while (true)
 	{
 #if defined(_LINUX_)
-		sleep(1);
+		sleep(100);
 #else
-		Sleep(1);
+		Sleep(100);
 #endif
 	}
 	CBusiness::Uninitialize();
@@ -74,6 +74,7 @@ int RunBurnServer()
 #if defined(_LINUX_)
 int RunDaemon()
 {
+	printf("Enter RunDaemon.\n");
 	pid_t	processID = 0;
 	int		status = 0;
 	int		pid = 0;
@@ -157,14 +158,18 @@ using std::string;
 
 int main(int argc, char *argv[])
 {
-
+	printf("Enter main.\n");
 	Poco::DateTime now;
 	cout << "data time is :" << now.day() << endl;
 
-	string jsonString = "{ \"name\" : \"ÎÒ\" }";
-	JSON::Parser parser;
-	Dynamic::Var result;
-	parser.reset();
+	string jsonString = "{ \"name\" : \"ç½—ä¼¯ç‰¹\" }";
+	cout << "jsonString : " << jsonString << endl;
+	JSON::Parser	jsonParser;
+	Dynamic::Var result = jsonParser.parse(jsonString);
+	JSON::Object::Ptr pObj = result.extract<JSON::Object::Ptr>();
+	Dynamic::Var varName = pObj->get("name");
+	cout << "name" << varName.toString() << endl;
+	return 0;
 
 #ifdef WIN32
 #else
@@ -208,8 +213,8 @@ int main(int argc, char *argv[])
 	bool bDebug = false;
 	while ((opt = getopt(argc, argv, "vd")) != -1)
 	{
-		// ²ÎÊıÁĞ±íÖĞ£¬ºóÃæÓĞ²ÎÊıµÄ¼Ó¡°:¡±£¬ºóÃæÃ»ÓĞ²ÎÊıµÄ²»¼Ó¡°:¡±
-		// Èçgetopt(argc, argv, "c:i:hv")±íÊ¾-cºÍ-iºóÃæÊÇ¸ú²ÎÊıµÄ£¬-hºÍ-vºóÃæÊÇ²»¸ú²ÎÊıµÄ
+		// å‚æ•°åˆ—è¡¨ä¸­ï¼Œåé¢æœ‰å‚æ•°çš„åŠ â€œ:â€ï¼Œåé¢æ²¡æœ‰å‚æ•°çš„ä¸åŠ â€œ:â€
+		// å¦‚getopt(argc, argv, "c:i:hv")è¡¨ç¤º-cå’Œ-iåé¢æ˜¯è·Ÿå‚æ•°çš„ï¼Œ-hå’Œ-våé¢æ˜¯ä¸è·Ÿå‚æ•°çš„
 		switch (opt)
 		{
 		case 'v':

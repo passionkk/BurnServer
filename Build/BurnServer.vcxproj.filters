@@ -90,6 +90,12 @@
     <ClCompile Include="..\Source\DownloadFile.cpp">
       <Filter>Net\Download</Filter>
     </ClCompile>
+    <ClCompile Include="..\Depends\FileSys\DirectoryUtil.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Depends\FileSys\FileUtil.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Include\Poco\AbstractCache.h">
@@ -1162,6 +1168,12 @@
     </ClInclude>
     <ClInclude Include="..\Source\DownloadFile.h">
       <Filter>Net\Download</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Depends\FileSys\DirectoryUtil.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Depends\FileSys\FileUtil.h">
+      <Filter>Util</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

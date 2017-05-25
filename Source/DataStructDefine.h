@@ -8,8 +8,17 @@ enum CDROMSTATE
 {
 	CDROM_INIT = 0,
 	CDROM_READY,
-	CDROM_WORKING,
+	CDROM_BURNING,		//刻录中
+	//CDROM_PAUSE,		
 	CDROM_UNINIT
+};
+
+enum TASKSTATE
+{
+	TASK_INIT = 0,
+	TASK_BURN,
+	TASK_PAUSE,			//暂停  由刻录状态转换到PAUSE
+	TASK_STOP
 };
 
 class CDRomInfo
@@ -123,7 +132,6 @@ public:
 		m_strCDRomID = "";
 		m_strCDRomName = "";
 		m_vecCDRomInfo.clear();
-		m_vecDVDHandle.clear();
 		m_strBurnMode = "";
 		m_strBurnType = "";
 		m_ullBurnedSize = 0;
@@ -132,13 +140,13 @@ public:
 		m_nCurBurnFileIndex = 0;
 		m_nBurnSpeed = 0;
 		m_strSessionID = "";
+		m_taskState = TASK_INIT;
 	};
 
 public:
 	std::string					m_strCDRomID;
 	std::string					m_strCDRomName;
 	std::vector<CDRomInfo>		m_vecCDRomInfo;
-	std::vector<void*>			m_vecDVDHandle;
 	DiskInfo					m_diskInfo;			//光盘信息，包含光盘类型，大小等。
 	unsigned long long			m_ullBurnedSize;	//已刻录大小
 	int							m_nAlarmSize;		//报警大小阈值
@@ -150,4 +158,5 @@ public:
 	int							m_nBurnSpeed;		//光驱刻录速度
 	BurnStateFeedbcak			m_burnStateFeedback;
 	std::string					m_strSessionID;
+	TASKSTATE					m_taskState;
 };

@@ -35,27 +35,31 @@ CPPFILES	= ../Source/BurnServer_main.cpp \
 ../Source/MainConfig.cpp \
 ../Source/UDPClient.cpp \
 ../Source/UDPServerChannel.cpp \
-../Source/UDPServerModule.cpp 
+../Source/UDPServerModule.cpp \
+../Source/DownloadFile.cpp 		\
+../Depends/FileSys/FileUtil.cpp \
+../Depends/FileSys/DirectoryUtil.cpp \
 
 CORE_LINK_LIBS = -lpthread -lrt -ldl -lstdc++ -lm -lcrypt
 
 #LIBS = -ljson_linux-gcc-5.4.0_libmt -lcurl -lmicrohttpd -lPocoCrypto -lPocoData -lPocoFoundation -lPocoJSON -lPocoNet \
 #	   -lPocoNetSSL -lPocoUtil -lPocoXML -lPocoZip $(CORE_LINK_LIBS)
 
-LIBS = -ljson_linux-gcc-5_libmt -lcurl -lmicrohttpd -lPocoJSON -lPocoNet -lPocoFoundation $(CORE_LINK_LIBS)
+LIBS = -Wl,-Bstatic -lDVDSDK -Wl,-Bdynamic -ljson_linux-gcc-5_libmt -lcurl -lmicrohttpd -lPocoJSON -lPocoNet -lPocoFoundation $(CORE_LINK_LIBS)
 	   
 LINKPATH = \
 -L/usr/local/BurnServer/poco/lib/ \
 -L/usr/local/BurnServer/curl/lib/ \
 -L/usr/local/BurnServer/microhttpd/lib/ \
--L/media/sf_OpenSource/jsoncpp/buildscons/linux-gcc-5/src/lib_json/
+-L/media/sf_OpenSource/jsoncpp/buildscons/linux-gcc-5/src/lib_json/  \
+-L/usr/local/BurnServer/DVDSDK/   
 #-L../Depends/poco/ \
 #-L../Depends/libcurl/ \
 #-L../Depends/microhttpd/ \
 #-L../Depends/jsoncpp/
 	
 BurnServer : $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) 
-	$(C++LINK) -o BurnServer.out $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) $(C++FLAGS) $(LINKPATH) $(LIBS)
+	$(C++LINK) -o BurnServer $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) $(C++FLAGS) $(LINKPATH) $(LIBS)
 
 clean:
 	rm -f *.out *.log $(CFILES:.c=.o) $(CPPFILES:.cpp=.o)
