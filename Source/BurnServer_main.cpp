@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
 	JSON::Object::Ptr pObj = result.extract<JSON::Object::Ptr>();
 	Dynamic::Var varName = pObj->get("name");
 	cout << "name" << varName.toString() << endl;
-	return 0;
+	//return 0;
 
 #ifdef WIN32
 #else

@@ -548,7 +548,7 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 
 	int nErroNo = 0;
 	DVDSDKInterface dvdInterface;
-	/*for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+	for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
 	{
 		std::string strCDRomID = task.m_vecCDRomInfo.at(i).m_strCDRomID;
 		DVDDRV_HANDLE hDvD = dvdInterface.DVDSDK_Load(strCDRomID.c_str());
@@ -572,15 +572,15 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 		if (task.m_strBurnMode.compare("doubleRelayBurn") == 0 || task.m_strBurnMode.compare("singleBurn") == 0)
 			break;
 	}
-	nRet = 0;*/
+	nRet = 0;
 	return nRet;
 }
 
 int CBusiness::InitCDRom(BurnTask& task)
 {
 	int nRet = -1;
-	//DVDSDKInterface dvdInterface;
-	/*for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+	DVDSDKInterface dvdInterface;
+	for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
 	{
 		DVDDRV_HANDLE hDvD = task.m_vecCDRomInfo.at(i).m_pDVDHandle;
 		if (hDvD != NULL)
@@ -608,7 +608,7 @@ int CBusiness::InitCDRom(BurnTask& task)
 				break;
 		}
 		nRet = 0;
-	}*/
+	}
 	return nRet;
 }
 
@@ -631,7 +631,7 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 	std::string strCDRomID = "";
 	int nCDRomIndex = -1;
 	//只是单盘刻录和双盘续刻的情况，未包含双盘同刻情况
-	/*DVDDRV_HANDLE pHandle = GetIdleCDRom(task, strCDRomID, nCDRomIndex);
+	DVDDRV_HANDLE pHandle = GetIdleCDRom(task, strCDRomID, nCDRomIndex);
 	if (pHandle == NULL || nCDRomIndex == -1)
 	{
 		printf("GetIdleCDRom fail.\n");
@@ -710,7 +710,7 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 		m_mutexVecBurnFileInfo.lock();
 		task.m_vecBurnFileInfo.erase(task.m_vecBurnFileInfo.begin());
 		m_mutexVecBurnFileInfo.unlock();
-	} while (task.m_vecBurnFileInfo.size() > 0);*/
+	} while (task.m_vecBurnFileInfo.size() > 0);
 
 }
 
@@ -761,7 +761,7 @@ int CBusiness::WriteFileToDisk(void* pHandle, void* pFileHandle, std::string str
 	memset(buffer, 0, DEFAULTPACKED);
 	size = fread(buffer, 1, DEFAULTPACKED, fd);
 	printf("Read [%d]\n", size);
-	/*
+	
 	DVDSDKInterface dvdInterface;
 	while (size)
 	{
@@ -781,7 +781,7 @@ int CBusiness::WriteFileToDisk(void* pHandle, void* pFileHandle, std::string str
 		size = fread(buffer, 1, DEFAULTPACKED, fd);
 		printf("Read [%d]\n", size);
 	}
-	*/
+	
 	fclose(fd);
 
 	printf(" WriteFileToDisk %s [%ld] is ok!\n", pFileName, num);
@@ -790,7 +790,7 @@ int CBusiness::WriteFileToDisk(void* pHandle, void* pFileHandle, std::string str
 
 int CBusiness::BurnLocalFile(void* pHandle, FileInfo& fileInfo/*std::string strSrcPath, std::string strDestPath*/)
 {
-	/*DVDSDKInterface dvdInterface;
+	DVDSDKInterface dvdInterface;
 	std::string strLocalPath = "";
 	std::string strDir = DirectoryUtil::GetParentDir(fileInfo.m_strDestFilePath);
 	//目前只是根目录
@@ -803,7 +803,7 @@ int CBusiness::BurnLocalFile(void* pHandle, FileInfo& fileInfo/*std::string strS
 		printf("WriteFIleToDisk fail.\n");
 		return -1;
 	}
-	dvdInterface.DVDSDK_CloseFile(pHandle, dvdFile);*/
+	dvdInterface.DVDSDK_CloseFile(pHandle, dvdFile);
 	return 0;
 }
 
@@ -815,7 +815,7 @@ int	CBusiness::BurnLocalFile(void* pHandle, std::string strSrcPath, std::string 
 		printf("file %s not exist.\n", strSrcPath);
 		return -1;
 	}
-	/*DVDSDKInterface dvdInterface;
+	DVDSDKInterface dvdInterface;
 	std::string strDestName = FileUtil::GetFileName(strDestPath);
 	//目前只是根目录
 	DVDSDK_FILE dvdFile = dvdInterface.DVDSDK_CreateFile(pHandle, NULL, (char*)strDestName.c_str(), 0);
@@ -827,7 +827,7 @@ int	CBusiness::BurnLocalFile(void* pHandle, std::string strSrcPath, std::string 
 			return -1;
 		}
 	}
-	dvdInterface.DVDSDK_CloseFile(pHandle, dvdFile);*/
+	dvdInterface.DVDSDK_CloseFile(pHandle, dvdFile);
 	return 0;
 }
 

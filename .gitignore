@@ -12,3 +12,5 @@
 /Build/ipch/testburnserver-527c7dcf
 /TestBurnServer/Debug
 /TestBurnServer/x64/Debug
+*.o
+/Build/BurnServer

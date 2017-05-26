@@ -20,6 +20,7 @@ CCFLAGS += -I../Include/microhttpd_linux
 CCFLAGS += -I../Include/poco/Net
 CCFLAGS += -I../Include/poco/JSON
 CCFLAGS += -I../Include/poco/Dynamic
+CCFLAGS += -I../Include/BurnCore
 #CCFLAGS += -I../Include/Charset
 #CCFLAGS += -I../Include/jsoncpp/json
 #CCFLAGS += -I../Include/poco
@@ -45,7 +46,7 @@ CORE_LINK_LIBS = -lpthread -lrt -ldl -lstdc++ -lm -lcrypt
 #LIBS = -ljson_linux-gcc-5.4.0_libmt -lcurl -lmicrohttpd -lPocoCrypto -lPocoData -lPocoFoundation -lPocoJSON -lPocoNet \
 #	   -lPocoNetSSL -lPocoUtil -lPocoXML -lPocoZip $(CORE_LINK_LIBS)
 
-LIBS = -Wl,-Bstatic -lDVDSDK -Wl,-Bdynamic -ljson_linux-gcc-5_libmt -lcurl -lmicrohttpd -lPocoJSON -lPocoNet -lPocoFoundation $(CORE_LINK_LIBS)
+LIBS = -lDVDSDK -ljson_linux-gcc-5_libmt -lcurl -lmicrohttpd -lPocoJSON -lPocoNet -lPocoFoundation $(CORE_LINK_LIBS)
 	   
 LINKPATH = \
 -L/usr/local/BurnServer/poco/lib/ \
