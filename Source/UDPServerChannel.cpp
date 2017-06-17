@@ -3,7 +3,7 @@
 #include "Poco/Timespan.h"
 #include "Business.h"
 #include "CCBUtility.h"
-#include "jsoncpp/json/json.h"
+#include "json/json.h"
 #include "Poco/Net/StreamSocket.h"
 #include "Poco/Net/NetException.h"
 
@@ -139,7 +139,7 @@ int UDPServerChannel::UdpServerCallBack(char *sRemoteIP, int nRemotePort, Datagr
 
 int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocket &localSocket, char *sData, int nData)
 {
-    //´¦ÀíudpÃüÁî
+    //å¤„ç†udpå‘½ä»¤
     try
     {
         if(localSocket.address().port() == 91)
@@ -197,7 +197,7 @@ int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocke
                                 ARPSend::GetInstance()->NotifyIPChange();
                                 if(MainConfig::GetInstance()->SysModule_GetRoleType() == ROLE_TYPE_MASTER)
                                 {
-                                    //ip¸Ä±ä£¬ÖØĞÂ×¢²ásip
+                                    //ipæ”¹å˜ï¼Œé‡æ–°æ³¨å†Œsip
                                     SIPModule::GetInstance()->RegisterAll();
                                 }*/
                             }
@@ -304,17 +304,17 @@ int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocke
                 memcpy(szData,sData,4);
                 if(szData[0] == 0x00 && szData[1] == 0x0a && szData[2] == 0x00 && szData[3] == 0x00)
                 {
-                    //ÊÕµ½ËÑË÷Éè±¸Ğ­Òé
+                    //æ”¶åˆ°æœç´¢è®¾å¤‡åè®®
                     /*if(MainConfig::GetInstance()->HighGradeModule_GetCompatibleOldDeviceSearchEnable())
                     {
-                        //»Ø¸´¹ã²¥+µ¥²¥£¬¸ñÊ½ÈçÏÂ
-                        //80 0a xx xx 00 00 +¡°net.ipaddr=DVCµÄIPµØÖ·\n
-                        //net.netmask=DVC×ÓÍøÑÚÂë\n
-                        //net.gateway=DVCÍø¹ØµØÖ·\n
-                        //net.ethaddr=DVCµÄMACµØÖ·\n
-                        //sys._swver=DVCµÄÈí¼ş°æ±¾\n
-                        //sys.dtyp=DVCµÄÉè±¸Ãû³Æ\n
-                        //sys.subVersion=3.0\n¡±
+                        //å›å¤å¹¿æ’­+å•æ’­ï¼Œæ ¼å¼å¦‚ä¸‹
+                        //80 0a xx xx 00 00 +â€œnet.ipaddr=DVCçš„IPåœ°å€\n
+                        //net.netmask=DVCå­ç½‘æ©ç \n
+                        //net.gateway=DVCç½‘å…³åœ°å€\n
+                        //net.ethaddr=DVCçš„MACåœ°å€\n
+                        //sys._swver=DVCçš„è½¯ä»¶ç‰ˆæœ¬\n
+                        //sys.dtyp=DVCçš„è®¾å¤‡åç§°\n
+                        //sys.subVersion=3.0\nâ€
                         int nMaxReturnData = 16*1024;
                         char *pReturnData = new char[nMaxReturnData];
                         int nReturnData = 0;
@@ -369,13 +369,13 @@ int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocke
                 memcpy(szData,sData,6);
                 if(szData[0] == 0x90 && szData[1] == 0x0a && szData[4] == 0x00 && szData[5] == 0x00)
                 {
-                    //ÊÕµ½ÉèÖÃÍøÂç²ÎÊıĞ­Òé
-                    //90 0a xx xx 00 00 +¡°net.ipaddr=DVCµÄIPµØÖ·\n
-                    //net.netmask=DVC×ÓÍøÑÚÂë\n
-                    //net.gateway=DVCÍø¹ØµØÖ·\n
-                    //net.ethaddr=DVCµÄMACµØÖ·\n
-                    //sys._swver=DVCµÄÈí¼ş°æ±¾\n
-                    //sys.dtyp=DVCµÄÉè±¸Ãû³Æ\n¡±
+                    //æ”¶åˆ°è®¾ç½®ç½‘ç»œå‚æ•°åè®®
+                    //90 0a xx xx 00 00 +â€œnet.ipaddr=DVCçš„IPåœ°å€\n
+                    //net.netmask=DVCå­ç½‘æ©ç \n
+                    //net.gateway=DVCç½‘å…³åœ°å€\n
+                    //net.ethaddr=DVCçš„MACåœ°å€\n
+                    //sys._swver=DVCçš„è½¯ä»¶ç‰ˆæœ¬\n
+                    //sys.dtyp=DVCçš„è®¾å¤‡åç§°\nâ€
                     std::string sRecvCmd = std::string(sData+6);
                     //g_NetLog.Debug("recv cmd: %s \n",sRecvCmd.c_str());
 
@@ -438,9 +438,9 @@ int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocke
                 }
                 else if(szData[0] == 0x91 && szData[1] == 0x0a && szData[4] == 0x00 && szData[5] == 0x00)
                 {
-                    //ÊÕµ½ÉèÖÃDHCPĞ­Òé
-                    //91 0a xx xx 00 00 +¡°net.ethaddr=DVCµÄMACµØÖ·\n
-                    //sys.dhcp=1\n¡±
+                    //æ”¶åˆ°è®¾ç½®DHCPåè®®
+                    //91 0a xx xx 00 00 +â€œnet.ethaddr=DVCçš„MACåœ°å€\n
+                    //sys.dhcp=1\nâ€
                     std::string sRecvCmd = std::string(sData+6);
                     //g_NetLog.Debug("recv cmd: %s \n",sRecvCmd.c_str());
 
@@ -497,8 +497,8 @@ int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocke
             {
                 if(nData < (16*1024))
                 {
-                    //×ª»»ÎªÍø¹ÜÉèÖÃÃüÁî
-                    //Ç°¼Ó00 03 00 00£¬²¢È·±£Ä©Î²Îª\n
+                    //è½¬æ¢ä¸ºç½‘ç®¡è®¾ç½®å‘½ä»¤
+                    //å‰åŠ 00 03 00 00ï¼Œå¹¶ç¡®ä¿æœ«å°¾ä¸º\n
                     int nSendData = 0;
                     char szSendData[16*1024+5];
                     memset(szSendData,0,sizeof(szSendData));
@@ -644,7 +644,7 @@ std::string UDPServerChannel::TestProtocol(std::string strSend)
 }
 
 
-//»ñÈ¡¹âÇıÁĞ±í
+//è·å–å…‰é©±åˆ—è¡¨
 std::string UDPServerChannel::GetCDRomList(std::string strIn)
 {
 	try
@@ -693,7 +693,7 @@ std::string UDPServerChannel::GetCDRomList(std::string strIn)
 	}
 }
 
-//¿ªÊ¼¿ÌÂ¼
+//å¼€å§‹åˆ»å½•
 std::string UDPServerChannel::StartBurn(std::string strIn)
 {
 	try
@@ -775,7 +775,7 @@ std::string UDPServerChannel::StartBurn(std::string strIn)
 	}
 }
 
-//ÔİÍ£¿ÌÂ¼
+//æš‚åœåˆ»å½•
 std::string UDPServerChannel::PauseBurn(std::string strIn)
 {
 	try
@@ -814,7 +814,7 @@ std::string UDPServerChannel::PauseBurn(std::string strIn)
 	}
 }
 
-//¼ÌĞø¿ÌÂ¼
+//ç»§ç»­åˆ»å½•
 std::string UDPServerChannel::ResumBurn(std::string strIn)
 {
 	try
@@ -916,11 +916,11 @@ std::string UDPServerChannel::GetCDRomInfo(std::string strIn)
 			jsonValue2["retCode"] = Json::Value(0);
 			jsonValue2["retMessage"] = Json::Value("ok");
 
-			//·µ»ØÊµ¼Ê¹âÇıĞÅÏ¢
+			//è¿”å›å®é™…å…‰é©±ä¿¡æ¯
 			jsonValue2["cdRomID"] = "CDRom_1";
-			jsonValue2["cdRomName"] = "¹âÇı1";
+			jsonValue2["cdRomName"] = "å…‰é©±1";
 			jsonValue2["burnState"] = 0;
-			jsonValue2["burnStateDescription"] = "Î´¿ÌÂ¼";
+			jsonValue2["burnStateDescription"] = "æœªåˆ»å½•";
 			jsonValue2["hasDVD"] = 0;
 			jsonValue2["DVDLeftCapcity"] = "0MB";
 			jsonValue2["DVDTotalCapcity"] = "0MB",

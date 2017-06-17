@@ -1,5 +1,5 @@
 #include "DownloadFile.h"
-#include "libcurl/curl.h"
+#include "curl/curl.h"
 
 DownloadFile::DownloadFile()
 {
@@ -25,7 +25,7 @@ int DownloadFile::CurlDownloadFile(std::string strSrcUrl, std::string strDestUrl
 			curl_easy_setopt(pCurl, CURLOPT_TIMEOUT, 60);	//time out
 			CURLcode res = curl_easy_perform(pCurl);
 			if (res != CURLE_OK)
-				printf("curl download file error, srcFile is %s, errorNo:%d.\n", strSrcUrl, (int)res);
+				printf("curl download file error, srcFile is %s, errorNo:%d.\n", strSrcUrl.c_str(), (int)res);
 			curl_easy_cleanup(pCurl);
 			fclose(m_pFile);
 		}

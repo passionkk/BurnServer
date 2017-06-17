@@ -14,19 +14,19 @@
 
 #include "Poco/Foundation.h"
 #include "Poco/File.h"
-#include "poco/StringTokenizer.h"
-#include "poco/JSON/Parser.h"
-#include "poco/Dynamic/Var.h"
-#include "Poco/net/Net.h"
-#include "poco/net/DatagramSocket.h"
-#include "poco/net/streamsocket.h"
+#include "Poco/StringTokenizer.h"
+#include "Poco/JSON/Parser.h"
+#include "Poco/Dynamic/Var.h"
+#include "Poco/Net/Net.h"
+#include "Poco/Net/DatagramSocket.h"
+#include "Poco/Net/StreamSocket.h"
 
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Thread.h"
 #include "Poco/Event.h"
-#include "poco/net/NetException.h"
-#include "poco/Runnable.h"
-#include "poco/FileStream.h"
+#include "Poco/Net/NetException.h"
+#include "Poco/Runnable.h"
+#include "Poco/FileStream.h"
 #include "Poco/UUIDGenerator.h"
 
 using namespace Poco;

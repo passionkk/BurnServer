@@ -65,8 +65,10 @@ void CTestProtocolDlg::OnBnClickedButtonGetcdromlist()
 	{
 		std::string sSend, sRecv;
 		m_udpClient.SendGetCDRomListProtocol(sSend, sRecv);
-		strSend = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length()));
-		strRecv = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length()));
+		//strSend = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length()));
+		//strRecv = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length()));
+		strSend = CharsetConvertMFC::UTF8ToUTF16(CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length())));
+		strRecv = CharsetConvertMFC::UTF8ToUTF16(CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length())));
 	}
 	m_editSendInfo.SetWindowText(strSend);
 	m_editRecvInfo.SetWindowText(strRecv);

@@ -60,7 +60,8 @@ void MainConfig::Init()
 		m_strConfigPath = pPath;
 		delete[] pPath;
 
-		m_strConfigPath += "\\config.json";
+		m_strConfigPath += "/config.json";
+		printf("config file path is %s.\n", m_strConfigPath.c_str());
 		if (m_pInstance->IsConfigFileRight(m_strConfigPath))
 			m_pInstance->ReadFromFile(m_strConfigPath);
 	}
@@ -74,7 +75,7 @@ bool MainConfig::IsConfigFileRight(std::string strFile)
 		if (!file.exists())
 		{
 			//g_NetLog.Debug("[MainConfig::ConfigFileRight] file %s do not exist\n", strFile.c_str());
-			printf("config file : %s not exist.\n", strFile);
+			printf("config file : %s not exist.\n", strFile.c_str());
 			return false;
 		}
 		printf("load config file : %s.\n", strFile.c_str());

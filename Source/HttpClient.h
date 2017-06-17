@@ -1,15 +1,4 @@
 ﻿#pragma once
-/*
-class CHttpClient
-{
-public:
-	CHttpClient();
-	virtual ~CHttpClient();
-};
-
-#ifndef __HTTP_CURL_H__
-#define __HTTP_CURL_H__*/
-
 #include <string>
 
 #include "Poco/Mutex.h"
@@ -17,7 +6,7 @@ public:
 #include "Poco/Net/DatagramSocket.h"
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Net/Socket.h"
-#include "poco/Foundation.h"
+#include "Poco/Foundation.h"
 
 class CHttpClient
 {

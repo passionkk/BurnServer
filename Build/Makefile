@@ -8,14 +8,19 @@ COMPILER_FLAGS	+= -Wall -Wno-switch -Wpointer-arith -Wredundant-decls -march=nat
 
 C++		=	g++
 CC		=	gcc
-CCFLAGS	+= $(COMPILER_FLAGS)  -g 
-#CCFLAGS	+= $(COMPILER_FLAGS)
+
+#ifeq ($(debug),1)
+#CCFLAGS	+= $(COMPILER_FLAGS)  -g 
+#else
+CCFLAGS	+= $(COMPILER_FLAGS)
+#endif
+
 C++LINK = g++
 
 # EACH DIRECTORY WITH HEADERS MUST BE APPENDED IN THIS MANNER TO THE CCFLAGS
 
 CCFLAGS += -I../Include
-CCFLAGS += -I../Include/libcurl
+CCFLAGS += -I../Include/curl
 CCFLAGS += -I../Include/microhttpd_linux
 CCFLAGS += -I../Include/poco/Net
 CCFLAGS += -I../Include/poco/JSON
@@ -49,11 +54,11 @@ CORE_LINK_LIBS = -lpthread -lrt -ldl -lstdc++ -lm -lcrypt
 LIBS = -lDVDSDK -ljson_linux-gcc-5_libmt -lcurl -lmicrohttpd -lPocoJSON -lPocoNet -lPocoFoundation $(CORE_LINK_LIBS)
 	   
 LINKPATH = \
--L/usr/local/BurnServer/poco/lib/ \
--L/usr/local/BurnServer/curl/lib/ \
--L/usr/local/BurnServer/microhttpd/lib/ \
+-L/usr/local/BurnServer_Tmp/poco/lib/ \
+-L/usr/local/BurnServer_Tmp/curl/lib/ \
+-L/usr/local/BurnServer_Tmp/microhttpd/lib/ \
 -L/media/sf_OpenSource/jsoncpp/buildscons/linux-gcc-5/src/lib_json/  \
--L/usr/local/BurnServer/DVDSDK/   
+-L/usr/local/BurnServer_Tmp/DVDSDK/   
 #-L../Depends/poco/ \
 #-L../Depends/libcurl/ \
 #-L../Depends/microhttpd/ \

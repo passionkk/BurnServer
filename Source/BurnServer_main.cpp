@@ -148,28 +148,23 @@ int RunDaemon()
 #endif	//
 
 #include "Poco/Poco.h"
+#include "Poco/JSON/JSON.h"
 #include "Poco/JSON/Parser.h"
-using namespace Poco::Dynamic;
-using namespace Poco;
-using std::string;
-
 #include "Poco/DateTime.h"
-//using Poco::DateTime;
+using std::string;
 
 int main(int argc, char *argv[])
 {
 	printf("Enter main.\n");
 	Poco::DateTime now;
 	cout << "data time is :" << now.day() << endl;
-
+	
 	string jsonString = "{ \"name\" : \"罗伯特\" }";
-	cout << "jsonString : " << jsonString << endl;
-	JSON::Parser	jsonParser;
-	Dynamic::Var result = jsonParser.parse(jsonString);
-	JSON::Object::Ptr pObj = result.extract<JSON::Object::Ptr>();
-	Dynamic::Var varName = pObj->get("name");
+	Poco::JSON::Parser	jsonParser;
+	Poco::Dynamic::Var result = jsonParser.parse(jsonString);
+	Poco::JSON::Object::Ptr pObj = result.extract<Poco::JSON::Object::Ptr>();
+	Poco::Dynamic::Var varName = pObj->get("name");
 	cout << "name" << varName.toString() << endl;
-	//return 0;
 
 #ifdef WIN32
 #else

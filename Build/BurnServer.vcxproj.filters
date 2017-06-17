@@ -90,10 +90,10 @@
     <ClCompile Include="..\Source\DownloadFile.cpp">
       <Filter>Net\Download</Filter>
     </ClCompile>
-    <ClCompile Include="..\Depends\FileSys\DirectoryUtil.cpp">
+    <ClCompile Include="..\Source\FileUtil.cpp">
       <Filter>Util</Filter>
     </ClCompile>
-    <ClCompile Include="..\Depends\FileSys\FileUtil.cpp">
+    <ClCompile Include="..\Source\DirectoryUtil.cpp">
       <Filter>Util</Filter>
     </ClCompile>
   </ItemGroup>
@@ -1169,10 +1169,10 @@
     <ClInclude Include="..\Source\DownloadFile.h">
       <Filter>Net\Download</Filter>
     </ClInclude>
-    <ClInclude Include="..\Depends\FileSys\DirectoryUtil.h">
+    <ClInclude Include="..\Source\FileUtil.h">
       <Filter>Util</Filter>
     </ClInclude>
-    <ClInclude Include="..\Depends\FileSys\FileUtil.h">
+    <ClInclude Include="..\Source\DirectoryUtil.h">
       <Filter>Util</Filter>
     </ClInclude>
   </ItemGroup>

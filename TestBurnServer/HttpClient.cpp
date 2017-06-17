@@ -22,6 +22,7 @@
 #include "Poco/net/Net.h"
 #include "poco/net/DatagramSocket.h"
 #include "poco/net/streamsocket.h"
+#include "Charset/CharsetConvertMFC.h"
 
 using namespace Poco::JSON;
 using namespace Poco::Dynamic;
@@ -223,7 +224,8 @@ int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bL
 		//g_NetLog.Debug("[H323Channel::SendHttpProtocol] send content: %s\n", sSend.c_str());
 	}
 	int iRet = -1;
-	std::string strUrl = "http://127.0.0.1:90/activeProtocol.action";
+	std::string strUrl = "http://192.168.1.16:90/activeProtocol.action";
+	//std::string strUrl = "http://10.0.2.15:90/activeProtocol.action";
 
 	CURL *curl = NULL;
 	CURLcode res;
@@ -251,14 +253,19 @@ int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bL
 			{
 			case CURLE_UNSUPPORTED_PROTOCOL:
 				fprintf(stderr, "不支持的协议,由URL的头部指定\n");
+				break;
 			case CURLE_COULDNT_CONNECT:
 				fprintf(stderr, "不能连接到remote主机或者代理\n");
+				break;
 			case CURLE_HTTP_RETURNED_ERROR:
 				fprintf(stderr, "http返回错误\n");
+				break;
 			case CURLE_READ_ERROR:
 				fprintf(stderr, "读本地文件错误\n");
+				break;
 			default:
 				fprintf(stderr, "返回值:%d\n", res);
+				break;
 			}
 		}
 		else
@@ -332,6 +339,8 @@ int CHttpClient::SendGetCDRomListProtocol(CString& strSend, CString& strRecv)
 			strSend = strS;
 			CString strR(sRecv.c_str());
 			strRecv = strR;
+			strSend = CharsetConvertMFC::UTF8ToUTF16(CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length())));
+			strRecv = CharsetConvertMFC::UTF8ToUTF16(CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length())));
 		}
 		return 0;
 	}
@@ -355,6 +364,7 @@ int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
 		pParams->set("alarmSize", 300);
 		pParams->set("burnType", "fileBurn");
 
+#if 0 //暂时先测试文件
 		Object::Ptr pStreamInfo = new Object(true);
 		pStreamInfo->set("burnFileName", "1.mp4");
 		pStreamInfo->set("playlistInfo", "<?xml><config></config>");
@@ -385,6 +395,8 @@ int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
 
 		pStreamInfo->set("burnUrlList", burnUrlArray); // add burnUrlList
 		pParams->set("streamInfo", pStreamInfo);
+#endif
+
 		//fileInfo
 		JSON::Array burnFileArray;
 		Object::Ptr	burnFile = new Object(true);

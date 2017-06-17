@@ -1,7 +1,7 @@
 #ifndef _CCB_UTILITY_H_
 #define _CCB_UTILITY_H_
 
-#include "commondefine.h"
+#include "CommonDefine.h"
 
 class CCBUtility
 {

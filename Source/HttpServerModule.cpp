@@ -1,7 +1,7 @@
 #include "HttpServerModule.h"
 #include "Business.h"
 #include "CommonDefine.h"
-#include "jsoncpp/json/json.h"
+#include "json/json.h"
 #include "MainConfig.h"
 
 HttpServerModule* HttpServerModule::m_pInstance = NULL;
@@ -129,7 +129,10 @@ void HttpServerModule::Init()
     HttpServerChannel* pChannel = new HttpServerChannel();
 	RetransChannel httpInfo = MainConfig::GetInstance()->GetServerConfigInfo(0);
 	int iPort = httpInfo.m_iPort;
-	pChannel->Start(iPort, &Access_callback, (void*)this, &response_completed_callback);
+	if (0 == pChannel->Start(iPort, &Access_callback, (void*)this, &response_completed_callback))
+		printf("Create Http Server Success.\n");
+	else
+		printf("Create Http Server Fail.\n");
 	//pChannel->Start(90, &Access_callback, (void*)this, &response_completed_callback);
 	m_vectChannels.push_back(pChannel);
 }
@@ -154,7 +157,7 @@ int HttpServerModule::ProcessPassiveProtocol(struct MHD_Connection *connection,c
     {      
         int ret = MHD_NO;
         struct MHD_Response *response;
-        //½âÎöĞ­Òé£¬²¢·µ»Ø
+        //è§£æåè®®ï¼Œå¹¶è¿”å›
         std::string jsonRecv = pszContent;
         std::string jsonSend = "";
 
@@ -353,6 +356,7 @@ std::string HttpServerModule::GetCDRomList(std::string strIn)
 			{
 				jsonCDRomInfo["cdRomID"] = vecCDRomInfo.at(i).m_strCDRomID;
 				jsonCDRomInfo["cdRomName"] = vecCDRomInfo.at(i).m_strCDRomName;
+				printf("CDRomName:%s.\n", vecCDRomInfo.at(i).m_strCDRomName.c_str());
 				jsonCDRomList.append(jsonCDRomInfo);
 			}
 
@@ -602,11 +606,11 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 			jsonValue2["retCode"] = Json::Value(0);
 			jsonValue2["retMessage"] = Json::Value("ok");
 	
-			//·µ»ØÊµ¼Ê¹âÇıĞÅÏ¢
+			//è¿”å›å®é™…å…‰é©±ä¿¡æ¯
 			jsonValue2["cdRomID"] = "CDRom_1";
-			jsonValue2["cdRomName"] = "¹âÇı1";
+			jsonValue2["cdRomName"] = "å…‰é©±1";
 			jsonValue2["burnState"] = 0;
-			jsonValue2["burnStateDescription"] = "Î´¿ÌÂ¼";
+			jsonValue2["burnStateDescription"] = "æœªåˆ»å½•";
 			jsonValue2["hasDVD"] = 0;
 			jsonValue2["DVDLeftCapcity"] = "0MB";
 			jsonValue2["DVDTotalCapcity"] = "0MB",

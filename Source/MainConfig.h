@@ -12,7 +12,7 @@ public:
 	int ReadFromFile(std::string strFile);
 	int SaveFile();
 
-	//»ñÈ¡·şÎñÆ÷ÅäÖÃĞÅÏ¢ nServerType£º0£¬Http£»1£¬UDP
+	//è·å–æœåŠ¡å™¨é…ç½®ä¿¡æ¯ nServerTypeï¼š0ï¼ŒHttpï¼›1ï¼ŒUDP
 	RetransChannel GetServerConfigInfo(int nServerType);
 	//int GetHttpServerConfigInfo();
 	//int GetUDPServerConfigInfo();

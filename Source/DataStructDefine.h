@@ -8,7 +8,7 @@ enum CDROMSTATE
 {
 	CDROM_INIT = 0,
 	CDROM_READY,
-	CDROM_BURNING,		//¿ÌÂ¼ÖĞ
+	CDROM_BURNING,		//åˆ»å½•ä¸­
 	//CDROM_PAUSE,		
 	CDROM_UNINIT
 };
@@ -17,7 +17,7 @@ enum TASKSTATE
 {
 	TASK_INIT = 0,
 	TASK_BURN,
-	TASK_PAUSE,			//ÔİÍ£  ÓÉ¿ÌÂ¼×´Ì¬×ª»»µ½PAUSE
+	TASK_PAUSE,			//æš‚åœ  ç”±åˆ»å½•çŠ¶æ€è½¬æ¢åˆ°PAUSE
 	TASK_STOP
 };
 
@@ -35,10 +35,10 @@ public:
 	virtual ~CDRomInfo(){};
 
 public:
-	std::string		m_strCDRomName;		//¹âÇıÃû: ¹âÇı1
-	std::string		m_strCDRomID;		//¹âÇıID: /dev/sr0
-	CDROMSTATE		m_euWorkState;		//¹âÇı¹¤×÷×´Ì¬
-	void*			m_pDVDHandle;		//¹âÇıHandle
+	std::string		m_strCDRomName;		//å…‰é©±å: å…‰é©±1
+	std::string		m_strCDRomID;		//å…‰é©±ID: /dev/sr0
+	CDROMSTATE		m_euWorkState;		//å…‰é©±å·¥ä½œçŠ¶æ€
+	void*			m_pDVDHandle;		//å…‰é©±Handle
 };
 
 class DiskInfo
@@ -56,11 +56,11 @@ public:
 	virtual ~DiskInfo(){};
 
 public:
-	int 	 	 ntype;			// ¹âÅÌÀàĞÍ	DISC_TYPE
-	int			 maxpeed;		// ×î´óËÙ¶È(Ğ´ËÙ¶È)
-	unsigned int discsize;		// ¹âÅÌÈİÁ¿(MB)
-	unsigned int usedsize;		// ÒÑÊ¹ÓÃµÄ´óĞ¡(MB)	
-	unsigned int freesize;		// ¿ÉÓÃ´óĞ¡(MB)
+	int 	 	 ntype;			// å…‰ç›˜ç±»å‹	DISC_TYPE
+	int			 maxpeed;		// æœ€å¤§é€Ÿåº¦(å†™é€Ÿåº¦)
+	unsigned int discsize;		// å…‰ç›˜å®¹é‡(MB)
+	unsigned int usedsize;		// å·²ä½¿ç”¨çš„å¤§å°(MB)	
+	unsigned int freesize;		// å¯ç”¨å¤§å°(MB)
 };
 
 class FileInfo
@@ -78,12 +78,12 @@ public:
 	};
 
 public:
-	int				m_nFlag;			//flagÎª0Ê±´ú±ístreamÀàĞÍ£¬Îª1Ê±´ú±íÎÄ¼şÀàĞÍ
+	int				m_nFlag;			//flagä¸º0æ—¶ä»£è¡¨streamç±»å‹ï¼Œä¸º1æ—¶ä»£è¡¨æ–‡ä»¶ç±»å‹
 	std::string		m_strFileLocation;	//remote or local
-	std::string		m_strType;			//ÎÄ¼şÀàĞÍ£¬Ä¿Â¼£ºdir || ÎÄ¼ş£ºfile
-	std::string		m_strSrcUrl;		//¿ÌÂ¼Á÷Ô´µØÖ·»òÕßÎÄ¼şÔ´Â·¾¶
+	std::string		m_strType;			//æ–‡ä»¶ç±»å‹ï¼Œç›®å½•ï¼šdir || æ–‡ä»¶ï¼šfile
+	std::string		m_strSrcUrl;		//åˆ»å½•æµæºåœ°å€æˆ–è€…æ–‡ä»¶æºè·¯å¾„
 	std::string		m_strDestFilePath;	//
-	std::string		m_strRemoteFileLocalPath;	//ÏÂÔØÔ¶¶ËÎÄ¼ş³É¹¦ºóµÄ±¾µØ´æ´¢Â·¾¶
+	std::string		m_strRemoteFileLocalPath;	//ä¸‹è½½è¿œç«¯æ–‡ä»¶æˆåŠŸåçš„æœ¬åœ°å­˜å‚¨è·¯å¾„
 	std::string		m_strDescription;
 };
 
@@ -103,7 +103,7 @@ public:
 	std::vector<FileInfo>	m_vecUrlList;
 };
 
-//¿ÌÂ¼×´Ì¬·´À¡
+//åˆ»å½•çŠ¶æ€åé¦ˆ
 class BurnStateFeedbcak
 {
 public:
@@ -117,11 +117,11 @@ public:
 	};
 
 public:
-	std::string		m_strNeedFeedback;		//ÊÇ·ñĞèÒª·´À¡¿ÌÂ¼ĞÅÏ¢£¬Èô²»ĞèÒªÔòÖ»ĞèÔÚ·âÅÌÇ°·´À¡
-	std::string		m_strFeedbackIP;		//·´À¡Ö÷»úIP
-	int				m_nFeedbackPort;		//·´À¡Ö÷»ú¶Ë¿Ú
-	std::string		m_transType;			//Í¨ĞÅĞ­Òé·½Ê½ http »òÕß udp£¬Ä¿Ç°·´À¡¶¼ÓÃudp
-	int				m_nFeedbackInterval;	//·´À¡Ê±¼ä¼ä¸ô µ¥Î»ºÁÃë
+	std::string		m_strNeedFeedback;		//æ˜¯å¦éœ€è¦åé¦ˆåˆ»å½•ä¿¡æ¯ï¼Œè‹¥ä¸éœ€è¦åˆ™åªéœ€åœ¨å°ç›˜å‰åé¦ˆ
+	std::string		m_strFeedbackIP;		//åé¦ˆä¸»æœºIP
+	int				m_nFeedbackPort;		//åé¦ˆä¸»æœºç«¯å£
+	std::string		m_transType;			//é€šä¿¡åè®®æ–¹å¼ http æˆ–è€… udpï¼Œç›®å‰åé¦ˆéƒ½ç”¨udp
+	int				m_nFeedbackInterval;	//åé¦ˆæ—¶é—´é—´éš” å•ä½æ¯«ç§’
 };
 
 class BurnTask
@@ -147,15 +147,15 @@ public:
 	std::string					m_strCDRomID;
 	std::string					m_strCDRomName;
 	std::vector<CDRomInfo>		m_vecCDRomInfo;
-	DiskInfo					m_diskInfo;			//¹âÅÌĞÅÏ¢£¬°üº¬¹âÅÌÀàĞÍ£¬´óĞ¡µÈ¡£
-	unsigned long long			m_ullBurnedSize;	//ÒÑ¿ÌÂ¼´óĞ¡
-	int							m_nAlarmSize;		//±¨¾¯´óĞ¡ãĞÖµ
+	DiskInfo					m_diskInfo;			//å…‰ç›˜ä¿¡æ¯ï¼ŒåŒ…å«å…‰ç›˜ç±»å‹ï¼Œå¤§å°ç­‰ã€‚
+	unsigned long long			m_ullBurnedSize;	//å·²åˆ»å½•å¤§å°
+	int							m_nAlarmSize;		//æŠ¥è­¦å¤§å°é˜ˆå€¼
 	std::string					m_strBurnMode;		//"singleBurn" "doubleParallelBurn" "doubleRelayBurn" 
-	std::string					m_strBurnType;		//"realTimeBurn" ¡±pseudoRealTimeBurn¡± ¡±fileBurn¡±
+	std::string					m_strBurnType;		//"realTimeBurn" â€pseudoRealTimeBurnâ€ â€fileBurnâ€
 	BurnStreamInfo				m_burnStreamInfo;
 	std::vector<FileInfo>		m_vecBurnFileInfo;
-	int							m_nCurBurnFileIndex;	//µ±Ç°¿ÌÂ¼ÎÄ¼şË÷Òı
-	int							m_nBurnSpeed;		//¹âÇı¿ÌÂ¼ËÙ¶È
+	int							m_nCurBurnFileIndex;	//å½“å‰åˆ»å½•æ–‡ä»¶ç´¢å¼•
+	int							m_nBurnSpeed;		//å…‰é©±åˆ»å½•é€Ÿåº¦
 	BurnStateFeedbcak			m_burnStateFeedback;
 	std::string					m_strSessionID;
 	TASKSTATE					m_taskState;

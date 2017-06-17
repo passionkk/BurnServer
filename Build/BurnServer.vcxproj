@@ -159,12 +159,12 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\Depends\FileSys\DirectoryUtil.cpp" />
-    <ClCompile Include="..\Depends\FileSys\FileUtil.cpp" />
     <ClCompile Include="..\Source\BurnServer_main.cpp" />
     <ClCompile Include="..\Source\Business.cpp" />
     <ClCompile Include="..\Source\CCBUtility.cpp" />
+    <ClCompile Include="..\Source\DirectoryUtil.cpp" />
     <ClCompile Include="..\Source\DownloadFile.cpp" />
+    <ClCompile Include="..\Source\FileUtil.cpp" />
     <ClCompile Include="..\Source\HttpClient.cpp" />
     <ClCompile Include="..\Source\HttpServerChannel.cpp" />
     <ClCompile Include="..\Source\HttpServerModule.cpp" />
@@ -174,8 +174,6 @@
     <ClCompile Include="..\Source\UDPServerModule.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\Depends\FileSys\DirectoryUtil.h" />
-    <ClInclude Include="..\Depends\FileSys\FileUtil.h" />
     <ClInclude Include="..\Include\BurnCore\LibDVDSDK.h" />
     <ClInclude Include="..\Include\Poco\AbstractCache.h" />
     <ClInclude Include="..\Include\Poco\AbstractDelegate.h" />
@@ -525,7 +523,9 @@
     <ClInclude Include="..\Source\CCBUtility.h" />
     <ClInclude Include="..\Source\CommonDefine.h" />
     <ClInclude Include="..\Source\DataStructDefine.h" />
+    <ClInclude Include="..\Source\DirectoryUtil.h" />
     <ClInclude Include="..\Source\DownloadFile.h" />
+    <ClInclude Include="..\Source\FileUtil.h" />
     <ClInclude Include="..\Source\HttpClient.h" />
     <ClInclude Include="..\Source\HttpServerChannel.h" />
     <ClInclude Include="..\Source\HttpServerModule.h" />

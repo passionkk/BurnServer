@@ -4,8 +4,8 @@
 #include "DataStructDefine.h"
 #include <vector>
 //#include "CommonDefine.h"
-#include "poco/Runnable.h"
-#include "poco/Thread.h"
+#include "Poco/Runnable.h"
+#include "Poco/Thread.h"
 #include "Poco/Event.h"
 #include "Poco/Mutex.h"
 
@@ -21,22 +21,22 @@ public:
 
 	virtual void run();
 public:
-	//Ğ­Òé´¦Àí
-	//±»¶¯Ğ­Òé´¦Àí
+	//åè®®å¤„ç†
+	//è¢«åŠ¨åè®®å¤„ç†
 	void		GetCDRomList(std::vector<CDRomInfo>& vecCDRomInfo);
 	bool		StartBurn(BurnTask& task);
 	bool		PauseBurn(std::string strSessionID);
 	bool		ResumeBurn(std::string strSessionID);
 	bool		StopBurn(std::string strSessionID);
-	void		GetCDRomInfo(std::string strCDRomID);// ÕâÀï²ÎÊı²»¹»£¬¿Ï¶¨Òª·µ»ØÖµ£¬Ã»ÏëºÃÊÇÀà¶ÔÏó»¹ÊÇstring¶ÔÏó
+	void		GetCDRomInfo(std::string strCDRomID);// è¿™é‡Œå‚æ•°ä¸å¤Ÿï¼Œè‚¯å®šè¦è¿”å›å€¼ï¼Œæ²¡æƒ³å¥½æ˜¯ç±»å¯¹è±¡è¿˜æ˜¯stringå¯¹è±¡
 	void		AddBurnFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo);
-	//Ö÷¶¯Ğ­Òé´¦Àí
-	//¿ÌÂ¼×´Ì¬·´À¡Ğ­Òé
+	//ä¸»åŠ¨åè®®å¤„ç†
+	//åˆ»å½•çŠ¶æ€åé¦ˆåè®®
 	void		BurnStateFeedback();
-	//·âÅÌÇ°¿ÌÂ¼×´Ì¬·´À¡Ğ­Òé
-	void		CloseDiscFeedback();//Õâ¸ö½Ó¿ÚÓ¦¸Ã´«¸øtask×÷Îª²ÎÊı
+	//å°ç›˜å‰åˆ»å½•çŠ¶æ€åé¦ˆåè®®
+	void		CloseDiscFeedback(int leftCap = 0, int totalCap = 0);//è¿™ä¸ªæ¥å£åº”è¯¥ä¼ ç»™taskä½œä¸ºå‚æ•°
 
-	//ÒµÎñÂß¼­
+	//ä¸šåŠ¡é€»è¾‘
 	int			CheckUnusedCDRom();
 	int			GetUndoTask(BurnTask& task);
 	void		DoTask(BurnTask& task);
@@ -48,15 +48,15 @@ public:
 	void		BurnStreamInfoToDisk(const BurnTask& task);
 	void		BurnFileToDisk(BurnTask& task);
 	int			WriteFileToDisk(void* pHandle, void* pFileHandle, std::string strLocalPath);
-
+	int			CloseDisk(void* pvHandle);
 	int			BurnLocalFile(void* pHandle, FileInfo& fileInfo /*std::string strSrcPath, std::string strDestPath*/);
 	int			BurnLocalFile(void* pHandle, std::string strSrcPath, std::string strDestPath);
 	int			BurnLocalDir(void* pHandle, FileInfo fileInfo /*std::string strSrcPath, std::string strDestPath*/);
-	//ÏÂÔØÔ¶¶ËÎÄ¼ş»òÄ¿Â¼ strType: "file" or "dir"; strSrcUrl:Ô´ÎÄ¼ş»òÎÄ¼ş¼ĞÂ·¾¶ Èç http://192.168.1.1:8080/download/a.mp4
-	//											 strDestUrl:Ä¿±êÎÄ¼ş»òÎÄ¼ş¼ĞÂ·¾¶,Ä¬ÈÏ´ÓÅäÖÃÎÄ¼şÖĞ¶ÁÈ¡Ä¿±êÎÄ¼ş¼Ğ£¬ºó¸úÎÄ¼şÃûÈç /media/BurnServer/Download/a.mp4											
+	//ä¸‹è½½è¿œç«¯æ–‡ä»¶æˆ–ç›®å½• strType: "file" or "dir"; strSrcUrl:æºæ–‡ä»¶æˆ–æ–‡ä»¶å¤¹è·¯å¾„ å¦‚ http://192.168.1.1:8080/download/a.mp4
+	//											 strDestUrl:ç›®æ ‡æ–‡ä»¶æˆ–æ–‡ä»¶å¤¹è·¯å¾„,é»˜è®¤ä»é…ç½®æ–‡ä»¶ä¸­è¯»å–ç›®æ ‡æ–‡ä»¶å¤¹ï¼Œåè·Ÿæ–‡ä»¶åå¦‚ /media/BurnServer/Download/a.mp4											
 	static std::string		Download(std::string strType, std::string strSrcUrl, std::string strDestUrl = "");
 	
-	//¸ù¾İÔ­Ä¿±êµØÖ·Éú³É±¾µØÄ¿±êµØÖ·£¬ÓÃÓÚÏÂÔØÊ±Ä¿±êÎÄ¼şµÄÉú³É
+	//æ ¹æ®åŸç›®æ ‡åœ°å€ç”Ÿæˆæœ¬åœ°ç›®æ ‡åœ°å€ï¼Œç”¨äºä¸‹è½½æ—¶ç›®æ ‡æ–‡ä»¶çš„ç”Ÿæˆ
 	static void		GenerateLocalPath(std::string strSrcUrl, std::string& localPath);
 
 private:
@@ -64,7 +64,7 @@ private:
 
 	static std::string GetCurDir();
 	int  GetCDRomListFromFile(const char* pFilePath);
-	int	 ExtractString(const char *head, char *end,
+	int	 ExtractString(const char *head, const char *end,
 					   char *src, char *buffer);
 public:
 	static CBusiness* m_pInstance;
@@ -72,10 +72,10 @@ public:
 private:
 	Poco::Mutex				m_mutexCDRomInfoVec;
 	std::vector<CDRomInfo>	m_vecCDRomInfo;
-	BurnTask				m_burnTask;				//ÕıÔÚÖ´ĞĞµÄ¿ÌÂ¼ÈÎÎñ
-	std::vector<BurnTask>	m_vecBurnTask;			//±£´æÎ´Ö´ĞĞµÄ¿ÌÂ¼ÈÎÎñ
-	std::vector<BurnTask>	m_vecBurningTask;		//±£´æÕıÔÚÖ´ĞĞµÄ¿ÌÂ¼ÈÎÎñ
-	std::vector<BurnTask>	m_vecFinishedTask;		//±£´æÒÑÍê³ÉµÄtask
+	BurnTask				m_burnTask;				//æ­£åœ¨æ‰§è¡Œçš„åˆ»å½•ä»»åŠ¡
+	std::vector<BurnTask>	m_vecBurnTask;			//ä¿å­˜æœªæ‰§è¡Œçš„åˆ»å½•ä»»åŠ¡
+	std::vector<BurnTask>	m_vecBurningTask;		//ä¿å­˜æ­£åœ¨æ‰§è¡Œçš„åˆ»å½•ä»»åŠ¡
+	std::vector<BurnTask>	m_vecFinishedTask;		//ä¿å­˜å·²å®Œæˆçš„task
 	Poco::Mutex				m_mutexBurnTaskVec;
 	Poco::Mutex				m_mutexVecBurnFileInfo;
 	Poco::Thread			m_thread;

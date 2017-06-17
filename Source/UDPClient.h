@@ -6,7 +6,7 @@
 #include "Poco/Net/DatagramSocket.h"
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Net/Socket.h"
-#include "poco/Foundation.h"
+#include "Poco/Foundation.h"
 
 class UDPClient
 {
@@ -17,7 +17,7 @@ public:
 
 public:
 	void		Init(std::string strIP, int nPort);
-	//Á¬½Ó·şÎñÆ÷
+	//è¿æ¥æœåŠ¡å™¨
 	bool		ConnectServer();
 	bool		Bind();
 	bool		SendProtocol(std::string strSend, std::string& strRecv);

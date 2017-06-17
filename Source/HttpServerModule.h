@@ -1,7 +1,7 @@
 #ifndef HTTPSERVERMODULE_INCLUDED
 #define HTTPSERVERMODULE_INCLUDED
 #include "HttpServerChannel.h"
-#include "JSON.h"
+#include "Poco/JSON/JSON.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,19 +31,19 @@ private:
 	std::string TestCallCloseDiskProtocol(std::string strIn);
 	std::string AgentHeartBeat(std::string strIn);
 	
-	//»ñÈ¡¹âÇıÁĞ±í
+	//è·å–å…‰é©±åˆ—è¡¨
 	std::string GetCDRomList(std::string strIn);
-	//¿ªÊ¼¿ÌÂ¼
+	//å¼€å§‹åˆ»å½•
 	std::string StartBurn(std::string strIn);
-	//ÔİÍ£¿ÌÂ¼
+	//æš‚åœåˆ»å½•
 	std::string PauseBurn(std::string strIn);
-	//¼ÌĞø¿ÌÂ¼
+	//ç»§ç»­åˆ»å½•
 	std::string ResumBurn(std::string strIn);
-	//¼ÌĞø¿ÌÂ¼
+	//ç»§ç»­åˆ»å½•
 	std::string StopBurn(std::string strIn);
-	//»ñÈ¡¹âÇıĞÅÏ¢
+	//è·å–å…‰é©±ä¿¡æ¯
 	std::string GetCDRomInfo(std::string strIn);
-	//Ôö¼Ó¿ÌÂ¼ÎÄ¼ş
+	//å¢åŠ åˆ»å½•æ–‡ä»¶
 	std::string AddBurnFile(std::string strIn);
 
 private:

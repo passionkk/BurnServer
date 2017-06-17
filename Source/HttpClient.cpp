@@ -2,7 +2,7 @@
 #ifdef WIN32
 #include <windows.h>
 #endif
-#include "libcurl/curl.h"
+#include "curl/curl.h"
 #include <string>
 
 #ifdef DEBUG
@@ -15,11 +15,11 @@
 #include "Poco/Foundation.h"
 //#include "Poco/File.h"
 //#include "poco/StringTokenizer.h"
-#include "poco/JSON/Parser.h"
-#include "poco/Dynamic/Var.h"
-#include "Poco/net/Net.h"
-#include "poco/net/DatagramSocket.h"
-#include "poco/net/streamsocket.h"
+#include "Poco/JSON/Parser.h"
+#include "Poco/Dynamic/Var.h"
+#include "Poco/Net/Net.h"
+#include "Poco/Net/DatagramSocket.h"
+#include "Poco/Net/StreamSocket.h"
 
 using namespace Poco::JSON;
 using namespace Poco::Dynamic;
@@ -127,8 +127,8 @@ int CHttpClient::Get(const std::string & strUrl, std::string & strResponse)
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, OnWriteData);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&strResponse);
 	/**
-	* µ±¶à¸öÏß³Ì¶¼Ê¹ÓÃ³¬Ê±´¦ÀíµÄÊ±ºò£¬Í¬Ê±Ö÷Ïß³ÌÖĞÓĞsleep»òÊÇwaitµÈ²Ù×÷¡£
-	* Èç¹û²»ÉèÖÃÕâ¸öÑ¡Ïî£¬libcurl½«»á·¢ĞÅºÅ´ò¶ÏÕâ¸öwait´Ó¶øµ¼ÖÂ³ÌĞòÍË³ö¡£
+	* å½“å¤šä¸ªçº¿ç¨‹éƒ½ä½¿ç”¨è¶…æ—¶å¤„ç†çš„æ—¶å€™ï¼ŒåŒæ—¶ä¸»çº¿ç¨‹ä¸­æœ‰sleepæˆ–æ˜¯waitç­‰æ“ä½œã€‚
+	* å¦‚æœä¸è®¾ç½®è¿™ä¸ªé€‰é¡¹ï¼Œlibcurlå°†ä¼šå‘ä¿¡å·æ‰“æ–­è¿™ä¸ªwaitä»è€Œå¯¼è‡´ç¨‹åºé€€å‡ºã€‚
 	*/
 	curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 3);
@@ -165,7 +165,7 @@ int CHttpClient::Posts(const std::string & strUrl, const std::string & strPost, 
 	}
 	else
 	{
-		//È±Ê¡Çé¿ö¾ÍÊÇPEM£¬ËùÒÔÎŞĞèÉèÖÃ£¬ÁíÍâÖ§³ÖDER
+		//ç¼ºçœæƒ…å†µå°±æ˜¯PEMï¼Œæ‰€ä»¥æ— éœ€è®¾ç½®ï¼Œå¦å¤–æ”¯æŒDER
 		//curl_easy_setopt(curl,CURLOPT_SSLCERTTYPE,"PEM");
 		curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, true);
 		curl_easy_setopt(curl, CURLOPT_CAINFO, pCaPath);
@@ -227,16 +227,16 @@ int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bL
 	curl = curl_easy_init();
 	if (curl != NULL)
 	{
-		curl_easy_setopt(curl, CURLOPT_URL, strUrl.c_str()); //urlµØÖ·  
-		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, client_write_data); //¶Ô·µ»ØµÄÊı¾İ½øĞĞ²Ù×÷µÄº¯ÊıµØÖ·  
-		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &sRecv); //ÕâÊÇwrite_dataµÄµÚËÄ¸ö²ÎÊıÖµ  
-		curl_easy_setopt(curl, CURLOPT_POST, 1); //ÉèÖÃÎª·Ç0±íÊ¾±¾´Î²Ù×÷Îªpost  
-		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); //ÉèÖÃÎª·Ç0,ÏìÓ¦Í·ĞÅÏ¢location
+		curl_easy_setopt(curl, CURLOPT_URL, strUrl.c_str()); //urlåœ°å€  
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, client_write_data); //å¯¹è¿”å›çš„æ•°æ®è¿›è¡Œæ“ä½œçš„å‡½æ•°åœ°å€  
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &sRecv); //è¿™æ˜¯write_dataçš„ç¬¬å››ä¸ªå‚æ•°å€¼  
+		curl_easy_setopt(curl, CURLOPT_POST, 1); //è®¾ç½®ä¸ºé0è¡¨ç¤ºæœ¬æ¬¡æ“ä½œä¸ºpost  
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); //è®¾ç½®ä¸ºé0,å“åº”å¤´ä¿¡æ¯location
 		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
 		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 
-		// ÉèÖÃÒªPOSTµÄJSONÊı¾İ  
+		// è®¾ç½®è¦POSTçš„JSONæ•°æ®  
 		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, sSend.c_str());
 
 
@@ -247,15 +247,15 @@ int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bL
 			switch (res)
 			{
 			case CURLE_UNSUPPORTED_PROTOCOL:
-				fprintf(stderr, "²»Ö§³ÖµÄĞ­Òé,ÓÉURLµÄÍ·²¿Ö¸¶¨\n");
+				fprintf(stderr, "ä¸æ”¯æŒçš„åè®®,ç”±URLçš„å¤´éƒ¨æŒ‡å®š\n");
 			case CURLE_COULDNT_CONNECT:
-				fprintf(stderr, "²»ÄÜÁ¬½Óµ½remoteÖ÷»ú»òÕß´úÀí\n");
+				fprintf(stderr, "ä¸èƒ½è¿æ¥åˆ°remoteä¸»æœºæˆ–è€…ä»£ç†\n");
 			case CURLE_HTTP_RETURNED_ERROR:
-				fprintf(stderr, "http·µ»Ø´íÎó\n");
+				fprintf(stderr, "httpè¿”å›é”™è¯¯\n");
 			case CURLE_READ_ERROR:
-				fprintf(stderr, "¶Á±¾µØÎÄ¼ş´íÎó\n");
+				fprintf(stderr, "è¯»æœ¬åœ°æ–‡ä»¶é”™è¯¯\n");
 			default:
-				fprintf(stderr, "·µ»ØÖµ:%d\n", res);
+				fprintf(stderr, "è¿”å›å€¼:%d\n", res);
 			}
 		}
 		else
