@@ -54,6 +54,7 @@ CTestBurnServerDlg::CTestBurnServerDlg(CWnd* pParent /*=NULL*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	//m_pHttpPage = NULL;
 	//m_pUdpPage = NULL;
+	bInit = false;
 }
 
 void CTestBurnServerDlg::DoDataExchange(CDataExchange* pDX)
@@ -69,6 +70,7 @@ BEGIN_MESSAGE_MAP(CTestBurnServerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BTN_TEST, &CTestBurnServerDlg::OnBnClickedBtnTest)
 	ON_BN_CLICKED(IDC_BTN_UDP_TEST, &CTestBurnServerDlg::OnBnClickedBtnUdpTest)
 	ON_NOTIFY(TCN_SELCHANGE, IDC_TAB_CTRL, &CTestBurnServerDlg::OnSelchangeTabCtrl)
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 
@@ -105,7 +107,7 @@ BOOL CTestBurnServerDlg::OnInitDialog()
 
 	// TODO:  在此添加额外的初始化代码
 	InitCtrl();
-
+	bInit = true;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -176,12 +178,12 @@ void CTestBurnServerDlg::InitCtrl()
 	m_tabCtrl.InsertItem(3, L"UDPServer");
 
 	//创建4个对话框
-	m_HTTPPage.Create(CTestProtocolDlg::IDD, &m_tabCtrl);
 	m_HTTPPage.SetProtocolMode(HTTP_MODE);
-
-	m_UDPPage.Create(CTestProtocolDlg::IDD, &m_tabCtrl);
+	m_HTTPPage.Create(CTestProtocolDlg::IDD, &m_tabCtrl);
+	
 	m_UDPPage.SetProtocolMode(UDP_MODE);
-
+	m_UDPPage.Create(CTestProtocolDlg::IDD, &m_tabCtrl);
+	
 	m_DlgHttpServer.Create(CTestPtoServerDlg::IDD, &m_tabCtrl);
 	m_DlgHttpServer.SetProtocolMode(HTTP_MODE);
 
@@ -257,7 +259,7 @@ void CTestBurnServerDlg::OnSelchangeTabCtrl(NMHDR *pNMHDR, LRESULT *pResult)
 		m_DlgHttpServer.ShowWindow(SW_HIDE);
 		m_DlgUDPServer.ShowWindow(SW_HIDE);
 	}
-	else if (m_nCurTabSel == 1)
+	else if (m_nCurTabSel == 2)
 	{
 		m_HTTPPage.ShowWindow(SW_HIDE);
 		m_UDPPage.ShowWindow(SW_HIDE);
@@ -272,4 +274,27 @@ void CTestBurnServerDlg::OnSelchangeTabCtrl(NMHDR *pNMHDR, LRESULT *pResult)
 		m_DlgUDPServer.ShowWindow(SW_SHOW);
 	}
 	*pResult = 0;
+}
+
+
+void CTestBurnServerDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialogEx::OnSize(nType, cx, cy);
+	if (bInit)
+	{
+		CRect rc;
+		GetClientRect(rc);
+		m_tabCtrl.MoveWindow(rc);
+		m_tabCtrl.GetClientRect(rc);
+		
+		rc.top += 20;
+		rc.bottom -= 0;
+		rc.left += 0;
+		rc.right -= 0;
+
+		m_HTTPPage.MoveWindow(&rc);
+		m_UDPPage.MoveWindow(&rc);
+		m_DlgHttpServer.MoveWindow(&rc);
+		m_DlgUDPServer.MoveWindow(&rc);
+	}
 }

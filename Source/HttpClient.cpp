@@ -20,6 +20,7 @@
 #include "Poco/Net/Net.h"
 #include "Poco/Net/DatagramSocket.h"
 #include "Poco/Net/StreamSocket.h"
+#include "NetLog.h"
 
 using namespace Poco::JSON;
 using namespace Poco::Dynamic;
@@ -271,6 +272,66 @@ int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bL
 	return 0;
 }
 
+int CHttpClient::SendHttpProtocol(std::string ip, int nPort, std::string sSend, std::string &sRecv, bool bLog)
+{
+	if (bLog)
+		g_NetLog.Debug("[CHttpClient::SendHttpProtocol] send content: %s\n", sSend.c_str());
+	int iRet = -1;
+	//std::string strUrl = "http://127.0.0.1:90/activeProtocol.action";
+	char szUrl[256];
+	memset(szUrl, 0, 256);
+	sprintf(szUrl, "http://%s:%d/activeProtocol.action", ip.c_str(), nPort);
+	std::string strUrl = szUrl;
+
+	CURL *curl = NULL;
+	CURLcode res;
+
+	curl = curl_easy_init();
+	if (curl != NULL)
+	{
+		curl_easy_setopt(curl, CURLOPT_URL, strUrl.c_str()); //url地址  
+		curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, client_write_data); //对返回的数据进行操作的函数地址  
+		curl_easy_setopt(curl, CURLOPT_WRITEDATA, &sRecv); //这是write_data的第四个参数值  
+		curl_easy_setopt(curl, CURLOPT_POST, 1); //设置为非0表示本次操作为post  
+		curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1); //设置为非0,响应头信息location
+		curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
+		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
+
+		// 设置要POST的JSON数据  
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, sSend.c_str());
+
+
+		res = curl_easy_perform(curl);
+
+		if (res != CURLE_OK)
+		{
+			switch (res)
+			{
+			case CURLE_UNSUPPORTED_PROTOCOL:
+				fprintf(stderr, "不支持的协议,由URL的头部指定\n");
+			case CURLE_COULDNT_CONNECT:
+				fprintf(stderr, "不能连接到remote主机或者代理\n");
+			case CURLE_HTTP_RETURNED_ERROR:
+				fprintf(stderr, "http返回错误\n");
+			case CURLE_READ_ERROR:
+				fprintf(stderr, "读本地文件错误\n");
+			default:
+				fprintf(stderr, "返回值:%d\n", res);
+			}
+		}
+		else
+		{
+			if (bLog)
+			{
+				g_NetLog.Debug("[CHttpClient::SendHttpProtocol] recv content: %s\n", sRecv.c_str());
+			}
+			iRet = 0;
+		}
+		curl_easy_cleanup(curl);
+	}
+	return 0;
+}
 
 int CHttpClient::BurnServerConnect(std::string& strRecv)
 {

@@ -14,6 +14,7 @@
 #include "CommonDefine.h"
 #include "Poco/Net/DNS.h"
 #include "Poco/URI.h"
+#include "NetLog.h"
 
 using Poco::Net::DatagramSocket;
 using Poco::Net::IPAddress;
@@ -134,7 +135,7 @@ int CCBUtility::ExecuteCMD(const char *cmd, char *result)
     }    
     else   
     {    
-        //g_NetLog.Debug("popen %s error\n", ps);  
+        g_NetLog.Debug("popen %s error\n", ps);  
         iRet = -1;
     }
 #endif
@@ -217,12 +218,12 @@ void CCBUtility::CopyFileOrDirectory(const char* sSrcPath,const char* sDestPath)
         if(file.exists())
         {
             file.copyTo(sDestPath);
-            //g_NetLog.Debug("copy file or directory success:  %s to %s\n", sSrcPath,sDestPath);
+            g_NetLog.Debug("copy file or directory success:  %s to %s\n", sSrcPath,sDestPath);
         }
     }
     catch (...)
     {
-        //g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
+        g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
     }
 }
 
@@ -285,7 +286,7 @@ int CCBUtility::TCPShortConnect(const char *sIP, int nPort, std::string strSend,
         if (!bSendSuccess)
         {
             ss.close();
-            //g_NetLog.Debug("send [%s:%d] failed\n", sIP, nPort);
+            g_NetLog.Debug("send [%s:%d] failed\n", sIP, nPort);
             return -1;
         }
 
@@ -316,7 +317,7 @@ int CCBUtility::TCPShortConnect(const char *sIP, int nPort, std::string strSend,
     }
     catch (...)
     {
-       // g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
+       g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
     }
 
     return 0;
@@ -347,7 +348,7 @@ int CCBUtility::UDPSend(const char *sIP, int nPort, std::string strSend, int nSe
     }
     catch (...)
     {
-        //g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
+        g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
         return -1;
     }
 }
@@ -361,7 +362,7 @@ int CCBUtility::UDPSend(DatagramSocket &localSocket, std::string strRemoteIP, in
     }
     catch (...)
     {
-        //g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
+        g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
         return -1;
     }
 }

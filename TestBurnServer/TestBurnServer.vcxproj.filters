@@ -45,9 +45,6 @@
     <ClInclude Include="Resource.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="HttpClient.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="UDPClient.h">
       <Filter>头文件</Filter>
     </ClInclude>
@@ -84,6 +81,15 @@
     <ClInclude Include="CommonDefine.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="DataStructDefine.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="HttpClient.h">
+      <Filter>Net\HttpServer</Filter>
+    </ClInclude>
+    <ClInclude Include="ListCtrlEdit.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TestBurnServer.cpp">
@@ -93,9 +99,6 @@
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="stdafx.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
-    <ClCompile Include="HttpClient.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
     <ClCompile Include="UDPClient.cpp">
@@ -130,6 +133,12 @@
     </ClCompile>
     <ClCompile Include="Net\UDPServerModule.cpp">
       <Filter>Net\UDPServer</Filter>
+    </ClCompile>
+    <ClCompile Include="HttpClient.cpp">
+      <Filter>Net\HttpServer</Filter>
+    </ClCompile>
+    <ClCompile Include="ListCtrlEdit.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

@@ -246,6 +246,90 @@ int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocke
 						Poco::Thread::sleep(5000);
 						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)strSendToClient.c_str(), strSendToClient.length());
 					}
+					else if (sMethod == "closeDiscFeedback")
+					{
+						std::string strSendToClient;
+						std::string strRemoteIP = sRemoteIP;
+						Poco::Thread::sleep(5000);
+						
+						Object::Ptr pObj = new Object(true);
+						pObj->set("method", "closeDiscFeedback");
+
+						Object::Ptr pParams = new Object(true);
+						pParams->set("retCode", 0);
+						pParams->set("retMessage", "ok");
+
+
+						//fileInfo
+						Object::Ptr	burnDocFile = new Object(true);
+						burnDocFile->set("fileLocation", "local");
+						burnDocFile->set("burnSrcFilePath", "/mnt/HD0/burnTestFile/DocFile.docx");
+						burnDocFile->set("burnDstFilePath", "DocFile.docx");
+						burnDocFile->set("fileDescription", "Doc File");
+						burnDocFile->set("fileLocation", "local");
+						burnDocFile->set("filetype", "file");
+						pParams->set("DocFile", burnDocFile);
+
+						JSON::Array burnFileArray;
+
+						Object::Ptr	burnPlayer = new Object(true);
+						burnPlayer->set("fileLocation", "local");
+						burnPlayer->set("burnSrcFilePath", "/mnt/HD0/burnTestFile/player.exe");
+						burnPlayer->set("burnDstFilePath", "player.exe");
+						burnPlayer->set("fileDescription", "player");
+						burnPlayer->set("fileLocation", "local");
+						burnPlayer->set("filetype", "file");
+						burnFileArray.add(burnPlayer);
+
+						Object::Ptr	burnCommonFile = new Object(true);
+						burnCommonFile->set("fileLocation", "local");
+						burnCommonFile->set("burnSrcFilePath", "/mnt/HD0/burnTestFile/1.mp4");
+						burnCommonFile->set("burnDstFilePath", "burnFeedbackTestFile.mp4");
+						burnCommonFile->set("fileDescription", "burnFeedbackTestFile");
+						burnCommonFile->set("fileLocation", "local");
+						burnCommonFile->set("filetype", "file");
+						burnFileArray.add(burnCommonFile);
+
+						pParams->set("burnFileList", burnFileArray);
+
+						pObj->set("params", pParams);
+						std::stringstream ss;
+						pObj->stringify(ss);
+						strSendToClient = ss.str();
+						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)strSendToClient.c_str(), strSendToClient.length());
+					}
+					else if (sMethod == "burnStateFeedback")
+					{
+						std::string strSendToClient = "recv burn state feed back";
+						std::string strRemoteIP = sRemoteIP;
+						Poco::Thread::sleep(5000);
+
+						Json::Reader    jsonReader;
+						Json::Value     jsonValueIn;
+
+						if (jsonReader.parse(strData, jsonValueIn))
+						{
+							std::string sMethod = jsonValueIn["method"].asString();
+							Json::Value   jsonValueParams = jsonValueIn["params"];
+
+							std::string strOut = jsonValueParams.toStyledString();
+							if (m_pCallbackFun)
+							{
+								m_pCallbackFun(m_pVoid, strOut, 1);
+							}
+
+							Json::Value     jsonValueRoot;
+							Json::Value     jsonValue1;
+							Json::Value     jsonValue2;
+							jsonValue2["retCode"] = Json::Value(0);
+							jsonValue2["retMessage"] = Json::Value("ok");
+							jsonValue1["method"] = Json::Value(sMethod.c_str());
+							jsonValue1["params"] = jsonValue2;
+							jsonValueRoot["result"] = jsonValue1;
+							string strRet = jsonValueRoot.toStyledString();
+							CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)strSendToClient.c_str(), strSendToClient.length());
+						}
+					}
 					else
 					{
 					}
@@ -598,4 +682,10 @@ std::string UDPServerChannel::TestProtocol(std::string strSend)
 		printf("%s catched\n", __PRETTY_FUNCTION__);
 		return "";
 	}
+}
+
+void UDPServerChannel::SetCallback(Fun pFunc, LPVOID pVoid)
+{
+	m_pCallbackFun = pFunc;
+	m_pVoid = pVoid;
 }

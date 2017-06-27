@@ -18,8 +18,8 @@ CCFLAGS	+= $(COMPILER_FLAGS)  -O2
 
 CCFLAGS += -I/usr/local/v200/include/stlport
 CCFLAGS += -I/usr/local/v200/include
-CCFLAGS += -I../BurnServer_v200
-CCFLAGS += -I../BurnServer_v200/DVDSDK
+CCFLAGS += -I../../Depends/v200
+CCFLAGS += -I../../Depends/v200/DVDSDK
 CCFLAGS += -I../Source
 CCFLAGS += -I/usr/local/v200/include/curl
 
@@ -28,33 +28,35 @@ C++FLAGS	= $(CCFLAGS)
 #SRC FILES
 CFILES		=	
 
-CPPFILES	= ../Source/BurnServer_main.cpp \
-../Source/Business.cpp \
-../Source/CCBUtility.cpp \
-../Source/HttpClient.cpp \
-../Source/HttpServerChannel.cpp \
-../Source/HttpServerModule.cpp \
-../Source/MainConfig.cpp \
-../Source/UDPClient.cpp \
-../Source/UDPServerChannel.cpp \
-../Source/UDPServerModule.cpp \
-../Source/DownloadFile.cpp 		\
-../Depends/FileSys/FileUtil.cpp \
-../Depends/FileSys/DirectoryUtil.cpp \
+CPPFILES	= ../../Source/BurnServer_main.cpp \
+../../Source/Business.cpp \
+../../Source/CCBUtility.cpp \
+../../Source/HttpClient.cpp \
+../../Source/HttpServerChannel.cpp \
+../../Source/HttpServerModule.cpp \
+../../Source/MainConfig.cpp \
+../../Source/UDPClient.cpp \
+../../Source/UDPServerChannel.cpp \
+../../Source/UDPServerModule.cpp \
+../../Source/DownloadFile.cpp 		\
+../../Source/FileUtil.cpp \
+../../Source/DirectoryUtil.cpp \
+../../Source/FileLog.cpp \
+../../Source/NetLog.cpp \
 
 
 # DEPEND LIB PATH
 LIBS = -lDVDSDK -lmicrohttpd -lcurl -lPocoUtil -lPocoJSON -lPocoNet -lPocoXML -lPocoFoundation -ljsoncppStlport -lstlport -lpthread -ldl -lrt \
 
 LINKPATH = \
--L../BurnServer_v200/DVDSDK \
+-L../../Depends/v200/DVDSDK \
 -L/usr/local/v200/lib \
 -L/usr/local/v200/arm-hisiv200-linux-lib \
 
 BurnServer :   $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) 
 	$(C++LINK) -o $(TARGET) $(CFILES:.c=.o) $(CPPFILES:.cpp=.o) $(C++FLAGS) $(LINKPATH) $(LIBS)
 	$(STRIP) $(TARGET)
-	cp $(TARGET) /var/tftpboot/
+	cp $(TARGET) /var/local/BurnServer/3531
 
 clean:
 	rm -f *.out *.log $(CFILES:.c=.o) $(CPPFILES:.cpp=.o)

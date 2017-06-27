@@ -6,6 +6,8 @@
 #include "json/json.h"
 #include "Poco/Net/StreamSocket.h"
 #include "Poco/Net/NetException.h"
+#include "NetLog.h"
+#include "FileLog.h"
 
 using namespace Poco::JSON;
 using namespace Poco::Dynamic;
@@ -122,7 +124,7 @@ void UDPServerChannel::run()
             }
             catch (...)
             {
-                //g_NetLog.Debug("[UDPServerChannel::run] catch!\n");
+                g_NetLog.Debug("[UDPServerChannel::run] catch!\n");
             }
 		}
 	}
@@ -286,6 +288,13 @@ int UDPServerChannel::ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocke
 					{
 						std::string jsonRecv;
 						jsonRecv = AddBurnFile(strData);
+						std::string strRemoteIP = sRemoteIP;
+						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)jsonRecv.c_str(), jsonRecv.length());
+					}
+					else if (sMethod.compare("setLogServer") == 0)
+					{
+						std::string jsonRecv;
+						jsonRecv = SetLogServer(strData);
 						std::string strRemoteIP = sRemoteIP;
 						CCBUtility::UDPSend(localSocket, strRemoteIP, nRemotePort, (char*)jsonRecv.c_str(), jsonRecv.length());
 					}
@@ -908,24 +917,89 @@ std::string UDPServerChannel::GetCDRomInfo(std::string strIn)
 			//sessionID 
 			std::string strCDRomID = jsonValueParams["cdRomID"].asString();
 
-			CBusiness::GetInstance()->GetCDRomInfo(strCDRomID);
+			CDRomInfo cdRomInfo;
+			DiskInfo diskInfo;
+			int nRet = 1;// CBusiness::GetInstance()->GetCDRomInfo(strCDRomID, cdRomInfo, diskInfo);
+			BurnTask task;
+			CBusiness::GetInstance()->GetCurTask(task);
+
+			int nIndex = -1;
+			for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+			{
+				if (task.m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0)
+				{
+					nIndex = i;
+					nRet = 0;
+					break;
+				}
+			}
+			//CBusiness::GetInstance()->GetCDRomInfo(strCDRomID);
 
 			Json::Value     jsonValueRoot;
 			Json::Value     jsonValue1;
 			Json::Value     jsonValue2;
-			jsonValue2["retCode"] = Json::Value(0);
-			jsonValue2["retMessage"] = Json::Value("ok");
+			//jsonValue2["retCode"] = Json::Value(0);
+			//jsonValue2["retMessage"] = Json::Value("ok");
 
-			//返回实际光驱信息
-			jsonValue2["cdRomID"] = "CDRom_1";
-			jsonValue2["cdRomName"] = "光驱1";
-			jsonValue2["burnState"] = 0;
-			jsonValue2["burnStateDescription"] = "未刻录";
-			jsonValue2["hasDVD"] = 0;
-			jsonValue2["DVDLeftCapcity"] = "0MB";
-			jsonValue2["DVDTotalCapcity"] = "0MB",
+			////返回实际光驱信息
+			//jsonValue2["cdRomID"] = "CDRom_1";
+			//jsonValue2["cdRomName"] = "光驱1";
+			//jsonValue2["burnState"] = 0;
+			//jsonValue2["burnStateDescription"] = "未刻录";
+			//jsonValue2["hasDVD"] = 0;
+			//jsonValue2["DVDLeftCapcity"] = "0MB";
+			//jsonValue2["DVDTotalCapcity"] = "0MB",
+			if (nRet == 1)
+			{
+				nRet = CBusiness::GetInstance()->GetCDRomInfo(strCDRomID, cdRomInfo, diskInfo);
+				if (nRet == 0)
+				{
+					jsonValue2["retCode"] = Json::Value(0);
+					jsonValue2["retMessage"] = Json::Value("ok");
 
-				jsonValue1["method"] = Json::Value(sMethod.c_str());
+					//返回实际光驱信息
+					jsonValue2["cdRomID"] = Json::Value(strCDRomID);
+					jsonValue2["cdRomName"] = Json::Value(cdRomInfo.m_strCDRomName);
+					std::string strDes = "";
+					CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
+					jsonValue2["burnState"] = Json::Value(cdRomInfo.m_euWorkState);
+					jsonValue2["burnStateDescription"] = Json::Value(strDes);
+					jsonValue2["hasDVD"] = Json::Value(diskInfo.discsize > 0 ? 1 : 0);
+					jsonValue2["DVDLeftCapcity"] = Json::Value(diskInfo.freesize);
+					jsonValue2["DVDTotalCapcity"] = Json::Value(diskInfo.discsize);
+				}
+				else
+				{
+					jsonValue2["retCode"] = Json::Value(1);
+					jsonValue2["retMessage"] = Json::Value("Get CDRomInfo fail.");
+
+					//返回实际光驱信息
+					jsonValue2["cdRomID"] = Json::Value(strCDRomID);
+					jsonValue2["cdRomName"] = Json::Value("");
+					jsonValue2["burnState"] = Json::Value(0);
+					jsonValue2["burnStateDescription"] = Json::Value("");
+					jsonValue2["hasDVD"] = Json::Value(0);
+					jsonValue2["DVDLeftCapcity"] = Json::Value("0MB");
+					jsonValue2["DVDTotalCapcity"] = Json::Value("0MB");
+				}
+			}
+			else
+			{
+				jsonValue2["retCode"] = Json::Value(0);
+				jsonValue2["retMessage"] = Json::Value("ok");
+
+				//返回实际光驱信息
+				jsonValue2["cdRomID"] = Json::Value(strCDRomID);
+				jsonValue2["cdRomName"] = Json::Value(task.m_vecCDRomInfo.at(nIndex).m_strCDRomName);
+				jsonValue2["burnState"] = Json::Value(task.m_vecCDRomInfo.at(nIndex).m_euWorkState);
+				std::string strDes = "";
+				CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
+				jsonValue2["burnStateDescription"] = Json::Value(strDes);
+				jsonValue2["hasDVD"] = Json::Value(task.m_burnStateFeedback.m_nHasDisc);
+				jsonValue2["DVDLeftCapcity"] = Json::Value(task.m_diskInfo.discsize - task.m_nBurnedSize);
+				jsonValue2["DVDTotalCapcity"] = Json::Value(task.m_diskInfo.discsize);
+			}
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
 			jsonValue1["params"] = jsonValue2;
 			jsonValueRoot["result"] = jsonValue1;
 			string strOut = jsonValueRoot.toStyledString();
@@ -994,6 +1068,57 @@ std::string UDPServerChannel::AddBurnFile(std::string strIn)
 	catch (...)
 	{
 		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+std::string UDPServerChannel::SetLogServer(std::string strIn)
+{
+	std::string strRet;
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value jsonValueParams = jsonValueIn["params"];
+
+			Json::Value jsonValueHost = jsonValueParams["host"];
+
+			std::string strIP1 = jsonValueHost["ip1"].asString();
+			int nPort1 = jsonValueHost["port1"].asInt();
+			g_NetLog.SetDest1(strIP1, nPort1);
+
+			std::string strIP2 = jsonValueHost["ip1"].asString();
+			int nPort2 = jsonValueHost["port1"].asInt();
+			g_NetLog.SetDest2(strIP2, nPort2);
+
+			std::string strIP3 = jsonValueHost["ip3"].asString();
+			int nPort3 = jsonValueHost["port3"].asInt();
+			g_NetLog.SetDest3(strIP3, nPort3);
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+			return strOut;
+		}
+		else
+		{
+			return "";
+		}
+	}
+	catch (...)
+	{
+		g_FileLog.Info("%s catched\n", __PRETTY_FUNCTION__);
 		return "";
 	}
 }

@@ -21,6 +21,8 @@ using Poco::Net::DatagramSocket;
 using Poco::Net::SocketAddress;
 using Poco::Net::IPAddress;
 
+typedef void(*Fun)(LPVOID lpVoid, std::string, int nProtocol);
+
 typedef int(*UdpServerCallBackFunc)(char *sRemoteIP, int nRemotePort, DatagramSocket &localSocket, char *sData, int nData, void *pContext);
 
 typedef  void CmdListener;
@@ -49,6 +51,8 @@ public:
 
     void AddListener(CmdListener* pListener);
     void AddRetransChannel(RetransChannel retransChannel);
+
+	void SetCallback(Fun, LPVOID pVoid);
 private:
     static int UdpServerCallBack(char *sRemoteIP, int nRemotePort, DatagramSocket &localSocket, char *sData, int nData, void *pContext);
     int ProcessCmd(char *sRemoteIP, int nRemotePort, DatagramSocket &localSocket, char *sData, int nData);
@@ -85,6 +89,8 @@ private:
     std::string m_strName;
     std::vector<RetransChannel> m_vectRetransChannels;
     Poco::Mutex    m_mutexRetransChannelsVect;
+	Fun m_pCallbackFun;
+	LPVOID m_pVoid;
 };
 
 

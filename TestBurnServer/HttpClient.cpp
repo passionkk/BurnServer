@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "HttpClient.h"
-#include "libcurl/curl.h"
+#include "curl/curl.h"
 #include <string>
 
 #ifdef WIN32
@@ -17,11 +17,11 @@
 #include "Poco/Foundation.h"
 //#include "Poco/File.h"
 //#include "poco/StringTokenizer.h"
-#include "poco/JSON/Parser.h"
-#include "poco/Dynamic/Var.h"
-#include "Poco/net/Net.h"
-#include "poco/net/DatagramSocket.h"
-#include "poco/net/streamsocket.h"
+#include "Poco/JSON/Parser.h"
+#include "Poco/Dynamic/Var.h"
+#include "Poco/Net/Net.h"
+#include "Poco/Net/DatagramSocket.h"
+#include "Poco/Net/StreamSocket.h"
 #include "Charset/CharsetConvertMFC.h"
 
 using namespace Poco::JSON;
@@ -39,7 +39,8 @@ size_t client_write_data(void* buffer, size_t size, size_t nmemb, void *stream)
 CHttpClient::CHttpClient(void) :
 m_bDebug(false)
 {
-
+	m_strServerIP = "";
+	m_nServerPort = 0;
 }
 
 CHttpClient::~CHttpClient(void)
@@ -217,7 +218,7 @@ int CHttpClient::Gets(const std::string & strUrl, std::string & strResponse, con
 
 #include "../include/Charset/CharsetConvertSTD.h"
 
-int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bLog)
+int CHttpClient::SendHttpProtocol(std::string strIP, int nPort, std::string sSend, std::string &sRecv, bool bLog)
 {
 	if (bLog)
 	{
@@ -226,6 +227,10 @@ int CHttpClient::SendHttpProtocol(std::string sSend, std::string &sRecv, bool bL
 	int iRet = -1;
 	std::string strUrl = "http://192.168.1.16:90/activeProtocol.action";
 	//std::string strUrl = "http://10.0.2.15:90/activeProtocol.action";
+	char szUrl[MAX_PATH];
+	memset(szUrl, 0, MAX_PATH);
+	sprintf(szUrl, "http://%s:%d/activeProtocol.action", m_strServerIP.c_str(), m_nServerPort);
+	strUrl = szUrl;
 
 	CURL *curl = NULL;
 	CURLcode res;
@@ -300,7 +305,7 @@ int CHttpClient::BurnServerConnect(CString& strRecv, int nCallCloseDisk)
 		std::string sSend = ss.str();
 		std::string sRecv = "";
 
-		if (SendHttpProtocol(sSend, sRecv) == 0)
+		if (SendHttpProtocol(m_strServerIP, m_nServerPort, sSend, sRecv) == 0)
 		{		
 			CString str(sRecv.c_str());
 			strRecv = str;//strRecv.Format(L"%s", sRecv.c_str());
@@ -319,6 +324,14 @@ void CHttpClient::SetDebug(bool bDebug)
 	m_bDebug = bDebug;
 }
 
+void CHttpClient::SetServerInfo(std::string strIP, int nPort)
+{
+	if (!strIP.empty())
+		m_strServerIP = strIP;
+	if (nPort > 0)
+		m_nServerPort = nPort;
+}
+
 //////////////////////////////////////////////////////////////////////////
 int CHttpClient::SendGetCDRomListProtocol(CString& strSend, CString& strRecv)
 {
@@ -333,7 +346,7 @@ int CHttpClient::SendGetCDRomListProtocol(CString& strSend, CString& strRecv)
 		std::string sSend = ss.str();
 		std::string sRecv = "";
 
-		if (SendHttpProtocol(sSend, sRecv) == 0)
+		if (SendHttpProtocol(m_strServerIP, m_nServerPort, sSend, sRecv) == 0)
 		{
 			CString strS(sSend.c_str());
 			strSend = strS;
@@ -351,7 +364,8 @@ int CHttpClient::SendGetCDRomListProtocol(CString& strSend, CString& strRecv)
 	}
 }
 
-int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
+int CHttpClient::SendStartBurnProtocol(std::string strBurnType, std::string strBurnMode, int nAlarmSize,
+									   const std::vector<FileInfo>& vecFileInfo, const BurnStateFeedbcak feedback, CString& strSend, CString& strRecv)
 {
 	try
 	{
@@ -359,9 +373,9 @@ int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
 		pObj->set("method", "startBurn");
 		
 		Object::Ptr pParams = new Object(true);
-		pParams->set("burnMode", "singleBurn");
+		pParams->set("burnMode", strBurnMode);//"singleBurn");
 	
-		pParams->set("alarmSize", 300);
+		pParams->set("alarmSize", nAlarmSize);//300);
 		pParams->set("burnType", "fileBurn");
 
 #if 0 //暂时先测试文件
@@ -399,6 +413,17 @@ int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
 
 		//fileInfo
 		JSON::Array burnFileArray;
+		for (int i = 0; i < vecFileInfo.size(); i++)
+		{
+			Object::Ptr	burnFile = new Object(true);
+			burnFile->set("fileLocation", vecFileInfo.at(i).m_strFileLocation);
+			burnFile->set("fileType", vecFileInfo.at(i).m_strType);
+			burnFile->set("burnSrcFilePath", vecFileInfo.at(i).m_strSrcUrl);
+			burnFile->set("burnDstFilePath", vecFileInfo.at(i).m_strDestFilePath);
+			burnFile->set("fileDescription", vecFileInfo.at(i).m_strDescription);
+			burnFileArray.add(burnFile);
+		}
+#if 0
 		Object::Ptr	burnFile = new Object(true);
 		burnFile->set("fileLocation", "local");
 		burnFile->set("fileType", "file");
@@ -422,20 +447,26 @@ int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
 		burnFile3->set("burnDstFilePath", "/Media/A3.mp4");
 		burnFile3->set("fileDescription", "From Judger camera");
 		burnFileArray.add(burnFile3);
-
+#endif
 		Object::Ptr	burnFileList = new Object(true);
 		burnFileList->set("burnFileList", burnFileArray);
 		pParams->set("fileInfo", burnFileList);
 		
 		pParams->set("burnSpeed", 8);
-
-		Object::Ptr pFeedbackParam = new Object(true);
-		pFeedbackParam->set("needFeedback", "yes");
-		pFeedbackParam->set("feedbackIP", "192.168.253.6");
-		pFeedbackParam->set("feedbackPort", 12345);
-		pFeedbackParam->set("transType", "http");
-		pFeedbackParam->set("feedIterval", 2000);
 		
+		Object::Ptr pFeedbackParam = new Object(true);
+		if (feedback.m_strNeedFeedback.compare("yes") == 0)
+		{
+			pFeedbackParam->set("needFeedback", "yes");
+		}
+		else
+		{
+			pFeedbackParam->set("needFeedback", "no");
+		}
+		pFeedbackParam->set("feedbackIP", feedback.m_strFeedbackIP);
+		pFeedbackParam->set("feedbackPort", feedback.m_nFeedbackPort);
+		pFeedbackParam->set("transType", feedback.m_transType);
+		pFeedbackParam->set("feedIterval", feedback.m_nFeedbackInterval);
 		pParams->set("feedback", pFeedbackParam);
 
 		pObj->set("params", pParams);
@@ -444,7 +475,7 @@ int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
 		pObj->stringify(ss);
 		std::string sSend = ss.str();
 		std::string sRecv = "";
-		if (SendHttpProtocol(sSend, sRecv) == 0)
+		if (SendHttpProtocol(m_strServerIP, m_nServerPort, sSend, sRecv) == 0)
 		{
 			CString strS(sSend.c_str());
 			strSend = strS; 
@@ -460,7 +491,7 @@ int CHttpClient::SendStartBurnProtocol(CString& strSend, CString& strRecv)
 	}
 }
 
-int CHttpClient::SendPauseBurnProtocol(CString& strSend, CString& strRecv)
+int CHttpClient::SendPauseBurnProtocol(std::string sessionID, CString& strSend, CString& strRecv)
 {
 	try
 	{
@@ -468,7 +499,7 @@ int CHttpClient::SendPauseBurnProtocol(CString& strSend, CString& strRecv)
 		pObj->set("method", "pauseBurn");
 
 		Object::Ptr pObjParams = new Object(true);
-		pObjParams->set("sessionID", "201704260001");
+		pObjParams->set("sessionID", sessionID);//"201704260001");
 		pObj->set("params", pObjParams);
 
 
@@ -477,7 +508,7 @@ int CHttpClient::SendPauseBurnProtocol(CString& strSend, CString& strRecv)
 		std::string sSend = ss.str();
 		std::string sRecv = "";
 
-		if (SendHttpProtocol(sSend, sRecv) == 0)
+		if (SendHttpProtocol(m_strServerIP, m_nServerPort, sSend, sRecv) == 0)
 		{
 			CString strS(sSend.c_str());
 			strSend = strS;
@@ -493,7 +524,7 @@ int CHttpClient::SendPauseBurnProtocol(CString& strSend, CString& strRecv)
 	}
 }
 
-int CHttpClient::SendRemuseBurnProtocol(CString& strSend, CString& strRecv)
+int CHttpClient::SendRemuseBurnProtocol(std::string sessionID, CString& strSend, CString& strRecv)
 {
 	try
 	{
@@ -501,7 +532,7 @@ int CHttpClient::SendRemuseBurnProtocol(CString& strSend, CString& strRecv)
 		pObj->set("method", "resumeBurn");
 
 		Object::Ptr pObjParams = new Object(true);
-		pObjParams->set("sessionID", "201704260001");
+		pObjParams->set("sessionID", sessionID);//"201704260001");
 		pObj->set("params", pObjParams);
 
 
@@ -510,7 +541,7 @@ int CHttpClient::SendRemuseBurnProtocol(CString& strSend, CString& strRecv)
 		std::string sSend = ss.str();
 		std::string sRecv = "";
 
-		if (SendHttpProtocol(sSend, sRecv) == 0)
+		if (SendHttpProtocol(m_strServerIP, m_nServerPort, sSend, sRecv) == 0)
 		{
 			CString strS(sSend.c_str());
 			strSend = strS;
@@ -526,7 +557,7 @@ int CHttpClient::SendRemuseBurnProtocol(CString& strSend, CString& strRecv)
 	}
 }
 
-int CHttpClient::SendStopBurnProtocol(CString& strSend, CString& strRecv)
+int CHttpClient::SendStopBurnProtocol(std::string sessionID, CString& strSend, CString& strRecv)
 {
 	try
 	{
@@ -534,7 +565,7 @@ int CHttpClient::SendStopBurnProtocol(CString& strSend, CString& strRecv)
 		pObj->set("method", "stopBurn");
 
 		Object::Ptr pObjParams = new Object(true);
-		pObjParams->set("sessionID", "201704260001");
+		pObjParams->set("sessionID", sessionID);//"201704260001");
 		pObj->set("params", pObjParams);
 
 		std::stringstream ss;
@@ -542,7 +573,7 @@ int CHttpClient::SendStopBurnProtocol(CString& strSend, CString& strRecv)
 		std::string sSend = ss.str();
 		std::string sRecv = "";
 
-		if (SendHttpProtocol(sSend, sRecv) == 0)
+		if (SendHttpProtocol(m_strServerIP, m_nServerPort, sSend, sRecv) == 0)
 		{
 			CString strS(sSend.c_str());
 			strSend = strS;
@@ -558,7 +589,7 @@ int CHttpClient::SendStopBurnProtocol(CString& strSend, CString& strRecv)
 	}
 }
 
-int CHttpClient::SendGetCDRomInfoProtocol(CString& strSend, CString& strRecv)
+int CHttpClient::SendGetCDRomInfoProtocol(std::string sessionID, CString& strSend, CString& strRecv)
 {
 	try
 	{
@@ -566,7 +597,7 @@ int CHttpClient::SendGetCDRomInfoProtocol(CString& strSend, CString& strRecv)
 		pObj->set("method", "getCDRomInfo");
 		
 		Object::Ptr pObjParams = new Object(true);
-		pObjParams->set("sessionID", "201704260001");
+		pObjParams->set("sessionID", sessionID);//"201704260001");
 		pObj->set("params", pObjParams);
 
 
@@ -575,12 +606,14 @@ int CHttpClient::SendGetCDRomInfoProtocol(CString& strSend, CString& strRecv)
 		std::string sSend = ss.str();
 		std::string sRecv = "";
 
-		if (SendHttpProtocol(sSend, sRecv) == 0)
+		if (SendHttpProtocol(m_strServerIP, m_nServerPort, sSend, sRecv) == 0)
 		{
 			CString strS(sSend.c_str());
 			strSend = strS;
 			CString strR(sRecv.c_str());
 			strRecv = strR;
+			strSend = CharsetConvertMFC::UTF8ToUTF16(CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length())));
+			strRecv = CharsetConvertMFC::UTF8ToUTF16(CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length())));
 		}
 		return 0;
 	}
@@ -591,7 +624,7 @@ int CHttpClient::SendGetCDRomInfoProtocol(CString& strSend, CString& strRecv)
 	}
 }
 
-int CHttpClient::SendAddBurnFileProtocol(CString& strSend, CString& strRecv)
+int CHttpClient::SendAddBurnFileProtocol(std::string sessionID, const std::vector<FileInfo>& vecFileInfo, CString& strSend, CString& strRecv)
 {
 	try
 	{
@@ -599,8 +632,23 @@ int CHttpClient::SendAddBurnFileProtocol(CString& strSend, CString& strRecv)
 		pObj->set("method", "addBurnFile");
 		
 		Object::Ptr pObjParams = new Object(true);
-		pObjParams->set("sessionID", "201704260001");
+		pObjParams->set("sessionID", sessionID);//"201704260001");
 		
+
+		//fileInfo
+		JSON::Array burnFileArray;
+		for (int i = 0; i < vecFileInfo.size(); i++)
+		{
+			Object::Ptr	burnFile = new Object(true);
+			burnFile->set("fileLocation", vecFileInfo.at(i).m_strFileLocation);
+			burnFile->set("fileType", vecFileInfo.at(i).m_strType);
+			burnFile->set("burnSrcFilePath", vecFileInfo.at(i).m_strSrcUrl);
+			burnFile->set("burnDstFilePath", vecFileInfo.at(i).m_strDestFilePath);
+			burnFile->set("fileDescription", vecFileInfo.at(i).m_strDescription);
+			burnFileArray.add(burnFile);
+		}
+		
+#if 0
 		JSON::Array burnFileArray;
 		Object objFile1;
 		objFile1.set("fileLocation", "local");
@@ -625,7 +673,7 @@ int CHttpClient::SendAddBurnFileProtocol(CString& strSend, CString& strRecv)
 		objFile3.set("fileLocation", "/Media/A2.mp4");
 		objFile3.set("fileLocation", "From Judger camera");
 		burnFileArray.add(objFile3);
-
+#endif
 		pObjParams->set("burnFileList", burnFileArray);
 		pObj->set("params", pObjParams);
 
@@ -634,7 +682,7 @@ int CHttpClient::SendAddBurnFileProtocol(CString& strSend, CString& strRecv)
 		std::string sSend = ss.str();
 		std::string sRecv = "";
 
-		if (SendHttpProtocol(sSend, sRecv) == 0)
+		if (SendHttpProtocol(m_strServerIP, m_nServerPort, sSend, sRecv) == 0)
 		{
 			CString strS(sSend.c_str());
 			strSend = strS;

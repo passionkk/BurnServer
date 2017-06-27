@@ -1,18 +1,25 @@
 {
     "HttpServer": {
         "strType": "http", 
-        "IP": "192.168.1.6",
+        "IP": "127.0.0.1",
 		"port": 90,
 		"serialName":"channel1"
     },
 	"UDPServer": {
         "strType": "udp", 
-        "IP": "192.168.1.6",
+        "IP": "127.0.0.1",
 		"port": 91,
 		"serialName":"channel1"
     },
-	"DownloadDir":
-	{
+	"DownloadDir":	{
 		"DefaultDir":"/media/BurnServer/Download/"
-	}
+	},
+    "LogRecvInfo": 	{
+        "ip1": "192.168.1.149",
+        "port1": 333,
+        "ip2": "",
+        "port2": 0,
+        "ip3": "",
+        "port3": 0
+    }
 }

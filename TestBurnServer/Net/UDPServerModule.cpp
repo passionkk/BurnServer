@@ -75,3 +75,11 @@ void UDPServerModule::UnInit()
         }
     }
 }
+
+void UDPServerModule::SetCallback(Fun pFun, LPVOID pVoid)
+{
+	for (int i = 0; i < m_vectChannels.size(); i++)
+	{
+		m_vectChannels.at(i)->SetCallback(pFun, pVoid);
+	}
+}

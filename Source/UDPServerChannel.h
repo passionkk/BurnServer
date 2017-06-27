@@ -70,6 +70,8 @@ private:
 	//增加刻录文件
 	std::string AddBurnFile(std::string strIn);
 
+	//设置日志接受服务器
+	std::string SetLogServer(std::string jsonRecv);
 
 private:
 	UdpServerCallBackFunc   m_CallBackFunc;

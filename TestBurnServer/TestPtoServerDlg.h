@@ -17,13 +17,17 @@ public:
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV Ö§³Ö
 	afx_msg void OnBnClickedBtnStartserver();
+	afx_msg void OnBnClickedBtnAddburnfile();
 
 	DECLARE_MESSAGE_MAP()
 
 public:
+	
+	static void SetFeedbackState(LPVOID pVoid, std::string strFeedback, int nShowIndex);
+	void DoSetFeedbackState(std::string strFeedback, int nShowIndex);
 	void	SetProtocolMode(PROTOCOL_MODE nMode);
 	PROTOCOL_MODE		m_nMode;		//0,http 1,udp
 	
 	int					m_nServerPort;
-	CString				m_strUUID;
+	CString				m_strSessionID;
 };

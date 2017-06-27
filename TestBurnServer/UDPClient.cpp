@@ -134,7 +134,8 @@ int UDPClient::SendGetCDRomListProtocol(std::string & strSend, std::string& strR
 	}
 }
 
-int UDPClient::SendStartBurnProtocol(std::string & strSend, std::string& strRecv)
+int UDPClient::SendStartBurnProtocol(std::string strBurnType, std::string strBurnMode, int nAlarmSize,
+									 const std::vector<FileInfo>& vecFileInfo, const BurnStateFeedbcak feedback, std::string & strSend, std::string& strRecv)
 {
 	try
 	{
@@ -142,11 +143,12 @@ int UDPClient::SendStartBurnProtocol(std::string & strSend, std::string& strRecv
 		pObj->set("method", "startBurn");
 
 		Object::Ptr pParams = new Object(true);
-		pParams->set("burnMode", "singleBurn");
+		pParams->set("burnMode", strBurnMode);//"singleBurn");
 
-		pParams->set("alarmSize", 300);
+		pParams->set("alarmSize", nAlarmSize);//300);
 		pParams->set("burnType", "fileBurn");
 
+#if 0
 		Object::Ptr pStreamInfo = new Object(true);
 		pStreamInfo->set("burnFileName", "1.mp4");
 		pStreamInfo->set("playlistInfo", "<?xml><config></config>");
@@ -177,8 +179,20 @@ int UDPClient::SendStartBurnProtocol(std::string & strSend, std::string& strRecv
 
 		pStreamInfo->set("burnUrlList", burnUrlArray); // add burnUrlList
 		pParams->set("streamInfo", pStreamInfo);
+#endif
 		//fileInfo
 		JSON::Array burnFileArray;
+		for (int i = 0; i < vecFileInfo.size(); i++)
+		{
+			Object::Ptr	burnFile = new Object(true);
+			burnFile->set("fileLocation", vecFileInfo.at(i).m_strFileLocation);
+			burnFile->set("fileType", vecFileInfo.at(i).m_strType);
+			burnFile->set("burnSrcFilePath", vecFileInfo.at(i).m_strSrcUrl);
+			burnFile->set("burnDstFilePath", vecFileInfo.at(i).m_strDestFilePath);
+			burnFile->set("fileDescription", vecFileInfo.at(i).m_strDescription);
+			burnFileArray.add(burnFile);
+		}
+#if 0
 		Object::Ptr	burnFile = new Object(true);
 		burnFile->set("fileLocation", "local");
 		burnFile->set("fileType", "file");
@@ -202,7 +216,7 @@ int UDPClient::SendStartBurnProtocol(std::string & strSend, std::string& strRecv
 		burnFile3->set("burnDstFilePath", "/Media/A3.mp4");
 		burnFile3->set("fileDescription", "From Judger camera");
 		burnFileArray.add(burnFile3);
-
+#endif
 		Object::Ptr	burnFileList = new Object(true);
 		burnFileList->set("burnFileList", burnFileArray);
 		pParams->set("fileInfo", burnFileList);
@@ -210,11 +224,22 @@ int UDPClient::SendStartBurnProtocol(std::string & strSend, std::string& strRecv
 		pParams->set("burnSpeed", 8);
 
 		Object::Ptr pFeedbackParam = new Object(true);
-		pFeedbackParam->set("needFeedback", "yes");
-		pFeedbackParam->set("feedbackIP", "192.168.253.6");
-		pFeedbackParam->set("feedbackPort", 12345);
-		pFeedbackParam->set("transType", "http");
-		pFeedbackParam->set("feedIterval", 2000);
+		if (feedback.m_strNeedFeedback.compare("yes") == 0)
+		{
+			pFeedbackParam->set("needFeedback", "yes");
+			pFeedbackParam->set("feedbackIP", feedback.m_strFeedbackIP);
+			pFeedbackParam->set("feedbackPort", feedback.m_nFeedbackPort);
+			pFeedbackParam->set("transType", feedback.m_transType);
+			pFeedbackParam->set("feedIterval", feedback.m_nFeedbackInterval);
+		}
+		else
+		{
+			pFeedbackParam->set("needFeedback", "no");
+			pFeedbackParam->set("feedbackIP", "127.0.0.1");
+			pFeedbackParam->set("feedbackPort", 12345);
+			pFeedbackParam->set("transType", "http");
+			pFeedbackParam->set("feedIterval", 2000);
+		}
 
 		pParams->set("feedback", pFeedbackParam);
 

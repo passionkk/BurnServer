@@ -89,7 +89,8 @@ response_completed_callback (void *cls,
 
 HttpServerModule::HttpServerModule(void)
 {
-
+	m_pCallbackFun = NULL;
+	m_pVoid = NULL;
 }
 
 HttpServerModule::~HttpServerModule(void)
@@ -186,7 +187,7 @@ int HttpServerModule::ProcessPassiveProtocol(struct MHD_Connection *connection,c
     }
 }
 
-std::string HttpServerModule::ProcessProtocol(std::string sMethod, std::string jsonRecv)
+std::string HttpServerModule::ProcessProtocol(std::string sMethod, std::string jsonRecv/*, std::string& strOut*/)
 {
     try
     {
@@ -199,6 +200,14 @@ std::string HttpServerModule::ProcessProtocol(std::string sMethod, std::string j
         {
             jsonSend = AgentHeartBeat(jsonRecv);
         }
+		else if (sMethod == "closeDiscFeedback")
+		{
+			jsonSend = FeedbackBeforeCloseDisc(jsonRecv/*, strOut*/);
+		}
+		else if (sMethod == "burnStateFeedback")
+		{
+			jsonSend = BurnStateFeedback(jsonRecv/*, strOut*/);
+		}
         else
         {												
             printf("%s : do not support this method\n", __PRETTY_FUNCTION__);
@@ -210,6 +219,12 @@ std::string HttpServerModule::ProcessProtocol(std::string sMethod, std::string j
         printf("%s catched\n", __PRETTY_FUNCTION__);
         return "";
     }
+}
+
+void HttpServerModule::SetCallback(Fun pFun, LPVOID pVoid)
+{
+	m_pCallbackFun = pFun;
+	m_pVoid = pVoid;
 }
 
 std::string HttpServerModule::TestProtocol(std::string strIn)
@@ -286,4 +301,158 @@ std::string HttpServerModule::AgentHeartBeat(std::string strIn)
         printf("%s catched\n", __PRETTY_FUNCTION__);
         return "";
     }
+}
+
+
+//·âÅÌÇ°·´À¡
+std::string HttpServerModule::FeedbackBeforeCloseDisc(std::string strIn/*, std::string& strOut*/)
+{
+	try
+	{
+#if 0
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+
+			Json::Value		jsonDocFile;
+			jsonDocFile["fileLocation"] = Json::Value("local");
+			jsonDocFile["burnSrcFilePath"] = Json::Value("/mnt/HD0/burnTestFile/DocFile.docx");
+			jsonDocFile["burnDstFilePath"] = Json::Value("DocFile.docx");
+			jsonDocFile["fileDescription"] = Json::Value("Doc File");
+			jsonValue2["DocFile"] = jsonDocFile;
+
+			Json::Value		jsonFileList;
+			Json::Value		jsonPlayer;
+			jsonPlayer["fileLocation"] = Json::Value("local");
+			jsonPlayer["burnSrcFilePath"] = Json::Value("/mnt/HD0/burnTestFile/player.exe");
+			jsonPlayer["burnDstFilePath"] = Json::Value("player.exe");
+			jsonPlayer["fileDescription"] = Json::Value("player");
+			jsonFileList.append(jsonPlayer);
+			
+			Json::Value		jsonTestFile;
+			jsonTestFile["fileLocation"] = Json::Value("local");
+			jsonTestFile["burnSrcFilePath"] = Json::Value("/mnt/HD0/burnTestFile/1.mp4");
+			jsonTestFile["burnDstFilePath"] = Json::Value("burnFeedbackTestFile.mp4");
+			jsonTestFile["fileDescription"] = Json::Value("burnFeedbackTestFile");
+			jsonFileList.append(jsonTestFile);
+
+			jsonValue2["burnFileList"] = jsonFileList;
+
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strOut = jsonValueRoot.toStyledString();
+
+			if (m_pCallbackFun)
+			{
+				m_pCallbackFun(m_pVoid, strOut, 0);
+			}
+			return strOut;
+		}
+#endif
+
+		Object::Ptr pObj = new Object(true);
+		pObj->set("method", "closeDiscFeedback");
+		
+		Object::Ptr pParams = new Object(true);
+		pParams->set("retCode", 0);
+		pParams->set("retMessage", "ok");
+
+
+		//fileInfo
+		Object::Ptr	burnDocFile = new Object(true);
+		burnDocFile->set("fileLocation", "local");
+		burnDocFile->set("burnSrcFilePath", "/mnt/HD0/burnTestFile/DocFile.docx");
+		burnDocFile->set("burnDstFilePath", "DocFile.docx");
+		burnDocFile->set("fileDescription", "Doc File");
+		burnDocFile->set("fileLocation", "local");
+		burnDocFile->set("filetype", "file");
+		pParams->set("DocFile", burnDocFile);
+
+		JSON::Array burnFileArray;
+
+		Object::Ptr	burnPlayer = new Object(true);
+		burnPlayer->set("fileLocation", "local");
+		burnPlayer->set("burnSrcFilePath", "/mnt/HD0/burnTestFile/player.exe");
+		burnPlayer->set("burnDstFilePath", "player.exe");
+		burnPlayer->set("fileDescription", "player");
+		burnPlayer->set("fileLocation", "local");
+		burnPlayer->set("filetype", "file");
+		burnFileArray.add(burnPlayer);
+
+		Object::Ptr	burnCommonFile = new Object(true);
+		burnCommonFile->set("fileLocation", "local");
+		burnCommonFile->set("burnSrcFilePath", "/mnt/HD0/burnTestFile/1.mp4");
+		burnCommonFile->set("burnDstFilePath", "burnFeedbackTestFile.mp4");
+		burnCommonFile->set("fileDescription", "burnFeedbackTestFile");
+		burnCommonFile->set("fileLocation", "local");
+		burnCommonFile->set("filetype", "file");
+		burnFileArray.add(burnCommonFile);
+		
+		pParams->set("burnFileList", burnFileArray);
+
+		pObj->set("params", pParams);
+		std::stringstream ss;
+		pObj->stringify(ss);
+		std::string strRet = ss.str();
+		return strRet;
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
+}
+
+//¿ÌÂ¼×´Ì¬·´À¡Ð­Òé
+std::string HttpServerModule::BurnStateFeedback(std::string strIn/*, std::string& strOut*/)
+{
+	try
+	{
+		Json::Reader    jsonReader;
+		Json::Value     jsonValueIn;
+
+		if (jsonReader.parse(strIn, jsonValueIn))
+		{
+			std::string sMethod = jsonValueIn["method"].asString();
+			Json::Value   jsonValueParams = jsonValueIn["params"];
+
+			std::string strOut = jsonValueParams.toStyledString();
+			if (m_pCallbackFun)
+			{
+				m_pCallbackFun(m_pVoid, strOut, 1);
+			}
+
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			jsonValue2["retCode"] = Json::Value(0);
+			jsonValue2["retMessage"] = Json::Value("ok");
+			jsonValue1["method"] = Json::Value(sMethod.c_str());
+			jsonValue1["params"] = jsonValue2;
+			jsonValueRoot["result"] = jsonValue1;
+			string strRet = jsonValueRoot.toStyledString();
+			return strRet;
+		}
+		else
+		{
+			return "";
+		}
+		return "";
+	}
+	catch (...)
+	{
+		printf("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
+	}
 }

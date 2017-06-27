@@ -6,6 +6,7 @@
 #include "Poco/Net/SocketAddress.h"
 #include "Poco/Net/Socket.h"
 #include "poco/Foundation.h"
+#include "DataStructDefine.h"
 
 class UDPClient
 {
@@ -24,7 +25,8 @@ public:
 	bool		Close();
 
 	int			SendGetCDRomListProtocol(std::string & strSend, std::string& strRecv);
-	int			SendStartBurnProtocol(std::string & strSend, std::string& strRecv);
+	int			SendStartBurnProtocol(std::string strBurnType, std::string strBurnMode, int nAlarmSize,
+									  const std::vector<FileInfo>& vecFileInfo, const BurnStateFeedbcak feedback, std::string & strSend, std::string& strRecv);
 	int			SendPauseBurnProtocol(std::string & strSend, std::string& strRecv);
 	int			SendRemuseBurnProtocol(std::string & strSend, std::string& strRecv);
 	int			SendStopBurnProtocol(std::string & strSend, std::string& strRecv);

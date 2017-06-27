@@ -8,6 +8,7 @@
 #include "Poco/Net/Socket.h"
 #include "poco/Foundation.h"
 #include "poco/UTF8Encoding.h"
+#include "DataStructDefine.h"
 
 using namespace Poco;
 
@@ -54,22 +55,26 @@ public:
 	*/
 	int Gets(const std::string & strUrl, std::string & strResponse, const char * pCaPath = NULL);
 
-	int SendHttpProtocol(std::string sSend, std::string &sRecv, bool bLog = true);
+	int SendHttpProtocol(std::string strIP, int nPort, std::string sSend, std::string &sRecv, bool bLog = true);
 
 	int BurnServerConnect(CString& strRecv, int nCallCloseDisk = 0);
 
 	int SendGetCDRomListProtocol(CString& strSend, CString& strRecv);
-	int SendStartBurnProtocol(CString& strSend, CString& strRecv);
-	int SendPauseBurnProtocol(CString& strSend, CString& strRecv);
-	int SendRemuseBurnProtocol(CString& strSend, CString& strRecv);
-	int SendStopBurnProtocol(CString& strSend, CString& strRecv);
-	int SendGetCDRomInfoProtocol(CString& strSend, CString& strRecv);
-	int SendAddBurnFileProtocol(CString& strSend, CString& strRecv);
+	int SendStartBurnProtocol(std::string strBurnType, std::string strBurnMode, int nAlarmSize,
+		const std::vector<FileInfo>& vecFileInfo, const BurnStateFeedbcak feedback, CString& strSend, CString& strRecv);
+	int SendPauseBurnProtocol(std::string sessionID, CString& strSend, CString& strRecv);
+	int SendRemuseBurnProtocol(std::string sessionID, CString& strSend, CString& strRecv);
+	int SendStopBurnProtocol(std::string sessionID, CString& strSend, CString& strRecv);
+	int SendGetCDRomInfoProtocol(std::string cdRomID, CString& strSend, CString& strRecv);
+	int SendAddBurnFileProtocol(std::string sessionID,  const std::vector<FileInfo>& vecFileInfo, CString& strSend, CString& strRecv);
 public:
 	void SetDebug(bool bDebug);
+	void SetServerInfo(std::string strIP, int nPort);
 
 private:
 	bool m_bDebug;
+	std::string m_strServerIP;
+	int			m_nServerPort;
 };
 
 //#endif

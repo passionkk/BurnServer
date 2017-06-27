@@ -52,6 +52,7 @@ void UDPServerModule::Init()
 	if (0 == pChannel->start(iPort))
     {
 		m_vectChannels.push_back(pChannel);
+		printf("Create UDPServer Success, Port : %d.\n", iPort);
 	}
 	else
     {

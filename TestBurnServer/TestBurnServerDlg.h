@@ -57,6 +57,8 @@ private:
 	int					m_nServerPort;
 	CTabCtrl			m_tabCtrl;
 	int					m_nCurTabSel;
+	bool				bInit;
 public:
 	afx_msg void OnSelchangeTabCtrl(NMHDR *pNMHDR, LRESULT *pResult);
+	afx_msg void OnSize(UINT nType, int cx, int cy);
 };

@@ -53,6 +53,8 @@ public:
 
 	int SendHttpProtocol(std::string sSend, std::string &sRecv, bool bLog = true);
 
+	int SendHttpProtocol(std::string ip, int nPort, std::string sSend, std::string &sRecv, bool bLog = true);
+
 	int BurnServerConnect(std::string& strRecv);
 
 public:

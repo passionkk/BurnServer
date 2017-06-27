@@ -1,5 +1,6 @@
 #include "MainConfig.h"
 #include "CommonDefine.h"
+#include "NetLog.h"
 
 #if defined(_LINUX_)
 #include <unistd.h>
@@ -139,6 +140,7 @@ int MainConfig::ReadFromFile(std::string strFile)
 
 int MainConfig::SaveFile()
 {
+
 	return 0;
 }
 
@@ -190,4 +192,36 @@ std::string MainConfig::GetDownloadDir()
 		//g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
 	}
 	return "";
+}
+
+void MainConfig::GetLogRecvInfo(std::vector<stLogRecvInfo>& vecLogRecvInfo)
+{
+	try
+	{
+		m_vecLogRecvInfo.clear();
+		Object::Ptr obj = m_varFullConfig.extract<Object::Ptr>();
+		m_LogRecvInfo = Object::makeStruct(obj->getObject("LogRecvInfo"));
+		
+		stLogRecvInfo logRecvInfo;
+		logRecvInfo.strLogRecvIP = m_LogRecvInfo["ip1"].toString();
+		logRecvInfo.nLogRecvPort = (int)m_LogRecvInfo["port1"];
+		m_vecLogRecvInfo.push_back(logRecvInfo);
+
+		logRecvInfo.strLogRecvIP = m_LogRecvInfo["ip2"].toString();
+		logRecvInfo.nLogRecvPort = (int)m_LogRecvInfo["port2"];
+		m_vecLogRecvInfo.push_back(logRecvInfo);
+
+		logRecvInfo.strLogRecvIP = m_LogRecvInfo["ip3"].toString();
+		logRecvInfo.nLogRecvPort = (int)m_LogRecvInfo["port3"];
+		m_vecLogRecvInfo.push_back(logRecvInfo);
+
+		for (int i = 0; i < m_vecLogRecvInfo.size(); i++)
+		{
+			vecLogRecvInfo.push_back(m_vecLogRecvInfo.at(i));
+		}
+	}
+	catch (...)
+	{
+		g_NetLog.Debug("%s catched.\n", __PRETTY_FUNCTION__);
+	}
 }

@@ -156,15 +156,18 @@ using std::string;
 int main(int argc, char *argv[])
 {
 	printf("Enter main.\n");
+#if 0 // for test
 	Poco::DateTime now;
 	cout << "data time is :" << now.day() << endl;
 	
 	string jsonString = "{ \"name\" : \"罗伯特\" }";
+	cout << "jsonString" << jsonString << endl;
 	Poco::JSON::Parser	jsonParser;
 	Poco::Dynamic::Var result = jsonParser.parse(jsonString);
 	Poco::JSON::Object::Ptr pObj = result.extract<Poco::JSON::Object::Ptr>();
 	Poco::Dynamic::Var varName = pObj->get("name");
-	cout << "name" << varName.toString() << endl;
+	cout << "name is " << varName.toString() << endl;
+#endif 
 
 #ifdef WIN32
 #else

@@ -194,7 +194,9 @@
     <ClInclude Include="..\Include\Charset\CharsetConvertMFC.h" />
     <ClInclude Include="..\Include\Charset\CharsetConvertSTD.h" />
     <ClInclude Include="CommonDefine.h" />
+    <ClInclude Include="DataStructDefine.h" />
     <ClInclude Include="HttpClient.h" />
+    <ClInclude Include="ListCtrlEdit.h" />
     <ClInclude Include="Net\CCBUtility.h" />
     <ClInclude Include="Net\HttpServerChannel.h" />
     <ClInclude Include="Net\HttpServerModule.h" />
@@ -214,6 +216,7 @@
     <ClCompile Include="..\Include\Charset\CharsetConvertMFC.cpp" />
     <ClCompile Include="..\Include\Charset\CharsetConvertSTD.cpp" />
     <ClCompile Include="HttpClient.cpp" />
+    <ClCompile Include="ListCtrlEdit.cpp" />
     <ClCompile Include="Net\CCBUtility.cpp">
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../stdafx.h</PrecompiledHeaderFile>
     </ClCompile>

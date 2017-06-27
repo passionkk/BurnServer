@@ -2,6 +2,7 @@
 //#include <iostream>
 #include <string>
 #include <vector>
+#include <pthread.h>
 #include "Poco/Mutex.h"
 
 enum CDROMSTATE
@@ -32,6 +33,26 @@ public:
 		m_pDVDHandle = NULL;
 	};
 
+	CDRomInfo(const CDRomInfo& cdRomInfo)
+	{
+		m_strCDRomName = cdRomInfo.m_strCDRomName;
+		m_strCDRomID = cdRomInfo.m_strCDRomID;
+		m_euWorkState = cdRomInfo.m_euWorkState;
+		m_pDVDHandle = cdRomInfo.m_pDVDHandle;
+	};
+
+	CDRomInfo& operator=(const CDRomInfo& cdRomInfo)
+	{
+		if (this != &cdRomInfo)
+		{
+			m_strCDRomName = cdRomInfo.m_strCDRomName;
+			m_strCDRomID = cdRomInfo.m_strCDRomID;
+			m_euWorkState = cdRomInfo.m_euWorkState;
+			m_pDVDHandle = cdRomInfo.m_pDVDHandle;
+		}
+		return *this;
+	};
+
 	virtual ~CDRomInfo(){};
 
 public:
@@ -51,6 +72,28 @@ public:
 		discsize = 0;
 		usedsize = 0;
 		freesize = 0;
+	};
+
+	DiskInfo(const DiskInfo& diskInfo)
+	{
+		ntype = diskInfo.ntype;
+		maxpeed = diskInfo.maxpeed;
+		discsize = diskInfo.discsize;
+		usedsize = diskInfo.usedsize;
+		freesize = diskInfo.freesize;
+	};
+
+	DiskInfo& operator= (const DiskInfo& diskInfo)
+	{
+		if (this != &diskInfo)
+		{
+			ntype = diskInfo.ntype;
+			maxpeed = diskInfo.maxpeed;
+			discsize = diskInfo.discsize;
+			usedsize = diskInfo.usedsize;
+			freesize = diskInfo.freesize;
+		}
+		return *this;
 	};
 
 	virtual ~DiskInfo(){};
@@ -114,6 +157,10 @@ public:
 		m_nFeedbackPort = 93;
 		m_transType = "udp";
 		m_nFeedbackInterval = 5000;
+		m_nThreadID = 0;
+		m_nHasDisc = 0;
+		m_nDVDLefCap = 0;
+		m_nDVDTotalCap = 0;
 	};
 
 public:
@@ -122,6 +169,10 @@ public:
 	int				m_nFeedbackPort;		//反馈主机端口
 	std::string		m_transType;			//通信协议方式 http 或者 udp，目前反馈都用udp
 	int				m_nFeedbackInterval;	//反馈时间间隔 单位毫秒
+	pthread_t		m_nThreadID;			//反馈线程ID
+	int				m_nHasDisc;				//是否有光盘
+	int				m_nDVDLefCap;			//光盘剩余空间
+	int				m_nDVDTotalCap;			//光驱总大小
 };
 
 class BurnTask
@@ -132,9 +183,10 @@ public:
 		m_strCDRomID = "";
 		m_strCDRomName = "";
 		m_vecCDRomInfo.clear();
+		m_nUseCDRomIndex = 0;
 		m_strBurnMode = "";
 		m_strBurnType = "";
-		m_ullBurnedSize = 0;
+		m_nBurnedSize = 0;
 		m_nAlarmSize = 0;
 		m_vecBurnFileInfo.clear();
 		m_nCurBurnFileIndex = 0;
@@ -147,16 +199,19 @@ public:
 	std::string					m_strCDRomID;
 	std::string					m_strCDRomName;
 	std::vector<CDRomInfo>		m_vecCDRomInfo;
+	int							m_nUseCDRomIndex;
 	DiskInfo					m_diskInfo;			//光盘信息，包含光盘类型，大小等。
-	unsigned long long			m_ullBurnedSize;	//已刻录大小
+	int							m_nBurnedSize;		//已刻录大小
 	int							m_nAlarmSize;		//报警大小阈值
 	std::string					m_strBurnMode;		//"singleBurn" "doubleParallelBurn" "doubleRelayBurn" 
 	std::string					m_strBurnType;		//"realTimeBurn" ”pseudoRealTimeBurn” ”fileBurn”
 	BurnStreamInfo				m_burnStreamInfo;
 	std::vector<FileInfo>		m_vecBurnFileInfo;
+	std::vector<FileInfo>		m_vecFeedbackFileInfo;
 	int							m_nCurBurnFileIndex;	//当前刻录文件索引
 	int							m_nBurnSpeed;		//光驱刻录速度
 	BurnStateFeedbcak			m_burnStateFeedback;
 	std::string					m_strSessionID;
-	TASKSTATE					m_taskState;
+	TASKSTATE					m_taskState;		//接收上层控制刻录状态
+	TASKSTATE					m_taskRealState;	//实际刻录状态
 };

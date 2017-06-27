@@ -8,6 +8,8 @@
 #include <memory.h>
 #include <vector>
 
+typedef void(*Fun)(LPVOID lpVoid, std::string, int nProtocol);
+
 class HttpServerModule
 {
 private:
@@ -22,8 +24,9 @@ private:
     void UnInit();
 public:
     int ProcessPassiveProtocol(struct MHD_Connection *connection,char *  pszContent);
-    std::string ProcessProtocol(std::string sMethod, std::string jsonRecv);
+    std::string ProcessProtocol(std::string sMethod, std::string jsonRecv/*, std::string& strOut*/);
 
+	void SetCallback(Fun, LPVOID pVoid);
 private:
 
 	std::string TestProtocol(std::string strIn);
@@ -44,9 +47,16 @@ private:
 	//增加刻录文件
 	std::string AddBurnFile(std::string strIn);
 
+	//封盘前反馈
+	std::string FeedbackBeforeCloseDisc(std::string strIn/*, std::string& strOut*/);
+	//刻录状态反馈协议
+	std::string BurnStateFeedback(std::string strIn/*, std::string& strOut*/);
+
 private:
     static HttpServerModule   *m_pInstance;
     std::vector<HttpServerChannel*>  m_vectChannels;
+	Fun m_pCallbackFun;
+	LPVOID m_pVoid;
 };
 
 #endif

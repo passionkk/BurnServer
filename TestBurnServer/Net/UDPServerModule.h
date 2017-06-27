@@ -13,6 +13,9 @@ public:
     static UDPServerModule *Initialize();
     static void Uninitialize();
     static UDPServerModule *GetInstance();
+
+	void SetCallback(Fun, LPVOID pVoid);
+
 private:
     void Init();
     void UnInit();
