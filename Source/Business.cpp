@@ -184,9 +184,9 @@ std::string CBusiness::GetCurDir()
 }
 
 //协议处理
-int CBusiness::GetCDRomListFromFile(const char* pFilePath)
+int CBusiness::GetCDRomListFromFile(const char* pFilePath, bool bReCheck)
 {
-	if (m_vecCDRomInfo.size() > 0)
+	if (m_vecCDRomInfo.size() > 0 && !bReCheck)
 		return 0;
 	char buf[2000];
 	int size;
@@ -209,6 +209,7 @@ int CBusiness::GetCDRomListFromFile(const char* pFilePath)
 	fclose(fd);
 
 	//std::vector<CDRomInfo> vecCDRomInfoTmp;
+	m_mutexCDRomInfoVec.lock();
 	m_vecCDRomInfo.clear();
 	char dev[200];
 	memset(dev, 0, 200);
@@ -247,7 +248,7 @@ int CBusiness::GetCDRomListFromFile(const char* pFilePath)
 		m_vecCDRomInfo.push_back(info);
 		printf("dev3 = %s\n", dev);
 	}
-
+	m_mutexCDRomInfoVec.unlock();
 #if 0
 	if (m_vecCDRomInfo.size() == 0)
 	{
@@ -316,9 +317,9 @@ int	CBusiness::ExtractString(const char *head, const char *end,
 void CBusiness::GetCDRomList(std::vector<CDRomInfo>& vecCDRomInfo)
 {
 	// 调用shell脚本获取光驱列表
-	printf("GetCDRomList.\n");
+	g_NetLog.Debug("GetCDRomList.\n");
 	//system("./Get_CDRom_Dev_Info.sh");
-	GetCDRomListFromFile("CDRomList");
+	GetCDRomListFromFile("CDRomList", true);	//每次都重新获取
 	vecCDRomInfo.clear();
 	for (int i = 0; i < m_vecCDRomInfo.size(); i++)
 		vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
@@ -665,13 +666,30 @@ int CBusiness::GetUndoTask(BurnTask& task)
 
 void CBusiness::DoTask(BurnTask& task)
 {
+	/*std::string str = "1.mp4";
+	g_NetLog.Debug("%s", str.c_str());
+	if (str.length() >= 1 && str.at(0) != '/')
+	{
+	std::string str1 = "/";
+	g_NetLog.Debug("%s", str.c_str());
+	str = str1 + str;
+	}
+	g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", str.c_str());*/
+
 	g_NetLog.Debug("Get One Task, DoTask.\n");
 	m_burnTask = task;
 	std::string strBurnCDRomID = task.m_strCDRomID;
 
-	if (0 != ChooseCDRomToBurn(task))
+	int nRet = ChooseCDRomToBurn(task);
+	if (0 != nRet)
 	{
 		g_NetLog.Debug("Choose CDRom fail.\n");
+		if (nRet == -1)
+		{
+			g_NetLog.Debug("Load CDRom fail. may change device, do check CDRom.\n");
+			GetCDRomListFromFile("./CDRom_List", true);
+			g_NetLog.Debug("Load CDRom fail. may change device, check CDRom finish.\n");
+		}
 		return;
 	}
 	if (0 != InitCDRom(task))
@@ -679,6 +697,7 @@ void CBusiness::DoTask(BurnTask& task)
 		g_NetLog.Debug("Init CDRom fail.\n");
 		return;
 	}
+
 	if (task.m_taskState == TASK_INIT)
 		task.m_taskState = TASK_BURN;
 	
@@ -713,6 +732,7 @@ void CBusiness::DeleteTask()
 
 void CBusiness::SetCDRomState(std::string strCDRomID, CDROMSTATE state)
 {
+	m_mutexCDRomInfoVec.lock();
 	for (int i = 0; i < m_vecCDRomInfo.size(); i++)
 	{
 		if (m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0)
@@ -721,6 +741,7 @@ void CBusiness::SetCDRomState(std::string strCDRomID, CDROMSTATE state)
 			break;
 		}
 	}
+	m_mutexCDRomInfoVec.unlock();
 }
 
 void* CBusiness::GetIdleCDRom(BurnTask& task, std::string& strCDRomID, int& nCDRomIndex)
@@ -728,7 +749,7 @@ void* CBusiness::GetIdleCDRom(BurnTask& task, std::string& strCDRomID, int& nCDR
 	void* pHandle = NULL;
 	for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
 	{
-		if (task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_READY)
+		if (task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_READY || task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT)
 		{
 			pHandle = task.m_vecCDRomInfo.at(i).m_pDVDHandle;
 			strCDRomID = task.m_vecCDRomInfo.at(i).m_strCDRomID;
@@ -782,11 +803,13 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 			return nRet;
 		}
 		task.m_vecCDRomInfo.clear();
+		m_mutexCDRomInfoVec.lock();
 		for (int i = 0; i < nNeedCDRomCount; i++)
 		{
 			if (m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT)
 				task.m_vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
 		}
+		m_mutexCDRomInfoVec.unlock();
 		if (task.m_vecCDRomInfo.size() < nNeedCDRomCount)
 		{
 			g_NetLog.Debug("task can use CDRom Num is %d, need cdRom is %d, ChooseCDRomToBurn faile.\n", task.m_vecCDRomInfo.size(), nNeedCDRomCount);
@@ -804,10 +827,11 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 		g_NetLog.Debug("define a dvdsdkinterface object.\n");
 		bool bInitState = true;
 		DVDSDKInterface dvdInterface;
+		DVDDRV_HANDLE hDvD = NULL;
 		for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
 		{
 			std::string strCDRomID = task.m_vecCDRomInfo.at(i).m_strCDRomID;
-			DVDDRV_HANDLE hDvD = dvdInterface.DVDSDK_Load(strCDRomID.c_str());
+			hDvD = dvdInterface.DVDSDK_Load(strCDRomID.c_str());
 			g_NetLog.Debug("dvdInterface.DVDSDK_Load.\n");
 			if (hDvD != NULL)
 			{
@@ -848,13 +872,15 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 					dvdInterface.DVDSDK_LockDoor(hDvD, 1);
 				}
 			}
-			if (task.m_strBurnMode.compare("doubleRelayBurn") == 0 || task.m_strBurnMode.compare("singleBurn") == 0)
+			else
+				nRet = -2;
+			if (hDvD != NULL && task.m_strBurnMode.compare("doubleRelayBurn") == 0 || task.m_strBurnMode.compare("singleBurn") == 0)
 			{
 				g_NetLog.Debug("task.m_strBurnMode is %s.\n", task.m_strBurnMode.c_str());
 				break;
 			}
 		}
-		if (bInitState)
+		if (bInitState && hDvD != NULL)
 			nRet = 0;
 		return nRet;
 	}
@@ -1013,7 +1039,28 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 		if (fileInfo.m_strFileLocation.compare("remote") == 0)
 		{	//远端	--- 下载跟刻录 分离，异步执行
 			//下载前应判断本地是否存在相同文件
-			std::string strLocalPath = Download(fileInfo.m_strType, fileInfo.m_strSrcUrl);
+			std::string strLocalPath;
+			std::string strDestFilePathTmp; // only for add / before file name eg : a.mp4 --> /a.mp4
+			g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", fileInfo.m_strDestFilePath.c_str());
+			if(fileInfo.m_strDestFilePath.length() >= 1 && fileInfo.m_strDestFilePath.at(0) != '/')
+			{
+				std::string str = "/";
+				g_NetLog.Debug("%s", str.c_str());
+				strDestFilePathTmp = str + fileInfo.m_strDestFilePath;
+			}
+			else if (fileInfo.m_strDestFilePath.length() >= 1)
+			{
+				std::string str = "/";
+				g_NetLog.Debug("%s", str.c_str());
+				strDestFilePathTmp = str + FileUtil::GetFileName(fileInfo.m_strDestFilePath);
+			}
+			else
+			{
+				g_NetLog.Debug("fileInfo.m_strDestFilePath is %s.\n", fileInfo.m_strDestFilePath.c_str());
+			}
+			g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", strDestFilePathTmp.c_str());
+			GenerateLocalPath(strDestFilePathTmp, strLocalPath);
+			Download(fileInfo.m_strType, fileInfo.m_strSrcUrl, strLocalPath);
 			m_mutexVecBurnFileInfo.lock();
 			task.m_vecBurnFileInfo.at(0).m_strRemoteFileLocalPath = strLocalPath;
 			fileInfo.m_strRemoteFileLocalPath = strLocalPath;
@@ -1036,7 +1083,7 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 			//文件
 			INT64 nSize = FileUtil::FileSize(strLocalPath.c_str());	//字节数
 			dSizeMB = nSize * 1.0 / 1024 / 1024;	//MB
-			g_NetLog.Debug("task.m_bBrunSize is %d, disc freesize is %d, disc usedsize is %d, disc discsize is %d, disc task alarm size is %d, file size is %g.\n", 
+			g_NetLog.Debug("task.m_BrunSize is %d, disc freesize is %d, disc usedsize is %d, disc discsize is %d, disc task alarm size is %d, file size is %g.\n", 
 							task.m_nBurnedSize, discInfo.freesize, discInfo.usedsize, discInfo.discsize, task.m_nAlarmSize, dSizeMB);
 			
 			//if (discInfo.freesize * 1.0 - dSizeMB <= task.m_nAlarmSize*1.0)
@@ -1126,7 +1173,16 @@ void CBusiness::BurnFeedbackFileToDisc(BurnTask& task, const DVDDRV_HANDLE pHand
 		if (fileInfo.m_strFileLocation.compare("remote") == 0)
 		{	//远端	--- 下载跟刻录 分离，异步执行
 			//下载前应判断本地是否存在相同文件
-			std::string strLocalPath = Download(fileInfo.m_strType, fileInfo.m_strSrcUrl);
+			g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", fileInfo.m_strDestFilePath.c_str());
+			if (fileInfo.m_strDestFilePath.length() >= 1 && fileInfo.m_strDestFilePath.at(0) != '/')
+			{
+				std::string str = "/";
+				g_NetLog.Debug("%s", str.c_str());
+				fileInfo.m_strDestFilePath = str + fileInfo.m_strDestFilePath;
+			}
+			g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", fileInfo.m_strDestFilePath.c_str());
+			GenerateLocalPath(fileInfo.m_strDestFilePath, strLocalPath);
+			Download(fileInfo.m_strType, fileInfo.m_strSrcUrl, strLocalPath);
 			m_mutexVecBurnFileInfo.lock();
 			task.m_vecBurnFileInfo.at(0).m_strRemoteFileLocalPath = strLocalPath;
 			fileInfo.m_strRemoteFileLocalPath = strLocalPath;
@@ -1193,11 +1249,12 @@ std::string CBusiness::Download(std::string strType, std::string strSrcUrl, std:
 {
 	if (strType.compare("file") == 0)
 	{	//文件
-		if (strDestUrl.empty())
-		{
-			CBusiness::GenerateLocalPath(strSrcUrl, strDestUrl);
-		}
+// 		if (strDestUrl.empty())
+// 		{
+// 			CBusiness::GenerateLocalPath(strSrcUrl, strDestUrl);
+// 		}
 		DownloadFile download;
+		g_NetLog.Debug("download file, srcUrl : %s, destUrl:%s.\n", strSrcUrl.c_str(), strDestUrl.c_str());
 		download.CurlDownloadFile(strSrcUrl, strDestUrl);
 	}
 	else
@@ -1210,6 +1267,9 @@ std::string CBusiness::Download(std::string strType, std::string strSrcUrl, std:
 void CBusiness::GenerateLocalPath(std::string strSrcUrl, std::string& localPath)
 {
 	std::string strDownloadDir = MainConfig::GetInstance()->GetDownloadDir();
+	if (!DirectoryUtil::IsDirExist(strDownloadDir.c_str()))
+		DirectoryUtil::CreateDir(strDownloadDir.c_str());
+
 	std::string strFileName = FileUtil::GetFileName(strSrcUrl);
 	localPath = DirectoryUtil::EnsureSlashEnd(strDownloadDir) + strFileName;
 	g_NetLog.Debug("[CBusiness::GenerateLocalPath]strDownloadDir is %s, strFileName is %s, localPath is %s.\n", strDownloadDir.c_str(), strFileName.c_str(), localPath.c_str());
@@ -1227,7 +1287,7 @@ int CBusiness::WriteFileToDisk(void* pHandle, void* pFileHandle, std::string str
 	fd = fopen(pFileName, "r");
 	if (fd == NULL)
 	{
-		printf("Open Local File Failed\n");
+		g_NetLog.Debug("Open Local File Failed\n");
 		return -1;
 	}
 	else

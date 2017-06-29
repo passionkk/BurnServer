@@ -87,7 +87,7 @@ private:
 	void		InitLog();
 
 	static std::string GetCurDir();
-	int			GetCDRomListFromFile(const char* pFilePath);
+	int			GetCDRomListFromFile(const char* pFilePath, bool bReCheck = false);
 	int			ExtractString(const char *head, const char *end,
 					   char *src, char *buffer);
 public:

@@ -25,6 +25,9 @@
     <Filter Include="Net\UDPServer">
       <UniqueIdentifier>{5cc0042a-416b-40ac-9c6c-3ac571115060}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{f29b897a-84cb-4a60-a9db-6562aa679893}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -90,6 +93,12 @@
     <ClInclude Include="ListCtrlEdit.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="DirectoryUtil.h">
+      <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="FileUtil.h">
+      <Filter>Util</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="TestBurnServer.cpp">
@@ -139,6 +148,12 @@
     </ClCompile>
     <ClCompile Include="ListCtrlEdit.cpp">
       <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectoryUtil.cpp">
+      <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="FileUtil.cpp">
+      <Filter>Util</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

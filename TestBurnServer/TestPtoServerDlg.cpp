@@ -15,7 +15,7 @@ IMPLEMENT_DYNAMIC(CTestPtoServerDlg, CDialogEx)
 CTestPtoServerDlg::CTestPtoServerDlg(CWnd* pParent /*=NULL*/)
 	: CDialogEx(CTestPtoServerDlg::IDD, pParent)
 	, m_nServerPort(0)
-	, m_strUUID(_T(""))
+	, m_strSessionID(_T(""))
 {
 
 }
@@ -28,12 +28,13 @@ void CTestPtoServerDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT_SERVERPORT, m_nServerPort);
-	DDX_Text(pDX, IDC_EDIT_UUID, m_strUUID);
+	//DDX_Text(pDX, IDC_EDIT_SESSIONID, m_strSessionID);
 }
 
 
 BEGIN_MESSAGE_MAP(CTestPtoServerDlg, CDialogEx)
 	ON_BN_CLICKED(IDC_BTN_STARTSERVER, &CTestPtoServerDlg::OnBnClickedBtnStartserver)
+	ON_BN_CLICKED(IDC_BTN_ADDBURNFILE, &CTestPtoServerDlg::OnBnClickedBtnAddburnfile)
 END_MESSAGE_MAP()
 
 
@@ -49,13 +50,41 @@ void CTestPtoServerDlg::SetProtocolMode(PROTOCOL_MODE nMode)
 		m_nServerPort = 1002;
 
 	UpdateData(FALSE);
+	//OnBnClickedBtnStartserver();
 }
 
 
 void CTestPtoServerDlg::OnBnClickedBtnStartserver()
 {
 	if (m_nMode == HTTP_MODE)
+	{
 		HttpServerModule::Initialize();
+		HttpServerModule::GetInstance()->SetCallback(CTestPtoServerDlg::SetFeedbackState, this);
+	}
 	else
 		UDPServerModule::Initialize();
+}
+
+
+void CTestPtoServerDlg::OnBnClickedBtnAddburnfile()
+{
+	// TODO:  在此添加控件通知处理程序代码
+}
+
+void CTestPtoServerDlg::SetFeedbackState(LPVOID pVoid, std::string strFeedback, int nShowIndex)
+{
+	if (pVoid != NULL)
+	{
+		CTestPtoServerDlg* pThis = (CTestPtoServerDlg*)pVoid;
+		pThis->DoSetFeedbackState(strFeedback, nShowIndex);
+	}
+}
+
+void CTestPtoServerDlg::DoSetFeedbackState(std::string strFeedback, int nShowIndex)
+{
+	CString str(strFeedback.c_str());
+	if (nShowIndex == 1)
+		SetDlgItemText(IDC_EDIT_RECV, str);
+	else
+		SetDlgItemText(IDC_EDIT_SEND, str);
 }

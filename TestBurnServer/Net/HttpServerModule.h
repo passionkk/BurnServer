@@ -26,7 +26,11 @@ public:
     int ProcessPassiveProtocol(struct MHD_Connection *connection,char *  pszContent);
     std::string ProcessProtocol(std::string sMethod, std::string jsonRecv/*, std::string& strOut*/);
 
+	int ProcessGETRequest(struct MHD_Connection *connection, const char *  url);
+
 	void SetCallback(Fun, LPVOID pVoid);
+
+	static std::string GetContentTypeByUrl(std::string sUrl);
 private:
 
 	std::string TestProtocol(std::string strIn);

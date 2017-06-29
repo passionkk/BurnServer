@@ -375,7 +375,7 @@ void CTestProtocolDlg::Init()
 	m_comboBurnMode.SetCurSel(0);
 	SetDlgItemInt(IDC_EDIT_ALARM_SIZE, 200);
 	
-	m_checkNeedFeedback.SetCheck(BST_CHECKED);
+	m_checkNeedFeedback.SetCheck(BST_UNCHECKED);
 	SetDlgItemInt(IDC_EDIT_FEEDBACK_INTERVAL, 2000);
 	SetDlgItemInt(IDC_EDIT_FEEDBACKPORT, 1001);
 	m_comboFeedbackMode.SetCurSel(0);

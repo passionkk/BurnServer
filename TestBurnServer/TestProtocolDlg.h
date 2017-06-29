@@ -3,6 +3,9 @@
 #include "UDPClient.h"
 
 #include "CommonDefine.h"
+#include "afxcmn.h"
+#include "afxwin.h"
+#include "ListCtrlEdit.h"
 // CTestProtocolDlg 对话框
 
 class CTestProtocolDlg : public CDialogEx
@@ -29,6 +32,11 @@ public:
 	afx_msg void OnBnClickedBtnStopburn();
 	afx_msg void OnBnClickedBtnGetcdrominfo();
 	afx_msg void OnBnClickedBtnAddburnfile();
+	afx_msg void OnBnClickedBtnConnectServer();
+	afx_msg void OnBnClickedBtnAddtolist();
+	afx_msg void OnBnClickedBtnClearList();
+	afx_msg void OnBnClickedBtnClearRecvjson();
+	afx_msg void OnBnClickedBtnClearSendjson();
 
 	CString GetServerIP();
 	void	Init();
@@ -44,4 +52,23 @@ public:
 	CEdit				m_editSendInfo;
 	CIPAddressCtrl		m_IPAddrCtrl;
 	int					m_nServerPort;
+	std::string			m_strServerIP;
+	/*CListCtrl*/CListCtrlEdit			m_lcFileInfo;
+	CString				m_strSrcFilePath;
+	CString				m_strDestFilePath;
+	CComboBox m_cmbFileLocation;
+	CComboBox m_comboFileType;
+	std::vector<FileInfo> m_vecFileInfo;
+	CButton m_checkNeedFeedback;
+	// 反馈server IP
+	CIPAddressCtrl m_ipCtrlFeedback;
+	// 反馈服务器Port
+	CEdit m_editFeedbackPort;
+	CComboBox m_comboFeedbackMode;
+	CComboBox m_comboBurnMode;
+	CComboBox m_comboBurnType;
+	CString m_strSessionID;
+	CListCtrl m_lcSaveTask;
+	afx_msg void OnBnClickedBtnMoveList();
+	afx_msg void OnBnClickedBtnClearList2();
 };

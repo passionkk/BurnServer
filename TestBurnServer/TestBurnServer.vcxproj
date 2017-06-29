@@ -195,6 +195,8 @@
     <ClInclude Include="..\Include\Charset\CharsetConvertSTD.h" />
     <ClInclude Include="CommonDefine.h" />
     <ClInclude Include="DataStructDefine.h" />
+    <ClInclude Include="DirectoryUtil.h" />
+    <ClInclude Include="FileUtil.h" />
     <ClInclude Include="HttpClient.h" />
     <ClInclude Include="ListCtrlEdit.h" />
     <ClInclude Include="Net\CCBUtility.h" />
@@ -215,6 +217,8 @@
     <ClCompile Include="..\Include\Charset\CharsetConvert.cpp" />
     <ClCompile Include="..\Include\Charset\CharsetConvertMFC.cpp" />
     <ClCompile Include="..\Include\Charset\CharsetConvertSTD.cpp" />
+    <ClCompile Include="DirectoryUtil.cpp" />
+    <ClCompile Include="FileUtil.cpp" />
     <ClCompile Include="HttpClient.cpp" />
     <ClCompile Include="ListCtrlEdit.cpp" />
     <ClCompile Include="Net\CCBUtility.cpp">
