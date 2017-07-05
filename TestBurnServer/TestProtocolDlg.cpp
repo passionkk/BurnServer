@@ -69,7 +69,7 @@ END_MESSAGE_MAP()
 
 
 // CTestProtocolDlg 消息处理程序
-
+#include "DirectoryUtil.h"
 void CTestProtocolDlg::SetProtocolMode(PROTOCOL_MODE nMode)
 {
 	std::set<std::string>   setFiles;
@@ -80,6 +80,23 @@ void CTestProtocolDlg::SetProtocolMode(PROTOCOL_MODE nMode)
 	if (setFiles.size() <= 0)
 	{
 		TRACE(L"No file");
+	}
+
+	strParse = "D:\\download";
+	std::string strDestDir = "D:\\abc";
+	strParse = DirectoryUtil::EnsureSlashEnd(strParse);
+	strDestDir = DirectoryUtil::EnsureSlashEnd(strDestDir);
+
+	std::vector<std::string> vecFileDstPath;
+	DirectoryUtil::GetFileList(strParse, vecFileDstPath);
+	int nIndex = -1;
+	for (int i = 0; i < vecFileDstPath.size(); i++)
+	{
+		nIndex = vecFileDstPath.at(i).find(strParse);
+		if (nIndex > -1)
+		{	//find success
+			vecFileDstPath.at(i).replace(nIndex, strParse.length(), strDestDir);
+		}
 	}
 
 	m_nMode = nMode;

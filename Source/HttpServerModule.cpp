@@ -653,8 +653,12 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 					jsonValue2["burnState"] = Json::Value(cdRomInfo.m_euWorkState);
 					jsonValue2["burnStateDescription"] = Json::Value(strDes);
 					jsonValue2["hasDVD"] = Json::Value(diskInfo.discsize > 0? 1: 0);
-					jsonValue2["DVDLeftCapcity"] = Json::Value(diskInfo.freesize);
-					jsonValue2["DVDTotalCapcity"] = Json::Value(diskInfo.discsize);
+					char szSize[256] = { 0 };
+					sprintf(szSize, "%dMB", diskInfo.discsize - task.m_nBurnedSize);
+					jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);//Json::Value(diskInfo.freesize);
+					memset(szSize, 0, 256);
+					sprintf(szSize, "%dMB", diskInfo.discsize);
+					jsonValue2["DVDTotalCapcity"] = Json::Value(szSize);//Json::Value(diskInfo.discsize);
 					g_NetLog.Debug("%s nRet = %d. assign json value.\n", __PRETTY_FUNCTION__, nRet);
 				}
 				else

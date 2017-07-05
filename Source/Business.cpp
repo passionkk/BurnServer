@@ -499,8 +499,13 @@ void CBusiness::BurnStateFeedback()
 				GetBurnStateString(m_burnTask.m_taskRealState, strDes);
 				jsonValue2["burnStateDescription"] = Json::Value(strDes);
 				jsonValue2["hasDVD"] = Json::Value(m_burnTask.m_burnStateFeedback.m_nHasDisc);
-				jsonValue2["DVDLeftCapcity"] = Json::Value(m_burnTask.m_diskInfo.discsize - m_burnTask.m_nBurnedSize);
-				jsonValue2["DVDTotalCapcity"] = Json::Value(m_burnTask.m_diskInfo.discsize);
+				
+				char szSize[256] = { 0 };
+				sprintf(szSize, "%dMB", m_burnTask.m_diskInfo.discsize - m_burnTask.m_nBurnedSize);
+				jsonValue2["DVDLeftCapcity"] = Json::Value(szSize); //Json::Value(m_burnTask.m_diskInfo.discsize - m_burnTask.m_nBurnedSize);
+				memset(szSize, 0, 256);
+				sprintf(szSize, "%dMB", m_burnTask.m_diskInfo.discsize);
+				jsonValue2["DVDTotalCapcity"] = Json::Value(szSize); //Json::Value(m_burnTask.m_diskInfo.discsize);
 
 				jsonValue1["method"] = Json::Value(sMethod.c_str());
 				jsonValue1["params"] = jsonValue2;
@@ -696,6 +701,8 @@ void CBusiness::DoTask(BurnTask& task)
 	if (0 != InitCDRom(task))
 	{
 		g_NetLog.Debug("Init CDRom fail.\n");
+		if (task.m_taskState == TASK_STOP && task.m_vecBurnFileInfo.size() == 0)
+			goto EndTask;
 		return;
 	}
 
@@ -721,6 +728,7 @@ void CBusiness::DoTask(BurnTask& task)
 		BurnFileToDisk(task);
 	} while (task.m_taskState == TASK_PAUSE);
 	
+EndTask:
 	DeleteTask();
 	m_bThreadState = false;
 }
@@ -859,6 +867,7 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 				while (nErroNo = dvdInterface.DVDSDK_LoadDisc(hDvD) != 0)
 				{
 					g_NetLog.Debug("CDRom load disk fail, error number is %d, check time : %d.\n", nErroNo, nCheckTime);
+					dvdInterface.DVDSDK_Tray(hDvD, 1);
 					bInitState = false;
 					if (nCheckTime++ == 30)
 					{
@@ -1514,25 +1523,40 @@ void CBusiness::GetBurnStateString(int nBurnState, std::string& strDes)
 
 void CBusiness::ConvertDirToFileInfo(BurnTask& task, std::string strSrcDir, std::string strDestDir, bool bFeedback)
 {
-	std::vector<string> vecFilePath;
-	DirectoryUtil::GetFileListNoSub(strSrcDir, vecFilePath);
+	strSrcDir = DirectoryUtil::EnsureSlashEnd(strSrcDir);
+	strDestDir = DirectoryUtil::EnsureNoSlashEnd(strDestDir);
 
-	std::vector<string> vecFileName;
-	DirectoryUtil::GetFileNameListNoSub(strSrcDir, vecFileName);
+	std::vector<string> vecFilePath;
+	DirectoryUtil::GetFileList(strSrcDir, vecFilePath);
+
+	//std::vector<string> vecFileName;
+	//DirectoryUtil::GetFileNameList(strSrcDir, vecFileName);
+
+	std::vector<string> vecFileDstPath;
+	DirectoryUtil::GetFileList(strSrcDir, vecFileDstPath);
+	int nIndex = -1;
+	for (int i = 0; i < vecFileDstPath.size(); i++)
+	{
+		nIndex = vecFileDstPath.at(i).find(strSrcDir);
+		if (nIndex > -1)
+		{	//find success
+			vecFileDstPath.at(i).replace(nIndex, strSrcDir.length(), strDestDir);
+		}
+	}
 
 	//vecFilePath 中 find strSrcDir replace 为strDestDir即可。
 	if (!bFeedback)
 	{
 		std::vector<FileInfo>::iterator it = task.m_vecBurnFileInfo.begin();
-		for (int i = 0; i < vecFileName.size(); i++)
+		for (int i = 0; i < vecFileDstPath.size()/*vecFileName.size()*/; i++)
 		{
-			vecFileName.at(i) = DirectoryUtil::EnsureSlashEnd(strDestDir) + vecFileName.at(i);
+			//vecFileName.at(i) = DirectoryUtil::EnsureSlashEnd(strDestDir) + vecFileName.at(i);
 			FileInfo fileInfo;
 			fileInfo.m_nFlag = 1;
 			fileInfo.m_strType = "file";
 			fileInfo.m_strFileLocation = "local";
 			fileInfo.m_strSrcUrl = vecFilePath.at(i);
-			fileInfo.m_strDestFilePath = vecFileName.at(i);
+			fileInfo.m_strDestFilePath = vecFileDstPath.at(i);//vecFileName.at(i);
 			if (it != task.m_vecBurnFileInfo.end())
 			{
 				task.m_vecBurnFileInfo.insert(it + i, fileInfo);
@@ -1546,15 +1570,15 @@ void CBusiness::ConvertDirToFileInfo(BurnTask& task, std::string strSrcDir, std:
 	else
 	{
 		std::vector<FileInfo>::iterator it = task.m_vecFeedbackFileInfo.begin();
-		for (int i = 0; i < vecFileName.size(); i++)
+		for (int i = 0; i < vecFileDstPath.size()/*vecFileName.size()*/; i++)
 		{
-			vecFileName.at(i) = DirectoryUtil::EnsureSlashEnd(strDestDir) + vecFileName.at(i);
+			//vecFileName.at(i) = DirectoryUtil::EnsureSlashEnd(strDestDir) + vecFileName.at(i);
 			FileInfo fileInfo;
 			fileInfo.m_nFlag = 1;
 			fileInfo.m_strType = "file";
 			fileInfo.m_strFileLocation = "local";
 			fileInfo.m_strSrcUrl = vecFilePath.at(i);
-			fileInfo.m_strDestFilePath = vecFileName.at(i);
+			fileInfo.m_strDestFilePath = vecFileDstPath.at(i); //vecFileName.at(i);
 			if (it != task.m_vecFeedbackFileInfo.end())
 			{
 				task.m_vecFeedbackFileInfo.insert(it + i, fileInfo);

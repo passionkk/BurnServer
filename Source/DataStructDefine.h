@@ -57,7 +57,8 @@ public:
 
 public:
 	std::string		m_strCDRomName;		//光驱名: 光驱1
-	std::string		m_strCDRomID;		//光驱ID: /dev/sr0
+	std::string		m_strCDRomID;		//光驱ID: CDRom_1 CDRom_2...CDRom_n  从1开始
+	std::string		m_strCDRomDevID;	//光驱设备ID: /dev/sr0
 	CDROMSTATE		m_euWorkState;		//光驱工作状态
 	void*			m_pDVDHandle;		//光驱Handle
 };
