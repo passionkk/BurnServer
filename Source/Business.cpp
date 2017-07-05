@@ -675,6 +675,7 @@ void CBusiness::DoTask(BurnTask& task)
 	str = str1 + str;
 	}
 	g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", str.c_str());*/
+	//CBusiness::Download("file", "http://192.168.1.149:1001/download?filePath=D:\\download\\小鸡快跑.mkv", "/mnt/HD0/burnTestFile/Download/小鸡快跑.mkv");
 
 	g_NetLog.Debug("Get One Task, DoTask.\n");
 	m_burnTask = task;
@@ -727,7 +728,8 @@ void CBusiness::DoTask(BurnTask& task)
 void CBusiness::DeleteTask()
 {
 	Mutex::ScopedLock   lock(m_mutexBurnTaskVec);
-	m_vecBurnTask.erase(m_vecBurnTask.begin());
+	if (m_vecBurnTask.size() > 0)
+		m_vecBurnTask.erase(m_vecBurnTask.begin());
 }
 
 void CBusiness::SetCDRomState(std::string strCDRomID, CDROMSTATE state)
@@ -1018,7 +1020,7 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 		if(nFileCount == 0 && task.m_taskState == TASK_STOP)
 		{	//发送封盘反馈协议
 			dvdInterface.DVDSDK_GetDiscInfo(pHandle, &discInfo);
-			g_NetLog.Debug("send close disc feedback .\n" );
+			g_NetLog.Debug("no file to burn and task state is stop, send close disc feedback .\n" );
 			CBusiness::CloseDiscFeedback(discInfo.discsize - m_burnTask.m_nBurnedSize, discInfo.discsize);
 			BurnFeedbackFileToDisc(task, pHandle);
 			task.m_taskRealState = TASK_STOP;
@@ -1038,7 +1040,7 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 		std::string strLocalPath = "";
 		if (fileInfo.m_strFileLocation.compare("remote") == 0)
 		{	//远端	--- 下载跟刻录 分离，异步执行
-			//下载前应判断本地是否存在相同文件
+			//下载前应判断本地是否存在相同文件，这里可以作续传的逻辑
 			std::string strLocalPath;
 			std::string strDestFilePathTmp; // only for add / before file name eg : a.mp4 --> /a.mp4
 			g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", fileInfo.m_strDestFilePath.c_str());
@@ -1154,7 +1156,7 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 	{
 		task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_UNINIT;
 		SetCDRomState(strCDRomID, CDROM_UNINIT);
-		DoTask(task);//双盘续刻 还要进行逻辑处理
+		return DoTask(task);//双盘续刻 还要进行逻辑处理
 	}
 	task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_UNINIT;
 	SetCDRomState(strCDRomID, CDROM_UNINIT);
@@ -1413,6 +1415,11 @@ int CBusiness::BurnLocalFile(void* pHandle, FileInfo& fileInfo/*std::string strS
 	}
 	g_NetLog.Debug("Write file %s to Disc Success.\n", fileInfo.m_strDestFilePath.c_str());
 	dvdInterface.DVDSDK_CloseFile(pHandle, dvdFile);
+
+	//删除下载的文件
+	if (fileInfo.m_strFileLocation.compare("remote") == 0)
+		FileUtil::DelFile(strLocalPath.c_str());
+
 	return 0;
 }
 
@@ -1454,6 +1461,7 @@ int CBusiness::BurnLocalDir(void* pHandle, FileInfo fileInfo/*std::string strSrc
 		std::vector<std::string> vecFileNameList;
 		DirectoryUtil::GetFileNameList(strLocalDir, vecFileNameList);
 
+		//拼刻录文件目标路径
 		for (int i = 0; i < vecFileNameList.size(); i++)
 		{
 			std::string strDestDir = DirectoryUtil::EnsureSlashEnd(fileInfo.m_strDestFilePath);
@@ -1512,6 +1520,7 @@ void CBusiness::ConvertDirToFileInfo(BurnTask& task, std::string strSrcDir, std:
 	std::vector<string> vecFileName;
 	DirectoryUtil::GetFileNameListNoSub(strSrcDir, vecFileName);
 
+	//vecFilePath 中 find strSrcDir replace 为strDestDir即可。
 	if (!bFeedback)
 	{
 		std::vector<FileInfo>::iterator it = task.m_vecBurnFileInfo.begin();

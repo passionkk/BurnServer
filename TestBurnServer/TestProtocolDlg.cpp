@@ -5,6 +5,7 @@
 #include "TestBurnServer.h"
 #include "TestProtocolDlg.h"
 #include "afxdialogex.h"
+#include "Poco/Glob.h"
 
 // CTestProtocolDlg ¶Ô»°¿ò
 
@@ -71,6 +72,16 @@ END_MESSAGE_MAP()
 
 void CTestProtocolDlg::SetProtocolMode(PROTOCOL_MODE nMode)
 {
+	std::set<std::string>   setFiles;
+	std::string strParse = "D:\\download\\";
+	strParse += "*";
+
+	Poco::Glob::glob(strParse, setFiles);
+	if (setFiles.size() <= 0)
+	{
+		TRACE(L"No file");
+	}
+
 	m_nMode = nMode;
 }
 

@@ -4,6 +4,7 @@
 #include "jsoncpp/json/json.h"
 #include "CCBUtility.h"
 #include "../FileUtil.h"
+#include "Charset/CharsetConvertMFC.h"
 
 HttpServerModule* HttpServerModule::m_pInstance = NULL;
 
@@ -278,15 +279,19 @@ int HttpServerModule::ProcessGETRequest(struct MHD_Connection *connection, const
 
 			MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, print_out_key, NULL);
 			const char* szFilePath = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "filePath");
-
-			if (FileUtil::FileExist(szFilePath))
+			//szFilePath 是UTF8编码 应该处理成GB
+			CStringA strAU8FilePath = szFilePath;
+			CStringW strWU16FilePath = CharsetConvertMFC::UTF8ToUTF16(strAU8FilePath);
+			std::string strFilePath = CharsetConvertMFC::UTF16ToUTF8StdString(strWU16FilePath);
+			CStringA strAGbFilePath = CharsetConvertMFC::UTF8ToGB18030(strAU8FilePath);
+			bool bOpen = FileUtil::FileExist(strAGbFilePath.GetBuffer());
+			if (FileUtil::FileExistW(strWU16FilePath.GetBuffer()))
 			{
-				TRACE(L"download config file\n");
+				TRACE(L"download file\n");
 				//发送文件
 				FILE *file = NULL;
-				INT64 i64Size = FileUtil::FileSize(szFilePath);
-				file = fopen(szFilePath, "rb");
-
+				INT64 i64Size = FileUtil::FileSizeW(strWU16FilePath.GetBuffer());
+				file = fopen(strAGbFilePath.GetBuffer(), "rb");
 				if (NULL == file)
 				{
 					return MHD_NO;

@@ -72,9 +72,6 @@
     <ClInclude Include="Net\HttpServerModule.h">
       <Filter>Net\HttpServer</Filter>
     </ClInclude>
-    <ClInclude Include="Net\CCBUtility.h">
-      <Filter>Net\UDPServer</Filter>
-    </ClInclude>
     <ClInclude Include="Net\UDPServerChannel.h">
       <Filter>Net\UDPServer</Filter>
     </ClInclude>
@@ -98,6 +95,9 @@
     </ClInclude>
     <ClInclude Include="FileUtil.h">
       <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="Net\CCBUtility.h">
+      <Filter>Net</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -134,9 +134,6 @@
     <ClCompile Include="Net\HttpServerModule.cpp">
       <Filter>Net\HttpServer</Filter>
     </ClCompile>
-    <ClCompile Include="Net\CCBUtility.cpp">
-      <Filter>Net\UDPServer</Filter>
-    </ClCompile>
     <ClCompile Include="Net\UDPServerChannel.cpp">
       <Filter>Net\UDPServer</Filter>
     </ClCompile>
@@ -154,6 +151,9 @@
     </ClCompile>
     <ClCompile Include="FileUtil.cpp">
       <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="Net\CCBUtility.cpp">
+      <Filter>Net</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

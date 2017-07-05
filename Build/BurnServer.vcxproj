@@ -162,6 +162,9 @@
     <ClCompile Include="..\Source\BurnServer_main.cpp" />
     <ClCompile Include="..\Source\Business.cpp" />
     <ClCompile Include="..\Source\CCBUtility.cpp" />
+    <ClCompile Include="..\Source\CharsetConvert.cpp" />
+    <ClCompile Include="..\Source\CharsetConvertMFC.cpp" />
+    <ClCompile Include="..\Source\CharsetConvertSTD.cpp" />
     <ClCompile Include="..\Source\DirectoryUtil.cpp" />
     <ClCompile Include="..\Source\DownloadFile.cpp" />
     <ClCompile Include="..\Source\FileUtil.cpp" />
@@ -521,6 +524,9 @@
     <ClInclude Include="..\Include\Poco\zlib.h" />
     <ClInclude Include="..\Source\Business.h" />
     <ClInclude Include="..\Source\CCBUtility.h" />
+    <ClInclude Include="..\Source\CharsetConvert.h" />
+    <ClInclude Include="..\Source\CharsetConvertMFC.h" />
+    <ClInclude Include="..\Source\CharsetConvertSTD.h" />
     <ClInclude Include="..\Source\CommonDefine.h" />
     <ClInclude Include="..\Source\DataStructDefine.h" />
     <ClInclude Include="..\Source\DirectoryUtil.h" />

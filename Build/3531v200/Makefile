@@ -43,6 +43,9 @@ CPPFILES	= ../../Source/BurnServer_main.cpp \
 ../../Source/DirectoryUtil.cpp \
 ../../Source/FileLog.cpp \
 ../../Source/NetLog.cpp \
+../../Source/CharsetConvert.cpp \
+../../Source/CharsetConvertMFC.cpp \
+../../Source/CharsetConvertSTD.cpp \
 
 
 # DEPEND LIB PATH

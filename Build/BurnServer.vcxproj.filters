@@ -52,6 +52,9 @@
     <Filter Include="Net\Download">
       <UniqueIdentifier>{48cb173f-c319-46dc-9c22-d05fe5374146}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Charset">
+      <UniqueIdentifier>{50a98d97-b22f-4e69-b180-1b02c6520ec3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -95,6 +98,15 @@
     </ClCompile>
     <ClCompile Include="..\Source\DirectoryUtil.cpp">
       <Filter>Util</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\CharsetConvert.cpp">
+      <Filter>Charset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\CharsetConvertMFC.cpp">
+      <Filter>Charset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\CharsetConvertSTD.cpp">
+      <Filter>Charset</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1174,6 +1186,15 @@
     </ClInclude>
     <ClInclude Include="..\Source\DirectoryUtil.h">
       <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\CharsetConvert.h">
+      <Filter>Charset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\CharsetConvertMFC.h">
+      <Filter>Charset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\CharsetConvertSTD.h">
+      <Filter>Charset</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

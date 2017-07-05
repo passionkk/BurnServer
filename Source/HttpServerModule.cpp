@@ -163,6 +163,7 @@ int HttpServerModule::ProcessPassiveProtocol(struct MHD_Connection *connection,c
         std::string jsonSend = "";
 
 		JSON::Parser	jsonParser;
+		g_NetLog.Debug("[HttpServerModule::ProcessPassiveProtocol] jsonRecv : %s.\n", jsonRecv.c_str());
 		Dynamic::Var result = jsonParser.parse(jsonRecv);
 		JSON::Object::Ptr pObj = result.extract<JSON::Object::Ptr>();
 		Dynamic::Var varMethod = pObj->get("method");
@@ -209,9 +210,9 @@ std::string HttpServerModule::ProcessProtocol(std::string sMethod, std::string j
 		}
 		else if (sMethod.compare("startBurn") == 0)
 		{
-			//g_NetLog.Debug("%s Handle StartBrun begin.\n", __PRETTY_FUNCTION__);
+			g_NetLog.Debug("%s Handle StartBrun begin.\n", __PRETTY_FUNCTION__);
 			jsonSend = StartBurn(jsonRecv);
-			//g_NetLog.Debug("%s Handle StartBrun end.\n", __PRETTY_FUNCTION__);
+			g_NetLog.Debug("%s Handle StartBrun end.\n", __PRETTY_FUNCTION__);
 		}
 		else if (sMethod.compare("pauseBurn") == 0)
 		{
@@ -609,7 +610,7 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 			std::string sMethod = jsonValueIn["method"].asString();
 			Json::Value   jsonValueParams = jsonValueIn["params"];
 
-			//sessionID 
+			//CDRomID 
 			std::string strCDRomID = jsonValueParams["cdRomID"].asString();
 			
 			CDRomInfo cdRomInfo;

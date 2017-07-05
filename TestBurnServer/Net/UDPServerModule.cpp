@@ -1,4 +1,4 @@
-#include "stdafx.h"
+#include "../stdafx.h"
 #include "UDPServerModule.h"
 #include "../CommonDefine.h"
 

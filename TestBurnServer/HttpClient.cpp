@@ -15,6 +15,8 @@
 //#pragma comment(lib, "ws2_32.lib")     
 //#pragma comment(lib, "winmm.lib")  
 #include "Poco/Foundation.h"
+#include "Charset/CharsetConvertMFC.h"
+#include "Charset/CharsetConvertSTD.h"
 //#include "Poco/File.h"
 //#include "poco/StringTokenizer.h"
 #include "Poco/JSON/Parser.h"
@@ -247,9 +249,13 @@ int CHttpClient::SendHttpProtocol(std::string strIP, int nPort, std::string sSen
 		curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
 		curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1);
 
-		// 设置要POST的JSON数据  
-		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, sSend.c_str());
-		
+		// 设置要POST的JSON数据
+		//convert to utf8
+		CStringA strSendGB(sSend.c_str());
+		CStringA strU8Send = CharsetConvertMFC::GB18030ToUTF8(strSendGB);
+		curl_easy_setopt(curl, CURLOPT_POSTFIELDS, strU8Send.GetBuffer());
+		strU8Send.ReleaseBuffer();
+
 		res = curl_easy_perform(curl);
 
 		if (res != CURLE_OK)
@@ -418,9 +424,9 @@ int CHttpClient::SendStartBurnProtocol(std::string strBurnType, std::string strB
 			Object::Ptr	burnFile = new Object(true);
 			burnFile->set("fileLocation", vecFileInfo.at(i).m_strFileLocation);
 			burnFile->set("fileType", vecFileInfo.at(i).m_strType);
-			burnFile->set("burnSrcFilePath", vecFileInfo.at(i).m_strSrcUrl);
-			burnFile->set("burnDstFilePath", vecFileInfo.at(i).m_strDestFilePath);
-			burnFile->set("fileDescription", vecFileInfo.at(i).m_strDescription);
+			burnFile->set("burnSrcFilePath", vecFileInfo.at(i).m_strSrcUrl.c_str());//CharsetConvertMFC::GB18030ToUTF8(CStringA(vecFileInfo.at(i).m_strSrcUrl.c_str())));
+						  burnFile->set("burnDstFilePath", vecFileInfo.at(i).m_strDestFilePath.c_str());//CharsetConvertMFC::GB18030ToUTF8(CStringA(vecFileInfo.at(i).m_strDestFilePath.c_str())));
+						  burnFile->set("fileDescription", vecFileInfo.at(i).m_strDescription.c_str());//CharsetConvertMFC::GB18030ToUTF8(CStringA(vecFileInfo.at(i).m_strDescription.c_str())));
 			burnFileArray.add(burnFile);
 		}
 #if 0
@@ -473,7 +479,7 @@ int CHttpClient::SendStartBurnProtocol(std::string strBurnType, std::string strB
 
 		std::stringstream ss;
 		pObj->stringify(ss);
-		std::string sSend = ss.str();
+		std::string sSend = ss.str();//sSend GB18030 编码
 		std::string sRecv = "";
 		if (SendHttpProtocol(m_strServerIP, m_nServerPort, sSend, sRecv) == 0)
 		{
@@ -597,7 +603,7 @@ int CHttpClient::SendGetCDRomInfoProtocol(std::string sessionID, CString& strSen
 		pObj->set("method", "getCDRomInfo");
 		
 		Object::Ptr pObjParams = new Object(true);
-		pObjParams->set("sessionID", sessionID);//"201704260001");
+		pObjParams->set("cdRomID", sessionID);//"201704260001");
 		pObj->set("params", pObjParams);
 
 
