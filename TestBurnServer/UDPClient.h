@@ -25,7 +25,7 @@ public:
 	bool		Close();
 
 	int			SendGetCDRomListProtocol(std::string & strSend, std::string& strRecv);
-	int			SendStartBurnProtocol(std::string strBurnType, std::string strBurnMode, int nAlarmSize,
+	int			SendStartBurnProtocol(std::string strCDRomID, std::string strBurnType, std::string strBurnMode, int nAlarmSize,
 									  const std::vector<FileInfo>& vecFileInfo, const BurnStateFeedbcak feedback, std::string & strSend, std::string& strRecv);
 	int			SendPauseBurnProtocol(std::string & strSend, std::string& strRecv);
 	int			SendRemuseBurnProtocol(std::string & strSend, std::string& strRecv);

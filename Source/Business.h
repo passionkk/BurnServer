@@ -38,6 +38,7 @@ public:
 	bool		ResumeBurn(std::string strSessionID);
 	bool		StopBurn(std::string strSessionID);
 	int			GetCDRomInfo(std::string strCDRomID, CDRomInfo& cdRomInfo, DiskInfo& discInfo);// 这里参数不够，肯定要返回值，没想好是类对象还是string对象
+	std::string GetCDRonInfo(std::string strCDRomID, std::string strMethod = "");
 	void		AddBurnFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo);
 	void		AddFeedbackFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo);
 	//主动协议处理 内部调用BurnStateFeedback
@@ -52,7 +53,7 @@ public:
 	static void* CloseDiscThread(void* pVoid);
 	void		CloseDisc();
 
-	void		GetCurTask(BurnTask& task);
+	int			GetCurTask(BurnTask& task);
 	//业务逻辑
 	int			CheckUnusedCDRom();
 	int			GetUndoTask(BurnTask& task);
@@ -61,6 +62,7 @@ public:
 
 	void		SetCDRomState(std::string strCDRomID, CDROMSTATE state);
 	void*		GetIdleCDRom(BurnTask& task, std::string& strCDRomID, int& nCDRomIndex);
+	void*		GetSpecCDRom(BurnTask& task, std::string& strCDRomID, int& nCDRomIndex);
 	void*		GetWorkingCDRomHandle(BurnTask& task, std::string& strCDRomID);
 	int			ChooseCDRomToBurn(BurnTask& task);
 	int			InitCDRom(BurnTask& task);
@@ -81,7 +83,10 @@ public:
 	void		GetBurnStateString(int nBurnState, std::string& strDes);
 
 	void		ConvertDirToFileInfo(BurnTask& task, std::string strSrcDir, std::string strDestDir, bool bFeedback = false);
-	
+	void		GetFileListByDir(std::string strDir, std::vector<std::string>& vecFileList);
+	int			GetBurnTaskSize();
+	bool		CheckExistCDRom(std::string strCDRomID);
+	void		GetCDRomInfoFromSavedVector(std::string strCDRomID, CDRomInfo& cdRomInfo);
 private:
 	void		Init();
 	void		InitLog();

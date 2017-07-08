@@ -370,7 +370,7 @@ int CHttpClient::SendGetCDRomListProtocol(CString& strSend, CString& strRecv)
 	}
 }
 
-int CHttpClient::SendStartBurnProtocol(std::string strBurnType, std::string strBurnMode, int nAlarmSize,
+int CHttpClient::SendStartBurnProtocol(std::string strCDRomID, std::string strBurnType, std::string strBurnMode, int nAlarmSize,
 									   const std::vector<FileInfo>& vecFileInfo, const BurnStateFeedbcak feedback, CString& strSend, CString& strRecv)
 {
 	try
@@ -379,6 +379,8 @@ int CHttpClient::SendStartBurnProtocol(std::string strBurnType, std::string strB
 		pObj->set("method", "startBurn");
 		
 		Object::Ptr pParams = new Object(true);
+		pParams->set("discName", "discName");
+		pParams->set("cdRomID", strCDRomID);
 		pParams->set("burnMode", strBurnMode);//"singleBurn");
 	
 		pParams->set("alarmSize", nAlarmSize);//300);

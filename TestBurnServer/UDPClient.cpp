@@ -134,7 +134,7 @@ int UDPClient::SendGetCDRomListProtocol(std::string & strSend, std::string& strR
 	}
 }
 
-int UDPClient::SendStartBurnProtocol(std::string strBurnType, std::string strBurnMode, int nAlarmSize,
+int UDPClient::SendStartBurnProtocol(std::string strCDRomID, std::string strBurnType, std::string strBurnMode, int nAlarmSize,
 									 const std::vector<FileInfo>& vecFileInfo, const BurnStateFeedbcak feedback, std::string & strSend, std::string& strRecv)
 {
 	try
@@ -144,7 +144,8 @@ int UDPClient::SendStartBurnProtocol(std::string strBurnType, std::string strBur
 
 		Object::Ptr pParams = new Object(true);
 		pParams->set("burnMode", strBurnMode);//"singleBurn");
-
+		pParams->set("discName", "discName");
+		pParams->set("cdRomID", strCDRomID);
 		pParams->set("alarmSize", nAlarmSize);//300);
 		pParams->set("burnType", "fileBurn");
 

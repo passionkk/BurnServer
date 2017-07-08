@@ -71,4 +71,5 @@ public:
 	CListCtrl m_lcSaveTask;
 	afx_msg void OnBnClickedBtnMoveList();
 	afx_msg void OnBnClickedBtnClearList2();
+	CComboBox m_comboCDRomID;
 };

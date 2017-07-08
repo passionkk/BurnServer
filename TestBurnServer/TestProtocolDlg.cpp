@@ -47,6 +47,7 @@ void CTestProtocolDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_COMBO2, m_comboBurnType);
 	DDX_Text(pDX, IDC_EDIT_SESSIONID, m_strSessionID);
 	DDX_Control(pDX, IDC_LIST2, m_lcSaveTask);
+	DDX_Control(pDX, IDC_COMBO_CDROMID, m_comboCDRomID);
 }
 
 
@@ -131,6 +132,10 @@ void CTestProtocolDlg::OnBnClickedBtnStartburn()
 	CString strRecv, strSend;
 	m_vecFileInfo.clear();
 	USES_CONVERSION;
+	CString strCDRomID;
+	GetDlgItemText(IDC_COMBO_CDROMID, strCDRomID);
+	std::string sCDRomID = T2A(strCDRomID);
+
 	for (int i = 0; i < m_lcFileInfo.GetItemCount(); i++)
 	{
 		FileInfo fInfo;
@@ -168,12 +173,12 @@ void CTestProtocolDlg::OnBnClickedBtnStartburn()
 
 	if (m_nMode == 0)
 	{
-		m_httpClient.SendStartBurnProtocol(sBurnType, sBurnMode, nAlarmSize, m_vecFileInfo, feedback, strSend, strRecv);
+		m_httpClient.SendStartBurnProtocol(sCDRomID, sBurnType, sBurnMode, nAlarmSize, m_vecFileInfo, feedback, strSend, strRecv);
 	}
 	else
 	{
 		std::string sSend, sRecv;
-		m_udpClient.SendStartBurnProtocol(sBurnType, sBurnMode, nAlarmSize, m_vecFileInfo, feedback, sSend, sRecv);
+		m_udpClient.SendStartBurnProtocol(sCDRomID, sBurnType, sBurnMode, nAlarmSize, m_vecFileInfo, feedback, sSend, sRecv);
 		strSend = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sSend.c_str(), sSend.length()));
 		strRecv = CharsetConvertMFC::CharsetStreamToCStringA(CharsetConvertSTD::ConstructCharsetStream((const unsigned char*)sRecv.c_str(), sRecv.length()));
 	}
@@ -273,9 +278,14 @@ void CTestProtocolDlg::OnBnClickedBtnGetcdrominfo()
 	CString strUUID;
 	GetDlgItemText(IDC_EDIT_SESSIONID, strUUID);
 	std::string sessionID = T2A(strUUID);
+	
+	CString strCDRomId;
+	GetDlgItemText(IDC_COMBO_CDROMID, strCDRomId);
+	std::string strCDRomID = T2A(strCDRomId);
+
 	if (m_nMode == 0)
 	{
-		m_httpClient.SendGetCDRomInfoProtocol(sessionID, strSend, strRecv);
+		m_httpClient.SendGetCDRomInfoProtocol(strCDRomID/*sessionID*/, strSend, strRecv);
 	}
 	else
 	{
@@ -361,7 +371,10 @@ void CTestProtocolDlg::Init()
 	//m_udpSocket.connect(m_socketAddr);
 	m_udpClient.Init("127.0.0.1", 91);
 	m_udpClient.ConnectServer();
-	UpdateData(FALSE);
+	
+	m_comboCDRomID.InsertString(0, L"CDRom_1");
+	m_comboCDRomID.InsertString(1, L"CDRom_2");
+	m_comboCDRomID.SetCurSel(0);
 
 	DWORD dwStyle = m_lcFileInfo.GetExtendedStyle();
 	dwStyle |= LVS_EX_FULLROWSELECT;
@@ -407,6 +420,8 @@ void CTestProtocolDlg::Init()
 	SetDlgItemInt(IDC_EDIT_FEEDBACK_INTERVAL, 2000);
 	SetDlgItemInt(IDC_EDIT_FEEDBACKPORT, 1001);
 	m_comboFeedbackMode.SetCurSel(0);
+
+	UpdateData(FALSE);
 }
 
 

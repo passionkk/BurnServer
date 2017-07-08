@@ -400,74 +400,104 @@ std::string HttpServerModule::StartBurn(std::string strIn)
 		if (jsonReader.parse(strIn, jsonValueIn))
 		{
 			std::string sMethod = jsonValueIn["method"].asString();
+			string strOut = "";
 			Json::Value   jsonValueParams = jsonValueIn["params"];
 
-			BurnTask task;
-			//burnMode
-			task.m_strBurnMode = jsonValueParams["burnMode"].asString();
-			//burnType
-			task.m_strBurnType = jsonValueParams["burnType"].asString();
-			//AlarmSize
-			task.m_nAlarmSize = jsonValueParams["alarmSize"].asInt();
-			//StreamInfo
-			Json::Value	jsonStreamInfo = jsonValueParams["streamInfo"];
-			task.m_burnStreamInfo.m_strBurnFileName = jsonStreamInfo["burnFileName"].asString();
-			task.m_burnStreamInfo.m_strPlayListContent = jsonStreamInfo["playlistInfo"].asString();
-			
-			Json::Value	jsonBurnUrlList = jsonStreamInfo["burnUrlList"];
-			for (int i = 0; i < jsonBurnUrlList.size(); i++)
-			{
-				FileInfo fileInfo;
-				fileInfo.m_nFlag = 0;
-				fileInfo.m_strSrcUrl = jsonBurnUrlList[i]["burnUrl"].asString();
-				fileInfo.m_strDescription = jsonBurnUrlList[i]["urlDescription"].asString();
+			std::string strCheckCDRomID = jsonValueParams["cdRomID"].asString();
+			if (strCheckCDRomID.empty())
+				strCheckCDRomID = "CDRom_1"; 
+			//验证是否存在 cdRomID的光驱
+			bool bRet = CBusiness::GetInstance()->CheckExistCDRom(strCheckCDRomID);
+
+			if (CBusiness::GetInstance()->GetBurnTaskSize() > 0 || !bRet)
+			{	
+				BurnTask task;
+				CBusiness::GetInstance()->GetCurTask(task);
+				// 仅保留一个刻录任务
+				Json::Value     jsonValueRoot;
+				Json::Value     jsonValue1;
+				Json::Value     jsonValue2;
+				jsonValue2["retCode"] = Json::Value(-1);
+				jsonValue2["retMessage"] = Json::Value("Exist Burn Task.");
+				jsonValue2["sessionID"] = Json::Value(task.m_strSessionID);
+				jsonValue1["method"] = Json::Value(sMethod.c_str());
+				jsonValue1["params"] = jsonValue2;
+				jsonValueRoot["result"] = jsonValue1;
+				strOut = jsonValueRoot.toStyledString();
 			}
-			
-			//fileInfo
-			Json::Value	jsonFileInfo = jsonValueParams["fileInfo"];
-			Json::Value jsonValueFileList = jsonFileInfo["burnFileList"];
-			for (int i = 0; i < jsonValueFileList.size(); i++)
+			else
 			{
-				FileInfo fileInfo;
-				fileInfo.m_strFileLocation = jsonValueFileList[i]["fileLocation"].asString();
-				fileInfo.m_strType = jsonValueFileList[i]["fileType"].asString();
-				fileInfo.m_strSrcUrl = jsonValueFileList[i]["burnSrcFilePath"].asString();
-				fileInfo.m_strDestFilePath = jsonValueFileList[i]["burnDstFilePath"].asString();
-				fileInfo.m_strDescription = jsonValueFileList[i]["fileDescription"].asString();
-				task.m_vecBurnFileInfo.push_back(fileInfo);
-				g_NetLog.Debug("get protocol fileInfo.m_strType is %s.\n", fileInfo.m_strType.c_str());
-				if (fileInfo.m_strType.compare("dir") == 0)
+				BurnTask task;
+				//discName
+				task.m_strDiscName = jsonValueParams["discName"].asString();
+				//strCDRomID
+				task.m_strCDRomID = strCheckCDRomID;//jsonValueParams["cdRomID"].asString();
+				//burnMode
+				task.m_strBurnMode = jsonValueParams["burnMode"].asString();
+				//burnType
+				task.m_strBurnType = jsonValueParams["burnType"].asString();
+				//AlarmSize
+				task.m_nAlarmSize = jsonValueParams["alarmSize"].asInt();
+				//StreamInfo
+				Json::Value	jsonStreamInfo = jsonValueParams["streamInfo"];
+				task.m_burnStreamInfo.m_strBurnFileName = jsonStreamInfo["burnFileName"].asString();
+				task.m_burnStreamInfo.m_strPlayListContent = jsonStreamInfo["playlistInfo"].asString();
+
+				Json::Value	jsonBurnUrlList = jsonStreamInfo["burnUrlList"];
+				for (int i = 0; i < jsonBurnUrlList.size(); i++)
 				{
-					g_NetLog.Debug("get protocol file dest path is %s.\n", fileInfo.m_strDestFilePath.c_str());
+					FileInfo fileInfo;
+					fileInfo.m_nFlag = 0;
+					fileInfo.m_strSrcUrl = jsonBurnUrlList[i]["burnUrl"].asString();
+					fileInfo.m_strDescription = jsonBurnUrlList[i]["urlDescription"].asString();
 				}
+
+				//fileInfo
+				Json::Value	jsonFileInfo = jsonValueParams["fileInfo"];
+				Json::Value jsonValueFileList = jsonFileInfo["burnFileList"];
+				for (int i = 0; i < jsonValueFileList.size(); i++)
+				{
+					FileInfo fileInfo;
+					fileInfo.m_strFileLocation = jsonValueFileList[i]["fileLocation"].asString();
+					fileInfo.m_strType = jsonValueFileList[i]["fileType"].asString();
+					fileInfo.m_strSrcUrl = jsonValueFileList[i]["burnSrcFilePath"].asString();
+					fileInfo.m_strDestFilePath = jsonValueFileList[i]["burnDstFilePath"].asString();
+					fileInfo.m_strDescription = jsonValueFileList[i]["fileDescription"].asString();
+					task.m_vecBurnFileInfo.push_back(fileInfo);
+					g_NetLog.Debug("get protocol fileInfo.m_strType is %s.\n", fileInfo.m_strType.c_str());
+					if (fileInfo.m_strType.compare("dir") == 0)
+					{
+						g_NetLog.Debug("get protocol file dest path is %s.\n", fileInfo.m_strDestFilePath.c_str());
+					}
+				}
+
+				//burnSpeed
+				task.m_nBurnSpeed = jsonValueParams["burnSpeed"].asInt();
+				Json::Value jsonFeedback = jsonValueParams["feedback"];
+				task.m_burnStateFeedback.m_strNeedFeedback = jsonFeedback["needFeedback"].asString();
+				task.m_burnStateFeedback.m_strFeedbackIP = jsonFeedback["feedbackIP"].asString();
+				task.m_burnStateFeedback.m_nFeedbackPort = jsonFeedback["feedbackPort"].asInt();
+				task.m_burnStateFeedback.m_transType = jsonFeedback["transType"].asString();
+				task.m_burnStateFeedback.m_nFeedbackInterval = jsonFeedback["feedIterval"].asInt();
+				task.m_taskState = task.m_taskRealState = TASK_INIT;
+
+				Poco::UUIDGenerator& gen = Poco::UUIDGenerator::defaultGenerator();
+				Poco::UUID uSessionID = gen.createRandom();
+				task.m_strSessionID = uSessionID.toString();
+				g_NetLog.Debug("[%s] Add a Task.\n", __PRETTY_FUNCTION__);
+				CBusiness::GetInstance()->StartBurn(task);
+
+				Json::Value     jsonValueRoot;
+				Json::Value     jsonValue1;
+				Json::Value     jsonValue2;
+				jsonValue2["retCode"] = Json::Value(0);
+				jsonValue2["retMessage"] = Json::Value("ok");
+				jsonValue2["sessionID"] = Json::Value(task.m_strSessionID);
+				jsonValue1["method"] = Json::Value(sMethod.c_str());
+				jsonValue1["params"] = jsonValue2;
+				jsonValueRoot["result"] = jsonValue1;
+				strOut = jsonValueRoot.toStyledString();
 			}
-			
-			//burnSpeed
-			task.m_nBurnSpeed = jsonValueParams["burnSpeed"].asInt();
-			Json::Value jsonFeedback = jsonValueParams["feedback"];
-			task.m_burnStateFeedback.m_strNeedFeedback = jsonFeedback["needFeedback"].asString();
-			task.m_burnStateFeedback.m_strFeedbackIP = jsonFeedback["feedbackIP"].asString();
-			task.m_burnStateFeedback.m_nFeedbackPort = jsonFeedback["feedbackPort"].asInt();
-			task.m_burnStateFeedback.m_transType = jsonFeedback["transType"].asString();
-			task.m_burnStateFeedback.m_nFeedbackInterval = jsonFeedback["feedIterval"].asInt();
-			task.m_taskState = task.m_taskRealState = TASK_INIT;
-			
-			Poco::UUIDGenerator& gen = Poco::UUIDGenerator::defaultGenerator();
-			Poco::UUID uSessionID = gen.createRandom();
-			task.m_strSessionID = uSessionID.toString();
-			g_NetLog.Debug("[%s] Add a Task.\n", __PRETTY_FUNCTION__);
-			CBusiness::GetInstance()->StartBurn(task);
-			
-			Json::Value     jsonValueRoot;
-			Json::Value     jsonValue1;
-			Json::Value     jsonValue2;
-			jsonValue2["retCode"] = Json::Value(0);
-			jsonValue2["retMessage"] = Json::Value("ok");
-			jsonValue2["sessionID"] = Json::Value(task.m_strSessionID);
-			jsonValue1["method"] = Json::Value(sMethod.c_str());
-			jsonValue1["params"] = jsonValue2;
-			jsonValueRoot["result"] = jsonValue1;
-			string strOut = jsonValueRoot.toStyledString();
 			return strOut;
 		}
 		else
@@ -572,13 +602,26 @@ std::string HttpServerModule::StopBurn(std::string strIn)
 
 			std::string strSessionID = jsonValueParams["sessionID"].asString();
 
-			CBusiness::GetInstance()->StopBurn(strSessionID);
+			bool bRet = CBusiness::GetInstance()->StopBurn(strSessionID);
+			int nTaskSize = CBusiness::GetInstance()->GetBurnTaskSize();
+			BurnTask task;
+			CBusiness::GetInstance()->GetCurTask(task);
 
 			Json::Value     jsonValueRoot;
 			Json::Value     jsonValue1;
 			Json::Value     jsonValue2;
-			jsonValue2["retCode"] = Json::Value(0);
-			jsonValue2["retMessage"] = Json::Value("ok");
+			if (bRet || nTaskSize == 0 || task.m_taskRealState != TASK_BURN)
+			{
+				jsonValue2["retCode"] = Json::Value(0);
+				jsonValue2["retMessage"] = Json::Value("ok");
+			}
+			else
+			{
+				jsonValue2["retCode"] = Json::Value(-1);
+				char szSize[256] = { 0 };
+				sprintf(szSize, "sessionID %s not belong to burn task, burn task sessionID is %s.", task.m_strSessionID.c_str());
+				jsonValue2["retMessage"] = Json::Value("sessionID not find in task list.");
+			}
 			jsonValue1["method"] = Json::Value(sMethod.c_str());
 			jsonValue1["params"] = jsonValue2;
 			jsonValueRoot["result"] = jsonValue1;
@@ -613,33 +656,108 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 			//CDRomID 
 			std::string strCDRomID = jsonValueParams["cdRomID"].asString();
 			
+			//std::string strOut = GetCDRonInfo(strCDRomID);
 			CDRomInfo cdRomInfo;
 			DiskInfo diskInfo;
-			int nRet = 1;// CBusiness::GetInstance()->GetCDRomInfo(strCDRomID, cdRomInfo, diskInfo);
+
+#if 0
+			Json::Value     jsonValueRoot;
+			Json::Value     jsonValue1;
+			Json::Value     jsonValue2;
+			int nRet = CBusiness::GetInstance()->GetCDRomInfo(strCDRomID, cdRomInfo, diskInfo);
+			if (nRet == 0)
+			{
+				jsonValue2["retCode"] = Json::Value(0);
+				jsonValue2["retMessage"] = Json::Value("ok");
+
+				//从当前刻录任务中获取刻录相关信息，内核调用获取的剩余大小不准确
+				BurnTask task;
+				CBusiness::GetInstance()->GetCurTask(task);
+				g_NetLog.Debug("%s GetCDRomInfo.\n", __PRETTY_FUNCTION__);
+				int nIndex = -1;
+				for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+				{
+					g_NetLog.Debug("%s i = %d.\n", __PRETTY_FUNCTION__, i);
+					if (task.m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0)
+					{
+						nIndex = i;
+						nRet = 0;
+						cdRomInfo = task.m_vecCDRomInfo.at(i);
+						break;
+					}
+				}
+				g_NetLog.Debug("%s nIndex = %d, nRet = %d.\n", __PRETTY_FUNCTION__, nIndex, nRet);
+
+				//返回实际光驱信息
+				jsonValue2["cdRomID"] = Json::Value(strCDRomID);
+				jsonValue2["cdRomName"] = Json::Value(cdRomInfo.m_strCDRomName);
+				std::string strDes = "";
+				if (nIndex != -1)
+					CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
+				else
+					strDes = "未刻录";
+				jsonValue2["burnState"] = Json::Value(cdRomInfo.m_euWorkState);
+				jsonValue2["burnStateDescription"] = Json::Value(strDes);
+				jsonValue2["hasDVD"] = Json::Value(cdRomInfo.m_nHasDisc);
+				char szSize[256] = { 0 };
+				if (nIndex != -1)
+					sprintf(szSize, "%dMB", diskInfo.discsize - task.m_nBurnedSize);
+				else
+					sprintf(szSize, "%dMB", diskInfo.freesize);
+				jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);//Json::Value(diskInfo.freesize);
+				memset(szSize, 0, 256);
+				sprintf(szSize, "%dMB", diskInfo.discsize);
+				jsonValue2["DVDTotalCapcity"] = Json::Value(szSize);//Json::Value(diskInfo.discsize);
+				g_NetLog.Debug("%s nRet = %d. assign json value.\n", __PRETTY_FUNCTION__, nRet);
+			}
+			else
+			{
+				jsonValue2["retCode"] = Json::Value(1);
+				jsonValue2["retMessage"] = Json::Value("Get CDRomInfo fail.");
+
+				//返回实际光驱信息
+				jsonValue2["cdRomID"] = Json::Value(strCDRomID);
+				jsonValue2["cdRomName"] = Json::Value("");
+				jsonValue2["burnState"] = Json::Value(0);
+				jsonValue2["burnStateDescription"] = Json::Value("");
+				jsonValue2["hasDVD"] = Json::Value(0);
+				jsonValue2["DVDLeftCapcity"] = Json::Value("0MB");
+				jsonValue2["DVDTotalCapcity"] = Json::Value("0MB");
+				g_NetLog.Debug("%s nRet = %d. assign json value.\n", __PRETTY_FUNCTION__, nRet);
+			}
+#endif
+#if 1
+			//int nRet = -1;// CBusiness::GetInstance()->GetCDRomInfo(strCDRomID, cdRomInfo, diskInfo);
 			BurnTask task;
-			CBusiness::GetInstance()->GetCurTask(task);
+			int nRet = CBusiness::GetInstance()->GetCurTask(task);
 		
 			g_NetLog.Debug("%s GetCDRomInfo.\n", __PRETTY_FUNCTION__);
 			
 			int nIndex = -1;
-			for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+			if (nRet == 0)
 			{
-				g_NetLog.Debug("%s i = %d.\n", __PRETTY_FUNCTION__, i);
-				if (task.m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0)
+				nRet = -1;
+				for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
 				{
-					nIndex = i;
-					nRet = 0;
-					break;
+					g_NetLog.Debug("%s i = %d.\n", __PRETTY_FUNCTION__, i);
+					if (task.m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0 && task.m_nUseCDRomIndex == i)
+					{
+						nIndex = i;
+						nRet = 0;
+						cdRomInfo = task.m_vecCDRomInfo.at(i);
+						diskInfo = task.m_diskInfo;
+						break;
+					}
 				}
 			}
 			g_NetLog.Debug("%s nIndex = %d, nRet = %d.\n", __PRETTY_FUNCTION__, nIndex, nRet);
 			Json::Value     jsonValueRoot;
 			Json::Value     jsonValue1;
 			Json::Value     jsonValue2;
-			if (nRet == 1)
+			if (nRet == 0 && nIndex > -1)
 			{
-				g_NetLog.Debug("%s nRet = %d. Call GetCDRomInfo.\n", __PRETTY_FUNCTION__, nRet );
-				nRet = CBusiness::GetInstance()->GetCDRomInfo(strCDRomID, cdRomInfo, diskInfo);
+				//g_NetLog.Debug("%s nRet = %d. Call GetCDRomInfo.\n", __PRETTY_FUNCTION__, nRet );
+				//nRet = CBusiness::GetInstance()->GetCDRomInfo(strCDRomID, cdRomInfo, diskInfo);
 				if (nRet == 0)
 				{
 					jsonValue2["retCode"] = Json::Value(0);
@@ -649,12 +767,12 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 					jsonValue2["cdRomID"] = Json::Value(strCDRomID);
 					jsonValue2["cdRomName"] = Json::Value(cdRomInfo.m_strCDRomName);
 					std::string strDes = "";
-					CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
-					jsonValue2["burnState"] = Json::Value(cdRomInfo.m_euWorkState);
-					jsonValue2["burnStateDescription"] = Json::Value(strDes);
-					jsonValue2["hasDVD"] = Json::Value(diskInfo.discsize > 0? 1: 0);
+					//CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
+					jsonValue2["burnState"] = Json::Value(1/*cdRomInfo.m_euWorkState*/);
+					jsonValue2["burnStateDescription"] = Json::Value("刻录中"/*strDes*/);
+					jsonValue2["hasDVD"] = Json::Value(diskInfo.discsize > 0 ? 1: 0);
 					char szSize[256] = { 0 };
-					sprintf(szSize, "%dMB", diskInfo.discsize - task.m_nBurnedSize);
+					sprintf(szSize, "%dMB", max(0, int(diskInfo.discsize - task.m_nBurnedSize)));
 					jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);//Json::Value(diskInfo.freesize);
 					memset(szSize, 0, 256);
 					sprintf(szSize, "%dMB", diskInfo.discsize);
@@ -678,22 +796,24 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 				}
 			}
 			else
-			{
+			{	//任务不存在，或者任务存在但是任务工作光驱不是所要查询的。
 				jsonValue2["retCode"] = Json::Value(0);
 				jsonValue2["retMessage"] = Json::Value("ok");
-				
+				CBusiness::GetInstance()->GetCDRomInfoFromSavedVector(strCDRomID, cdRomInfo);
+				//nRet = CBusiness::GetInstance()->GetCDRomInfo(strCDRomID, cdRomInfo, diskInfo);
 				//返回实际光驱信息
 				jsonValue2["cdRomID"] = Json::Value(strCDRomID);
-				jsonValue2["cdRomName"] = Json::Value(task.m_vecCDRomInfo.at(nIndex).m_strCDRomName);
-				jsonValue2["burnState"] = Json::Value(task.m_vecCDRomInfo.at(nIndex).m_euWorkState);
-				std::string strDes = "";
-				CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
+				jsonValue2["cdRomName"] = Json::Value(cdRomInfo.m_strCDRomName);
+				jsonValue2["burnState"] = Json::Value(0);//无任务
+				std::string strDes = "未刻录";
+				//CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
 				jsonValue2["burnStateDescription"] = Json::Value(strDes);
-				jsonValue2["hasDVD"] = Json::Value(task.m_burnStateFeedback.m_nHasDisc);
-				jsonValue2["DVDLeftCapcity"] = Json::Value(task.m_diskInfo.discsize - task.m_nBurnedSize);
-				jsonValue2["DVDTotalCapcity"] = Json::Value(task.m_diskInfo.discsize);
+				jsonValue2["hasDVD"] = Json::Value(0);
+				jsonValue2["DVDLeftCapcity"] = Json::Value("0MB");
+				jsonValue2["DVDTotalCapcity"] = Json::Value("0MB");
 				g_NetLog.Debug("%s nRet = %d. assign json value.\n", __PRETTY_FUNCTION__, nRet);
 			}
+#endif
 			jsonValue1["method"] = Json::Value(sMethod.c_str());
 			jsonValue1["params"] = jsonValue2;
 			jsonValueRoot["result"] = jsonValue1;

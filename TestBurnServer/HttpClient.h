@@ -60,7 +60,7 @@ public:
 	int BurnServerConnect(CString& strRecv, int nCallCloseDisk = 0);
 
 	int SendGetCDRomListProtocol(CString& strSend, CString& strRecv);
-	int SendStartBurnProtocol(std::string strBurnType, std::string strBurnMode, int nAlarmSize,
+	int SendStartBurnProtocol(std::string strCDRomID, std::string strBurnType, std::string strBurnMode, int nAlarmSize,
 		const std::vector<FileInfo>& vecFileInfo, const BurnStateFeedbcak feedback, CString& strSend, CString& strRecv);
 	int SendPauseBurnProtocol(std::string sessionID, CString& strSend, CString& strRecv);
 	int SendRemuseBurnProtocol(std::string sessionID, CString& strSend, CString& strRecv);
