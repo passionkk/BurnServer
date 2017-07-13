@@ -70,7 +70,7 @@ public:
 	void		BurnFileToDisk(BurnTask& task);
 	void		BurnFeedbackFileToDisc(BurnTask& task,const DVDDRV_HANDLE pHandle);
 	int			WriteFileToDisk(void* pHandle, void* pFileHandle, std::string strLocalPath);
-	int			CloseDisk(void* pvHandle);
+	int			CloseDisk(void* pvHandle, bool bHasBurnFile = true);
 	int			BurnLocalFile(void* pHandle, FileInfo& fileInfo /*std::string strSrcPath, std::string strDestPath*/);
 	int			BurnLocalFile(void* pHandle, std::string strSrcPath, std::string strDestPath);
 	int			BurnLocalDir(void* pHandle, FileInfo fileInfo /*std::string strSrcPath, std::string strDestPath*/);

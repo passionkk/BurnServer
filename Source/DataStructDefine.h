@@ -19,6 +19,8 @@ enum TASKSTATE
 	TASK_INIT = 0,
 	TASK_BURN,
 	TASK_PAUSE,			//暂停  由刻录状态转换到PAUSE
+	TASK_FORMAT,		//格式化光盘
+	TASK_CLOSEDISC,		//封盘
 	TASK_STOP
 };
 

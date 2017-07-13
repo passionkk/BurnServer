@@ -5,6 +5,8 @@
 #include "MainConfig.h"
 #include "FileLog.h"
 #include "NetLog.h"
+#include "FileUtil.h"
+#include "DirectoryUtil.h"
 
 HttpServerModule* HttpServerModule::m_pInstance = NULL;
 
@@ -462,6 +464,19 @@ std::string HttpServerModule::StartBurn(std::string strIn)
 					fileInfo.m_strType = jsonValueFileList[i]["fileType"].asString();
 					fileInfo.m_strSrcUrl = jsonValueFileList[i]["burnSrcFilePath"].asString();
 					fileInfo.m_strDestFilePath = jsonValueFileList[i]["burnDstFilePath"].asString();
+					if (fileInfo.m_strDestFilePath.empty())
+					{	//目标路径为空 采用源路径的文件名或者文件夹名
+						if (fileInfo.m_strType.compare("file") == 0)
+						{
+							fileInfo.m_strDestFilePath = FileUtil::GetFileName(fileInfo.m_strSrcUrl);
+						}
+						else
+						{	//当文件夹处理 这里可能最后带有/
+							std::string strNoSlashDir = DirectoryUtil::EnsureNoSlashEnd(fileInfo.m_strSrcUrl);
+							fileInfo.m_strDestFilePath = FileUtil::GetFileName(strNoSlashDir);
+						}
+						g_NetLog.Debug("[HttpServerModule::StartBurn]DestFilePaht is empty, default is %s", fileInfo.m_strDestFilePath.c_str());
+					}
 					fileInfo.m_strDescription = jsonValueFileList[i]["fileDescription"].asString();
 					task.m_vecBurnFileInfo.push_back(fileInfo);
 					g_NetLog.Debug("get protocol fileInfo.m_strType is %s.\n", fileInfo.m_strType.c_str());
@@ -846,33 +861,61 @@ std::string HttpServerModule::AddBurnFile(std::string strIn)
 			std::string sMethod = jsonValueIn["method"].asString();
 			Json::Value   jsonValueParams = jsonValueIn["params"];
 
-			//sessionID 
-			std::string strSessionID = jsonValueParams["sessionID"].asString();
-			
-			//fileInfo vector
-			std::vector<FileInfo> vecFileInfo;
-			Json::Value jsonValueFileList = jsonValueParams["burnFileList"];
-			for (int i = 0; i < jsonValueFileList.size(); i++)
-			{
-				FileInfo fileInfo;
-				fileInfo.m_nFlag = 1;
-				fileInfo.m_strFileLocation = jsonValueFileList[i]["fileLocation"].asString();
-				fileInfo.m_strType = jsonValueFileList[i]["fileType"].asString();
-				fileInfo.m_strSrcUrl = jsonValueFileList[i]["burnSrcFilePath"].asString();
-				fileInfo.m_strDestFilePath = jsonValueFileList[i]["burnDstFilePath"].asString();
-				fileInfo.m_strDescription = jsonValueFileList[i]["fileDescription"].asString();
-				vecFileInfo.push_back(fileInfo);
-			}
-			CBusiness::GetInstance()->AddBurnFile(strSessionID, vecFileInfo);
-
 			Json::Value     jsonValueRoot;
 			Json::Value     jsonValue1;
 			Json::Value     jsonValue2;
-			jsonValue2["retCode"] = Json::Value(0);
-			jsonValue2["retMessage"] = Json::Value("ok");
-			jsonValue1["method"] = Json::Value(sMethod.c_str());
-			jsonValue1["params"] = jsonValue2;
-			jsonValueRoot["result"] = jsonValue1;
+
+			//sessionID 
+			std::string strSessionID = jsonValueParams["sessionID"].asString();
+
+			BurnTask task;
+			CBusiness::GetInstance()->GetCurTask(task);
+			
+			if ((task.m_taskState == TASK_STOP) || (task.m_strSessionID.compare(strSessionID) != 0))
+			{
+				jsonValue2["retCode"] = Json::Value(-1);
+				jsonValue2["retMessage"] = Json::Value("task has be set stop.");
+				jsonValue1["method"] = Json::Value(sMethod.c_str());
+				jsonValue1["params"] = jsonValue2;
+				jsonValueRoot["result"] = jsonValue1;
+			}
+			else
+			{
+				//fileInfo vector
+				std::vector<FileInfo> vecFileInfo;
+				Json::Value jsonValueFileList = jsonValueParams["burnFileList"];
+				for (int i = 0; i < jsonValueFileList.size(); i++)
+				{
+					FileInfo fileInfo;
+					fileInfo.m_nFlag = 1;
+					fileInfo.m_strFileLocation = jsonValueFileList[i]["fileLocation"].asString();
+					fileInfo.m_strType = jsonValueFileList[i]["fileType"].asString();
+					fileInfo.m_strSrcUrl = jsonValueFileList[i]["burnSrcFilePath"].asString();
+					fileInfo.m_strDestFilePath = jsonValueFileList[i]["burnDstFilePath"].asString();
+					if (fileInfo.m_strDestFilePath.empty())
+					{	//目标路径为空 采用源路径的文件名或者文件夹名
+						if (fileInfo.m_strType.compare("file") == 0)
+						{
+							fileInfo.m_strDestFilePath = FileUtil::GetFileName(fileInfo.m_strSrcUrl);
+						}
+						else
+						{	//当文件夹处理 这里可能最后带有/
+							std::string strNoSlashDir = DirectoryUtil::EnsureNoSlashEnd(fileInfo.m_strSrcUrl);
+							fileInfo.m_strDestFilePath = FileUtil::GetFileName(strNoSlashDir);
+						}
+						g_NetLog.Debug("[HttpServerModule::AddBurnFile]DestFilePaht is empty, default is %s", fileInfo.m_strDestFilePath.c_str());
+					}
+					fileInfo.m_strDescription = jsonValueFileList[i]["fileDescription"].asString();
+					vecFileInfo.push_back(fileInfo);
+				}
+				CBusiness::GetInstance()->AddBurnFile(strSessionID, vecFileInfo);
+
+				jsonValue2["retCode"] = Json::Value(0);
+				jsonValue2["retMessage"] = Json::Value("ok");
+				jsonValue1["method"] = Json::Value(sMethod.c_str());
+				jsonValue1["params"] = jsonValue2;
+				jsonValueRoot["result"] = jsonValue1;
+			}
 			string strOut = jsonValueRoot.toStyledString();
 			return strOut;
 		}
