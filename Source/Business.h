@@ -38,7 +38,7 @@ public:
 	bool		ResumeBurn(std::string strSessionID);
 	bool		StopBurn(std::string strSessionID);
 	int			GetCDRomInfo(std::string strCDRomID, CDRomInfo& cdRomInfo, DiskInfo& discInfo);// 这里参数不够，肯定要返回值，没想好是类对象还是string对象
-	std::string GetCDRonInfo(std::string strCDRomID, std::string strMethod = "");
+	std::string GetCDRomInfo(std::string strCDRomID, std::string strMethod = "");
 	void		AddBurnFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo);
 	void		AddFeedbackFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo);
 	//主动协议处理 内部调用BurnStateFeedback
@@ -61,6 +61,11 @@ public:
 	void		DeleteTask();
 
 	void		SetCDRomState(std::string strCDRomID, CDROMSTATE state);
+	std::string GetCDRomState(CDROMSTATE state, int& nFeedbackState);
+	void		ResetCDRomState();
+
+	void		SetTaskCDRomState(std::string strCDRomID, CDROMSTATE state);
+
 	void*		GetIdleCDRom(BurnTask& task, std::string& strCDRomID, int& nCDRomIndex);
 	void*		GetSpecCDRom(BurnTask& task, std::string& strCDRomID, int& nCDRomIndex);
 	void*		GetWorkingCDRomHandle(BurnTask& task, std::string& strCDRomID);
@@ -70,7 +75,7 @@ public:
 	void		BurnFileToDisk(BurnTask& task);
 	void		BurnFeedbackFileToDisc(BurnTask& task,const DVDDRV_HANDLE pHandle);
 	int			WriteFileToDisk(void* pHandle, void* pFileHandle, std::string strLocalPath);
-	int			CloseDisk(void* pvHandle, bool bHasBurnFile = true);
+	int			CloseDisc(void* pvHandle, bool bHasBurnFile = true);
 	int			BurnLocalFile(void* pHandle, FileInfo& fileInfo /*std::string strSrcPath, std::string strDestPath*/);
 	int			BurnLocalFile(void* pHandle, std::string strSrcPath, std::string strDestPath);
 	int			BurnLocalDir(void* pHandle, FileInfo fileInfo /*std::string strSrcPath, std::string strDestPath*/);

@@ -444,7 +444,7 @@ int CBusiness::GetCDRomInfo(std::string strCDRomID, CDRomInfo& cdRomInfo, DiskIn
 	return nRet;
 }
 
-std::string CBusiness::GetCDRonInfo(std::string strCDRomID, std::string sMethod)
+std::string CBusiness::GetCDRomInfo(std::string strCDRomID, std::string sMethod)
 {
 	std::string strOut = "";
 	CDRomInfo cdRomInfo;
@@ -466,7 +466,7 @@ std::string CBusiness::GetCDRonInfo(std::string strCDRomID, std::string sMethod)
 				nIndex = i;
 				nRet = 0;
 				cdRomInfo = task.m_vecCDRomInfo.at(i);
-				diskInfo = task.m_diskInfo;
+				diskInfo = task.m_vecCDRomInfo.at(i).m_discInfo;
 				break;
 			}
 		}
@@ -522,7 +522,7 @@ std::string CBusiness::GetCDRonInfo(std::string strCDRomID, std::string sMethod)
 		jsonValue2["cdRomID"] = Json::Value(strCDRomID);
 		jsonValue2["cdRomName"] = Json::Value(cdRomInfo.m_strCDRomName);
 		jsonValue2["burnState"] = Json::Value(0);//无任务
-		std::string strDes = "未刻录";
+		std::string strDes = "空闲";
 		jsonValue2["burnStateDescription"] = Json::Value(strDes);
 		jsonValue2["hasDVD"] = Json::Value(0);
 		jsonValue2["DVDLeftCapcity"] = Json::Value("0MB");
@@ -541,6 +541,7 @@ std::string CBusiness::GetCDRonInfo(std::string strCDRomID, std::string sMethod)
 int CBusiness::GetCurTask(BurnTask& task)
 {
 	int nRet = 0;
+	g_NetLog.Debug("[CBusiness::GetCurTask] m_vecBurnTask.size() is %d.\n", m_vecBurnTask.size());
 	if (m_vecBurnTask.size() > 0)
 		task = m_burnTask;
 	else
@@ -621,6 +622,7 @@ void CBusiness::BurnStateFeedback()
 				Json::Value     jsonValue1;
 				Json::Value     jsonValue2;
 				int nIndex = -1;
+#if 0
 				DVDDRV_HANDLE pHandle = GetSpecCDRom(m_burnTask, m_burnTask.m_strCDRomID, nIndex);
 				DVDSDKInterface dvdInterface;
 				int nHasDisc = 0;
@@ -635,14 +637,57 @@ void CBusiness::BurnStateFeedback()
 				GetBurnStateString(m_burnTask.m_taskRealState, strDes);
 				jsonValue2["burnStateDescription"] = Json::Value(strDes);
 				jsonValue2["hasDVD"] = Json::Value(nHasDisc/*m_burnTask.m_burnStateFeedback.m_nHasDisc*/);
-				
+
 				char szSize[256] = { 0 };
 				sprintf(szSize, "%dMB", m_burnTask.m_diskInfo.discsize - m_burnTask.m_nBurnedSize);
-				jsonValue2["DVDLeftCapcity"] = Json::Value(szSize); //Json::Value(m_burnTask.m_diskInfo.discsize - m_burnTask.m_nBurnedSize);
+				jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);
 				memset(szSize, 0, 256);
 				sprintf(szSize, "%dMB", m_burnTask.m_diskInfo.discsize);
-				jsonValue2["DVDTotalCapcity"] = Json::Value(szSize); //Json::Value(m_burnTask.m_diskInfo.discsize);
+				jsonValue2["DVDTotalCapcity"] = Json::Value(szSize);
+#endif			
+				int nUseCDRomIndex = m_burnTask.m_nUseCDRomIndex;
+				int nBurnedSize = m_burnTask.m_nBurnedSize;
+				CDRomInfo cdRomInfo;
+				DiskInfo diskInfo;
 
+				//有几个光驱反馈几次
+				for (int i = 0; i < m_burnTask.m_vecCDRomInfo.size(); i++)
+				{
+					if (i == nUseCDRomIndex)
+					{
+						//刻录使用中的光驱 返回实际光驱信息
+						cdRomInfo = m_burnTask.m_vecCDRomInfo.at(i);
+						diskInfo = m_burnTask.m_vecCDRomInfo.at(i).m_discInfo;
+
+						jsonValue2["cdRomID"] = Json::Value(m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomID);
+						jsonValue2["cdRomName"] = Json::Value(m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomName);
+						std::string strDes = "";
+						int nFeedbackState = 0;
+						strDes = GetCDRomState(m_burnTask.m_vecCDRomInfo.at(nUseCDRomIndex).m_euWorkState, nFeedbackState);
+						jsonValue2["burnState"] = Json::Value(nFeedbackState);
+						jsonValue2["burnStateDescription"] = Json::Value(strDes);
+						jsonValue2["hasDVD"] = Json::Value(diskInfo.discsize > 0 ? 1 : 0);
+						char szSize[256] = { 0 };
+						sprintf(szSize, "%dMB", max(0, int(diskInfo.discsize - nBurnedSize)));
+						jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);
+						memset(szSize, 0, 256);
+						sprintf(szSize, "%dMB", diskInfo.discsize);
+						jsonValue2["DVDTotalCapcity"] = Json::Value(szSize);
+					}
+					else
+					{
+						jsonValue2["cdRomID"] = Json::Value(m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomID);
+						jsonValue2["cdRomName"] = Json::Value(m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomName);
+						jsonValue2["sessionID"] = Json::Value(m_burnTask.m_strSessionID);
+
+						jsonValue2["burnState"] = Json::Value(0);
+						std::string strDes = "空闲";
+						jsonValue2["burnStateDescription"] = Json::Value(strDes);
+						jsonValue2["hasDVD"] = Json::Value(0);
+						jsonValue2["DVDLeftCapcity"] = Json::Value("0MB");
+						jsonValue2["DVDTotalCapcity"] = Json::Value("0MB");
+					}
+				}
 				jsonValue1["method"] = Json::Value(sMethod.c_str());
 				jsonValue1["params"] = jsonValue2;
 				std::string strSend = jsonValue1.toStyledString();
@@ -659,9 +704,11 @@ void CBusiness::BurnStateFeedback()
 				{
 					CHttpClient client;
 					client.SendHttpProtocol(m_burnTask.m_burnStateFeedback.m_strFeedbackIP, m_burnTask.m_burnStateFeedback.m_nFeedbackPort,
-											strSend, strRecv);
+						strSend, strRecv);
 				}
 			}
+			else
+				break;
 			if (nInterval <= 0)
 				nInterval = 2000;
 			sleep(nInterval/1000);
@@ -794,7 +841,7 @@ void CBusiness::CloseDisc()
 		g_NetLog.Debug("[CBusiness::CloseDisc].\n");
 		if (m_pCloseHandle != NULL)
 		{
-			CloseDisk(m_pCloseHandle);
+			CloseDisc(m_pCloseHandle);
 			m_pCloseHandle = NULL;
 		}
 	}
@@ -902,6 +949,8 @@ void CBusiness::DoTask(BurnTask& task)
 EndTask:
 	DeleteTask();
 	m_bThreadState = false;
+
+	ResetCDRomState();
 }
 
 void CBusiness::DeleteTask()
@@ -927,6 +976,71 @@ void CBusiness::SetCDRomState(std::string strCDRomID, CDROMSTATE state)
 	m_mutexCDRomInfoVec.unlock();
 }
 
+std::string CBusiness::GetCDRomState(CDROMSTATE state, int& nFeedbackState)
+{
+	std::string strRet = "空闲";
+	nFeedbackState = 0;
+	switch (state)
+	{
+	case CDROM_INIT:
+	case CDROM_UNINIT:
+		break;
+	case CDROM_WAIT_INSERT_DISC:
+		strRet = "等待插入光盘";
+		break;
+	case CDROM_READY:
+		strRet = "准备中";
+		nFeedbackState = 1;
+		break;
+	case CDROM_BURNING:
+		strRet = "刻录中";
+		nFeedbackState = 1;
+		break;
+	case CDROM_FORMAT:
+		strRet = "格式化中";
+		nFeedbackState = 1;
+		break;
+	case CDROM_CLOSEDISC:
+		strRet = "封盘中";
+		nFeedbackState = 1;
+		break;
+	default:
+		break;
+	}
+	return strRet;
+}
+
+void CBusiness::ResetCDRomState()
+{
+	m_mutexCDRomInfoVec.lock();
+	for (int i = 0; i < m_vecCDRomInfo.size(); i++)
+	{
+		m_vecCDRomInfo.at(i).m_euWorkState = CDROM_UNINIT;
+	}
+	m_mutexCDRomInfoVec.unlock();
+}
+
+void CBusiness::SetTaskCDRomState(std::string strCDRomID, CDROMSTATE state)
+{
+	for (int i = 0; i < m_burnTask.m_vecCDRomInfo.size(); i++)
+	{
+		if (m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0)
+		{
+			m_burnTask.m_vecCDRomInfo.at(i).m_euWorkState = state;
+			if (state == CDROM_INIT || state == CDROM_UNINIT)
+			{	//重置光盘信息为0
+				m_burnTask.m_vecCDRomInfo.at(i).m_nBurnedSize = 0;
+				m_burnTask.m_vecCDRomInfo.at(i).m_discInfo.discsize = 0;
+				m_burnTask.m_vecCDRomInfo.at(i).m_discInfo.freesize = 0;
+				m_burnTask.m_vecCDRomInfo.at(i).m_discInfo.usedsize = 0;
+
+				g_NetLog.Debug("[CBusiness::SetTaskCDRomState] i : %d, state : %d, SetTaskCDRomState to UNINIT.", i, state);
+			}
+			break;
+		}
+	}
+}
+
 void* CBusiness::GetIdleCDRom(BurnTask& task, std::string& strCDRomID, int& nCDRomIndex)
 {
 	void* pHandle = NULL;
@@ -948,7 +1062,7 @@ void* CBusiness::GetSpecCDRom(BurnTask& task, std::string& strCDRomID, int& nCDR
 	void* pHandle = NULL;
 	for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
 	{
-		if (task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_READY || task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT ||
+		if (task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_READY || //task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT ||
 			task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_INIT)
 		{
 			pHandle = task.m_vecCDRomInfo.at(i).m_pDVDHandle;
@@ -980,12 +1094,31 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 	try
 	{
 		int nRet = -1;
+		int nCheckTime = 0;
+		while (m_vecCDRomInfo.size() <= 0)
+		{
+			GetCDRomListFromFile("./CDRom_List", true);
+			sleep(3);
+			if (nCheckTime++ > 3)
+			{
+				g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] find no cdrom.\n");
+				return nRet;
+			}
+		}
 
 		if (task.m_taskRealState == TASK_BURN)// 续刻的任务
 		{
 			if (task.m_strBurnMode.compare("doubleRelayBurn") == 0)//双盘续刻
 			{
+				g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn]task.m_nUseCDRomIndex is %d. cdrom state is %d.\n", 
+					task.m_nUseCDRomIndex, task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState);
+
 				task.m_nUseCDRomIndex = task.m_vecCDRomInfo.size() - 1 - task.m_nUseCDRomIndex;
+
+				g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn]task.m_nUseCDRomIndex is %d. cdrom state is %d.\n",
+					task.m_nUseCDRomIndex, task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState);
+
+				task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState = CDROM_INIT;
 			}
 			return 0;
 		}
@@ -999,7 +1132,8 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 			nNeedCDRomCount = 1;
 		if (m_vecCDRomInfo.size() < nNeedCDRomCount)	//光驱数量不足
 		{
-			g_NetLog.Debug("count of cdRom is %d, need cdRom is %d, ChooseCDRomToBurn faile.\n", m_vecCDRomInfo.size(), nNeedCDRomCount);
+			g_NetLog.Debug("count of cdRom is %d, need cdRom is %d, ChooseCDRomToBurn fail.\n", m_vecCDRomInfo.size(), nNeedCDRomCount);
+			//这里应该自动将任务改为单盘任务
 			return nRet;
 		}
 		task.m_vecCDRomInfo.clear();
@@ -1009,15 +1143,18 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 			for (int i = 0; i < m_vecCDRomInfo.size()/*nNeedCDRomCount*/; i++)
 			{
 				if (m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT && m_vecCDRomInfo.at(i).m_strCDRomID.compare(task.m_strCDRomID) == 0)
+				{
+					m_vecCDRomInfo.at(i).m_euWorkState = CDROM_INIT;
 					task.m_vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
+				}
 			}
 		}	
 		else
 		{
 			for (int i = 0; i < m_vecCDRomInfo.size()/*nNeedCDRomCount*/; i++)
 			{
-				if (m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT)
-					task.m_vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
+				//if (m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT)
+				task.m_vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
 			}
 		}
 
@@ -1077,9 +1214,11 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 				sleep(5);
 				}*/
 				//这里不会阻塞
+				task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState = CDROM_WAIT_INSERT_DISC; // 置为等待插入光盘
 				int nCheckTime = 0;
 				while (nErroNo = dvdInterface.DVDSDK_LoadDisc(hDvD) != 0)
 				{
+					//这里可以加上未插入光盘
 					g_NetLog.Debug("CDRom load disk fail, error number is %d, check time : %d.\n", nErroNo, nCheckTime);
 					bInitState = false;
 					if (++nCheckTime > 3)
@@ -1089,12 +1228,13 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 						dvdInterface.DVDSDK_UnLoad(hDvD);
 						break;
 					}
-					sleep(5);//5秒检测一次，15s为一个任务周期
+					sleep(4);//3秒检测一次，12s为一个任务周期
 					if (task.m_taskState == TASK_STOP && task.m_vecBurnFileInfo.size() == 0)
 						break;
 				}
 				if (nCheckTime <= 3 /*&& task.m_taskState != TASK_STOP*/)
 				{
+					//置为准备中
 					bInitState = true;
 					task.m_burnStateFeedback.m_nHasDisc = 1;
 					dvdInterface.DVDSDK_LockDoor(hDvD, 1);
@@ -1149,6 +1289,7 @@ int CBusiness::InitCDRom(BurnTask& task)
 					dvdInterface.DVDSDK_LockDoor(hDvD, 0);
 					dvdInterface.DVDSDK_Tray(hDvD, 1);
 					g_NetLog.Debug("[CBusiness::InitCDRom]Open CDRom Tray, please insert Disc.\n");
+					task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_WAIT_INSERT_DISC;
 					task.m_burnStateFeedback.m_nHasDisc = 0;
 					sleep(5);
 				}
@@ -1160,14 +1301,17 @@ int CBusiness::InitCDRom(BurnTask& task)
 				task.m_vecCDRomInfo.at(nCDRomIndex).m_pDVDHandle = hDvD;
 				DVD_DISC_INFO_T diskInfo;
 				dvdInterface.DVDSDK_GetDiscInfo(hDvD, &diskInfo);
-				task.m_diskInfo.ntype = diskInfo.ntype;
-				task.m_diskInfo.maxpeed = diskInfo.maxpeed;
-				task.m_diskInfo.discsize = diskInfo.discsize;
-				task.m_diskInfo.usedsize = diskInfo.usedsize;
-				task.m_diskInfo.freesize = diskInfo.freesize;
+				task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.ntype = diskInfo.ntype;
+				task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.maxpeed = diskInfo.maxpeed;
+				task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.discsize = diskInfo.discsize;
+				task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.usedsize = diskInfo.usedsize;
+				task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.freesize = diskInfo.freesize;
+				task.m_vecCDRomInfo.at(nCDRomIndex).m_nBurnedSize = 0;
+
 
 				if (dvdInterface.DVDSDK_DiscCanWrite(hDvD) != ERROR_DVD_OK)
 				{
+					task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_WAIT_INSERT_DISC;
 					g_NetLog.Debug("Disc Can not be Writed! \n");
 					dvdInterface.DVDSDK_LockDoor(hDvD, 0);
 					dvdInterface.DVDSDK_Tray(hDvD, 1);
@@ -1178,12 +1322,12 @@ int CBusiness::InitCDRom(BurnTask& task)
 				//	dvdInterface.DVDSDK_SetWriteSpeed(hDvD, task.m_nBurnSpeed, diskInfo.ntype);
 				
 				//判断报警大小是否超过光盘总容量，如果超过不刻录此任务
-				if (task.m_nAlarmSize >= task.m_diskInfo.discsize)
+				if (task.m_nAlarmSize >= task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.discsize)
 					return -2;
 				
 				//置此光驱为Ready状态
 				g_NetLog.Debug("set cdrom work state.\n");
-				task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_READY;
+				task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_READY;  //格式化之后才进入burning状态
 				SetCDRomState(task.m_vecCDRomInfo.at(nCDRomIndex).m_strCDRomID, CDROM_READY);
 			}
 			else
@@ -1201,11 +1345,12 @@ int CBusiness::InitCDRom(BurnTask& task)
 			DVD_DISC_INFO_T diskInfo;
 			if (0 != dvdInterface.DVDSDK_GetDiscInfo(hDvD, &diskInfo))
 				g_NetLog.Debug("[CBusiness::InitCDRom] DVDSDK_GetDiscInfo fail.\n");
-			task.m_diskInfo.ntype = diskInfo.ntype;
-			task.m_diskInfo.maxpeed = diskInfo.maxpeed;
-			task.m_diskInfo.discsize = diskInfo.discsize;
-			task.m_diskInfo.usedsize = diskInfo.usedsize;
-			task.m_diskInfo.freesize = diskInfo.freesize;
+			task.m_vecCDRomInfo.at(i).m_discInfo.ntype = diskInfo.ntype;
+			task.m_vecCDRomInfo.at(i).m_discInfo.maxpeed = diskInfo.maxpeed;
+			task.m_vecCDRomInfo.at(i).m_discInfo.discsize = diskInfo.discsize;
+			task.m_vecCDRomInfo.at(i).m_discInfo.usedsize = diskInfo.usedsize;
+			task.m_vecCDRomInfo.at(i).m_discInfo.freesize = diskInfo.freesize;
+			task.m_vecCDRomInfo.at(i).m_nBurnedSize = 0;
 
 			if (dvdInterface.DVDSDK_DiscCanWrite(hDvD) != ERROR_DVD_OK)
 			{
@@ -1285,9 +1430,11 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 	DVD_DISC_INFO_T discInfo;
 
 	if (nBurnFileCount > 0)
-	{//格式化光盘
+	{	//格式化光盘
 		g_NetLog.Debug("[CBusiness::BurnFileToDisk] Format Disc.\n");
+		task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_FORMAT;
 		dvdInterface.DVDSDK_FormatDisc(pHandle, (char*)task.m_strSessionID.c_str());//光盘名称 协议里是否需要涉及
+		task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_BURNING;
 	}
 
 	task.m_nBurnedSize = 0;//清空刻录总量 不采用光驱获取的值，测试不准确
@@ -1303,6 +1450,9 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 			CBusiness::CloseDiscFeedback(discInfo.discsize - m_burnTask.m_nBurnedSize, discInfo.discsize);
 			BurnFeedbackFileToDisc(task, pHandle);
 			task.m_taskRealState = TASK_STOP;
+			
+			//置状态为封盘
+			task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState = CDROM_CLOSEDISC;
 			break;
 		}
 		if (nFileCount == 0 || task.m_taskState == TASK_PAUSE)
@@ -1384,6 +1534,9 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 					g_NetLog.Debug("[CBusiness::BurnFileToDisk]will erase task, and push cur task.\n");
 					m_vecBurnTask.erase(m_vecBurnTask.begin());
 					g_NetLog.Debug("task burn file size is %d.\n", task.m_vecBurnFileInfo.size());
+					//封盘前置状态 置为封盘中
+					task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState = CDROM_CLOSEDISC;
+					m_burnTask.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState = CDROM_CLOSEDISC;
 					m_vecBurnTask.push_back(task);
 					m_mutexVecBurnFileInfo.unlock();
 
@@ -1446,14 +1599,16 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 			g_NetLog.Debug("error fileType, neither file or dir. fileType is %s\n", fileInfo.m_strType.c_str());
 		}
 
-		//刻录结束，更新刻录大小信息
+		//刻录文件结束，更新刻录大小信息
 		task.m_nBurnedSize += dSizeMB;
+		task.m_vecCDRomInfo.at(nCDRomIndex).m_nBurnedSize = task.m_nBurnedSize;
 		g_NetLog.Debug("has burned size is %d.\n", task.m_nBurnedSize);
 		m_mutexVecBurnFileInfo.lock();
 		if (task.m_vecBurnFileInfo.size() > 0 && fileInfo.m_strType.compare("dir") != 0)
 			task.m_vecBurnFileInfo.erase(task.m_vecBurnFileInfo.begin());
 		g_NetLog.Debug("left burn file count is : %d. m_burnTask.m_vecBurnFileInfo.size() is :%d\n", 
 			task.m_vecBurnFileInfo.size(), m_burnTask.m_vecBurnFileInfo.size());
+		
 		m_vecBurnTask.erase(m_vecBurnTask.begin());
 		m_vecBurnTask.push_back(task);
 		m_mutexVecBurnFileInfo.unlock();
@@ -1468,8 +1623,8 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 		pthread_create(&threadID, NULL, &(CBusiness::CloseDiscThread), (void*)this);
 	}
 	else
-	{
-		CloseDisk(pHandle, nBurnFileCount == 0 ? false : true);
+	{	//单盘封盘
+		CloseDisc(pHandle, nBurnFileCount == 0 ? false : true);
 	}
 	//反馈线程停止
 	m_bThreadState = false;
@@ -1653,7 +1808,7 @@ int CBusiness::WriteFileToDisk(void* pHandle, void* pFileHandle, std::string str
 	return 0;
 }
 
-int CBusiness::CloseDisk(void* pvHandle, bool bHasBurnFile)
+int CBusiness::CloseDisc(void* pvHandle, bool bHasBurnFile)
 {
 	try
 	{
@@ -1679,6 +1834,34 @@ int CBusiness::CloseDisk(void* pvHandle, bool bHasBurnFile)
 			if (0 != dvdInterface.DVDSDK_UnLoad(pHandle))
 				g_NetLog.Debug("call DVDSDK_UnLoad fail.\n");
 
+			for (int i = 0; i < m_burnTask.m_vecCDRomInfo.size(); i++)
+			{		//置为为初始化状态
+				g_NetLog.Debug("[CBusiness::CloseDisk]i = %d, m_pDVDHandle = %0x, close Handle : %0x.\n",
+							   i, m_burnTask.m_vecCDRomInfo.at(i).m_pDVDHandle, pHandle);
+				if (m_burnTask.m_vecCDRomInfo.at(i).m_pDVDHandle == pHandle)
+				{
+					SetTaskCDRomState(m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomID, CDROM_UNINIT);
+
+					g_NetLog.Debug("[CBusiness::CloseDisk]i = %d, m_pDVDHandle = %0x, close Handle : %0x, cdromState : %d.\n",
+						i, m_burnTask.m_vecCDRomInfo.at(i).m_pDVDHandle, pHandle, m_burnTask.m_vecCDRomInfo.at(i).m_euWorkState);
+
+					//设置队列里任务的对应光驱信息为不可用
+					m_mutexBurnTaskVec.lock();
+					if (m_vecBurnTask.size() > 0)
+					{
+						if (m_vecBurnTask.at(0).m_vecCDRomInfo.size() > i)
+						{
+							m_vecBurnTask.at(0).m_vecCDRomInfo.at(i).m_euWorkState = CDROM_UNINIT;
+							m_vecBurnTask.at(0).m_vecCDRomInfo.at(i).m_nBurnedSize = 0;
+							m_vecBurnTask.at(0).m_vecCDRomInfo.at(i).m_discInfo.discsize = 0;
+							m_vecBurnTask.at(0).m_vecCDRomInfo.at(i).m_discInfo.freesize = 0;
+							m_vecBurnTask.at(0).m_vecCDRomInfo.at(i).m_discInfo.usedsize = 0;
+						}
+					}
+					m_mutexBurnTaskVec.unlock();
+					break;
+				}
+			}
 			return 0;
 		}
 		else
@@ -1830,7 +2013,7 @@ void CBusiness::GetBurnStateString(int nBurnState, std::string& strDes)
 	switch (nBurnState)
 	{
 	case 0:
-		strDes = "未刻录";
+		strDes = "空闲";
 		break;
 	case 1:
 		strDes = "刻录中";

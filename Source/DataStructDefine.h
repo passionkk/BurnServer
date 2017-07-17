@@ -8,9 +8,11 @@
 enum CDROMSTATE
 {
 	CDROM_INIT = 0,
-	CDROM_READY,
+	CDROM_WAIT_INSERT_DISC, //等待插入光盘
+	CDROM_READY,		//准备刻录
+	CDROM_FORMAT,		//光盘格式化
 	CDROM_BURNING,		//刻录中
-	//CDROM_PAUSE,		
+	CDROM_CLOSEDISC,	//封盘
 	CDROM_UNINIT
 };
 
@@ -19,60 +21,7 @@ enum TASKSTATE
 	TASK_INIT = 0,
 	TASK_BURN,
 	TASK_PAUSE,			//暂停  由刻录状态转换到PAUSE
-	TASK_FORMAT,		//格式化光盘
-	TASK_CLOSEDISC,		//封盘
 	TASK_STOP
-};
-
-class CDRomInfo
-{
-public:
-	CDRomInfo()
-	{
-		m_strCDRomName = "";
-		m_strCDRomID = "";
-		m_strCDRomDevID = "";
-		m_nHasDisc = 0;
-		m_euWorkState = CDROM_UNINIT;
-		m_pDVDHandle = NULL;
-	};
-
-	CDRomInfo(const CDRomInfo& cdRomInfo)
-	{
-		if (this != &cdRomInfo)
-		{
-			m_strCDRomName = cdRomInfo.m_strCDRomName;
-			m_strCDRomID = cdRomInfo.m_strCDRomID;
-			m_strCDRomDevID = cdRomInfo.m_strCDRomDevID;
-			m_nHasDisc = cdRomInfo.m_nHasDisc;
-			m_euWorkState = cdRomInfo.m_euWorkState;
-			m_pDVDHandle = cdRomInfo.m_pDVDHandle;
-		}
-	};
-
-	CDRomInfo& operator=(const CDRomInfo& cdRomInfo)
-	{
-		if (this != &cdRomInfo)
-		{
-			m_strCDRomName = cdRomInfo.m_strCDRomName;
-			m_strCDRomID = cdRomInfo.m_strCDRomID;
-			m_strCDRomDevID = cdRomInfo.m_strCDRomDevID;
-			m_nHasDisc = cdRomInfo.m_nHasDisc;
-			m_euWorkState = cdRomInfo.m_euWorkState;
-			m_pDVDHandle = cdRomInfo.m_pDVDHandle;
-		}
-		return *this;
-	};
-
-	virtual ~CDRomInfo(){};
-
-public:
-	std::string		m_strCDRomName;		//光驱名: 光驱1
-	std::string		m_strCDRomID;		//光驱ID: CDRom_1 CDRom_2...CDRom_n  从1开始
-	std::string		m_strCDRomDevID;	//光驱设备ID: /dev/sr0
-	CDROMSTATE		m_euWorkState;		//光驱工作状态
-	int				m_nHasDisc;			//是否有光盘
-	void*			m_pDVDHandle;		//光驱Handle
 };
 
 class DiskInfo
@@ -117,6 +66,65 @@ public:
 	unsigned int discsize;		// 光盘容量(MB)
 	unsigned int usedsize;		// 已使用的大小(MB)	
 	unsigned int freesize;		// 可用大小(MB)
+};
+
+class CDRomInfo
+{
+public:
+	CDRomInfo()
+		: m_discInfo()
+	{
+		m_strCDRomName = "";
+		m_strCDRomID = "";
+		m_strCDRomDevID = "";
+		m_nHasDisc = 0;
+		m_euWorkState = CDROM_UNINIT;
+		m_pDVDHandle = NULL;
+		m_nBurnedSize = 0;
+	};
+
+	CDRomInfo(const CDRomInfo& cdRomInfo)
+	{
+		if (this != &cdRomInfo)
+		{
+			m_strCDRomName = cdRomInfo.m_strCDRomName;
+			m_strCDRomID = cdRomInfo.m_strCDRomID;
+			m_strCDRomDevID = cdRomInfo.m_strCDRomDevID;
+			m_nHasDisc = cdRomInfo.m_nHasDisc;
+			m_euWorkState = cdRomInfo.m_euWorkState;
+			m_pDVDHandle = cdRomInfo.m_pDVDHandle;
+			m_nBurnedSize = cdRomInfo.m_nBurnedSize;
+			m_discInfo = cdRomInfo.m_discInfo;
+		}
+	};
+
+	CDRomInfo& operator=(const CDRomInfo& cdRomInfo)
+	{
+		if (this != &cdRomInfo)
+		{
+			m_strCDRomName = cdRomInfo.m_strCDRomName;
+			m_strCDRomID = cdRomInfo.m_strCDRomID;
+			m_strCDRomDevID = cdRomInfo.m_strCDRomDevID;
+			m_nHasDisc = cdRomInfo.m_nHasDisc;
+			m_euWorkState = cdRomInfo.m_euWorkState;
+			m_pDVDHandle = cdRomInfo.m_pDVDHandle;
+			m_nBurnedSize = cdRomInfo.m_nBurnedSize;
+			m_discInfo = cdRomInfo.m_discInfo;
+		}
+		return *this;
+	};
+
+	virtual ~CDRomInfo(){};
+
+public:
+	std::string		m_strCDRomName;		//光驱名: 光驱1
+	std::string		m_strCDRomID;		//光驱ID: CDRom_1 CDRom_2...CDRom_n  从1开始
+	std::string		m_strCDRomDevID;	//光驱设备ID: /dev/sr0
+	CDROMSTATE		m_euWorkState;		//光驱工作状态
+	int				m_nHasDisc;			//是否有光盘
+	void*			m_pDVDHandle;		//光驱Handle
+	int				m_nBurnedSize;		//已刻录大小
+	DiskInfo		m_discInfo;			//光盘信息
 };
 
 class FileInfo
@@ -214,7 +222,7 @@ public:
 	std::string					m_strCDRomName;
 	std::vector<CDRomInfo>		m_vecCDRomInfo;
 	int							m_nUseCDRomIndex;
-	DiskInfo					m_diskInfo;			//光盘信息，包含光盘类型，大小等。
+	DiskInfo					m_discInfo;			//光盘信息，包含光盘类型，大小等。
 	int							m_nBurnedSize;		//已刻录大小
 	int							m_nAlarmSize;		//报警大小阈值
 	std::string					m_strBurnMode;		//"singleBurn" "doubleParallelBurn" "doubleRelayBurn" 

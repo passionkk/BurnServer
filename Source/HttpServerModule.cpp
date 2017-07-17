@@ -93,6 +93,7 @@ response_completed_callback (void *cls,
 
 
 HttpServerModule::HttpServerModule(void)
+: m_mutexHttpModule()
 {
 
 }
@@ -201,6 +202,7 @@ std::string HttpServerModule::ProcessProtocol(std::string sMethod, std::string j
 {
     try
     {
+		Poco::Mutex::ScopedLock     lock(m_mutexHttpModule);
         std::string jsonSend = "";
 		if (sMethod == "testProtocol")
 		{
@@ -438,8 +440,8 @@ std::string HttpServerModule::StartBurn(std::string strIn)
 				task.m_strBurnMode = jsonValueParams["burnMode"].asString();
 				//burnType
 				task.m_strBurnType = jsonValueParams["burnType"].asString();
-				//AlarmSize
-				task.m_nAlarmSize = jsonValueParams["alarmSize"].asInt();
+				//AlarmSize  设置到配置文件中可配
+				task.m_nAlarmSize = 4300;//jsonValueParams["alarmSize"].asInt();
 				//StreamInfo
 				Json::Value	jsonStreamInfo = jsonValueParams["streamInfo"];
 				task.m_burnStreamInfo.m_strBurnFileName = jsonStreamInfo["burnFileName"].asString();
@@ -673,7 +675,7 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 			
 			//std::string strOut = GetCDRonInfo(strCDRomID);
 			CDRomInfo cdRomInfo;
-			DiskInfo diskInfo;
+			//DiskInfo diskInfo;
 
 #if 0
 			Json::Value     jsonValueRoot;
@@ -710,7 +712,7 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 				if (nIndex != -1)
 					CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
 				else
-					strDes = "未刻录";
+					strDes = "空闲";
 				jsonValue2["burnState"] = Json::Value(cdRomInfo.m_euWorkState);
 				jsonValue2["burnStateDescription"] = Json::Value(strDes);
 				jsonValue2["hasDVD"] = Json::Value(cdRomInfo.m_nHasDisc);
@@ -745,7 +747,6 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 			//int nRet = -1;// CBusiness::GetInstance()->GetCDRomInfo(strCDRomID, cdRomInfo, diskInfo);
 			BurnTask task;
 			int nRet = CBusiness::GetInstance()->GetCurTask(task);
-		
 			g_NetLog.Debug("%s GetCDRomInfo.\n", __PRETTY_FUNCTION__);
 			
 			int nIndex = -1;
@@ -755,12 +756,12 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 				for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
 				{
 					g_NetLog.Debug("%s i = %d.\n", __PRETTY_FUNCTION__, i);
-					if (task.m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0 && task.m_nUseCDRomIndex == i)
+					if (task.m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0/* && task.m_nUseCDRomIndex == i*/)
 					{
 						nIndex = i;
 						nRet = 0;
 						cdRomInfo = task.m_vecCDRomInfo.at(i);
-						diskInfo = task.m_diskInfo;
+						//diskInfo = task.m_vecCDRomInfo.at(i).m_discInfo;
 						break;
 					}
 				}
@@ -771,10 +772,8 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 			Json::Value     jsonValue2;
 			if (nRet == 0 && nIndex > -1)
 			{
-				//g_NetLog.Debug("%s nRet = %d. Call GetCDRomInfo.\n", __PRETTY_FUNCTION__, nRet );
-				//nRet = CBusiness::GetInstance()->GetCDRomInfo(strCDRomID, cdRomInfo, diskInfo);
 				if (nRet == 0)
-				{
+				{	//当前刻录光驱
 					jsonValue2["retCode"] = Json::Value(0);
 					jsonValue2["retMessage"] = Json::Value("ok");
 
@@ -782,32 +781,19 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 					jsonValue2["cdRomID"] = Json::Value(strCDRomID);
 					jsonValue2["cdRomName"] = Json::Value(cdRomInfo.m_strCDRomName);
 					std::string strDes = "";
-					//CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
-					jsonValue2["burnState"] = Json::Value(1/*cdRomInfo.m_euWorkState*/);
-					jsonValue2["burnStateDescription"] = Json::Value("刻录中"/*strDes*/);
-					jsonValue2["hasDVD"] = Json::Value(diskInfo.discsize > 0 ? 1: 0);
+					int nFeedbackState = 0;
+					strDes = CBusiness::GetInstance()->GetCDRomState(task.m_vecCDRomInfo.at(nIndex).m_euWorkState, nFeedbackState);
+					g_NetLog.Debug("[HttpServerModule::GetCDRomInfo]m_euWorkState %d, nFeedbackState : %d.\n",
+								   (int)task.m_vecCDRomInfo.at(nIndex).m_euWorkState, nFeedbackState);
+					jsonValue2["burnState"] = Json::Value(nFeedbackState);//1);
+					jsonValue2["burnStateDescription"] = Json::Value(/*"刻录中"*/strDes);
+					jsonValue2["hasDVD"] = Json::Value(cdRomInfo.m_discInfo.discsize > 0 ? 1: 0);
 					char szSize[256] = { 0 };
-					sprintf(szSize, "%dMB", max(0, int(diskInfo.discsize - task.m_nBurnedSize)));
-					jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);//Json::Value(diskInfo.freesize);
+					sprintf(szSize, "%dMB", max(0, int(cdRomInfo.m_discInfo.discsize - task.m_vecCDRomInfo.at(nIndex).m_nBurnedSize)));
+					jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);
 					memset(szSize, 0, 256);
-					sprintf(szSize, "%dMB", diskInfo.discsize);
-					jsonValue2["DVDTotalCapcity"] = Json::Value(szSize);//Json::Value(diskInfo.discsize);
-					g_NetLog.Debug("%s nRet = %d. assign json value.\n", __PRETTY_FUNCTION__, nRet);
-				}
-				else
-				{
-					jsonValue2["retCode"] = Json::Value(1);
-					jsonValue2["retMessage"] = Json::Value("Get CDRomInfo fail.");
-
-					//返回实际光驱信息
-					jsonValue2["cdRomID"] = Json::Value(strCDRomID);
-					jsonValue2["cdRomName"] = Json::Value("");
-					jsonValue2["burnState"] = Json::Value(0);
-					jsonValue2["burnStateDescription"] = Json::Value("");
-					jsonValue2["hasDVD"] = Json::Value(0);
-					jsonValue2["DVDLeftCapcity"] = Json::Value("0MB");
-					jsonValue2["DVDTotalCapcity"] = Json::Value("0MB");
-					g_NetLog.Debug("%s nRet = %d. assign json value.\n", __PRETTY_FUNCTION__, nRet);
+					sprintf(szSize, "%dMB", cdRomInfo.m_discInfo.discsize);
+					jsonValue2["DVDTotalCapcity"] = Json::Value(szSize);
 				}
 			}
 			else
@@ -820,13 +806,11 @@ std::string HttpServerModule::GetCDRomInfo(std::string strIn)
 				jsonValue2["cdRomID"] = Json::Value(strCDRomID);
 				jsonValue2["cdRomName"] = Json::Value(cdRomInfo.m_strCDRomName);
 				jsonValue2["burnState"] = Json::Value(0);//无任务
-				std::string strDes = "未刻录";
-				//CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
+				std::string strDes = "空闲";
 				jsonValue2["burnStateDescription"] = Json::Value(strDes);
 				jsonValue2["hasDVD"] = Json::Value(0);
 				jsonValue2["DVDLeftCapcity"] = Json::Value("0MB");
 				jsonValue2["DVDTotalCapcity"] = Json::Value("0MB");
-				g_NetLog.Debug("%s nRet = %d. assign json value.\n", __PRETTY_FUNCTION__, nRet);
 			}
 #endif
 			jsonValue1["method"] = Json::Value(sMethod.c_str());

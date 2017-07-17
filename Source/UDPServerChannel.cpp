@@ -945,7 +945,7 @@ std::string UDPServerChannel::GetCDRomInfo(std::string strIn)
 			//jsonValue2["cdRomID"] = "CDRom_1";
 			//jsonValue2["cdRomName"] = "光驱1";
 			//jsonValue2["burnState"] = 0;
-			//jsonValue2["burnStateDescription"] = "未刻录";
+			//jsonValue2["burnStateDescription"] = "空闲";
 			//jsonValue2["hasDVD"] = 0;
 			//jsonValue2["DVDLeftCapcity"] = "0MB";
 			//jsonValue2["DVDTotalCapcity"] = "0MB",
@@ -996,8 +996,8 @@ std::string UDPServerChannel::GetCDRomInfo(std::string strIn)
 				CBusiness::GetInstance()->GetBurnStateString(task.m_taskRealState, strDes);
 				jsonValue2["burnStateDescription"] = Json::Value(strDes);
 				jsonValue2["hasDVD"] = Json::Value(task.m_burnStateFeedback.m_nHasDisc);
-				jsonValue2["DVDLeftCapcity"] = Json::Value(task.m_diskInfo.discsize - task.m_nBurnedSize);
-				jsonValue2["DVDTotalCapcity"] = Json::Value(task.m_diskInfo.discsize);
+				jsonValue2["DVDLeftCapcity"] = Json::Value(task.m_discInfo.discsize - task.m_nBurnedSize);
+				jsonValue2["DVDTotalCapcity"] = Json::Value(task.m_discInfo.discsize);
 			}
 			jsonValue1["method"] = Json::Value(sMethod.c_str());
 			jsonValue1["params"] = jsonValue2;

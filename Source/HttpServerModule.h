@@ -2,6 +2,7 @@
 #define HTTPSERVERMODULE_INCLUDED
 #include "HttpServerChannel.h"
 #include "Poco/JSON/JSON.h"
+#include "Poco/Mutex.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -52,6 +53,7 @@ private:
 private:
     static HttpServerModule   *m_pInstance;
     std::vector<HttpServerChannel*>  m_vectChannels;
+	Poco::Mutex     m_mutexHttpModule;
 };
 
 #endif
