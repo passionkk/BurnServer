@@ -441,7 +441,7 @@ std::string HttpServerModule::StartBurn(std::string strIn)
 				//burnType
 				task.m_strBurnType = jsonValueParams["burnType"].asString();
 				//AlarmSize  设置到配置文件中可配
-				task.m_nAlarmSize = 4300;//jsonValueParams["alarmSize"].asInt();
+				task.m_nAlarmSize = jsonValueParams["alarmSize"].asInt();//4300;//
 				//StreamInfo
 				Json::Value	jsonStreamInfo = jsonValueParams["streamInfo"];
 				task.m_burnStreamInfo.m_strBurnFileName = jsonStreamInfo["burnFileName"].asString();
