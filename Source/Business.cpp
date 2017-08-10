@@ -21,12 +21,16 @@
 
 CBusiness* CBusiness::m_pInstance = NULL;
 
-CBusiness::CBusiness() :Runnable(),
-	m_thread("CBusiness"),
-	m_ready(),
-	m_bStop(true),
-	m_bThreadState(false),
-	m_pCloseHandle(NULL)
+CBusiness::CBusiness() 
+	:	Runnable(),
+		m_thread("CBusiness"),
+		m_ready(),
+		m_bStop(true),
+		m_bThreadState(false),
+		m_pCloseHandle(NULL),
+		m_mutexBurnTaskVec(),
+		m_mutexCDRomInfoVec(),
+		m_mutexBurnTask()
 {
 }
 
@@ -101,7 +105,7 @@ void CBusiness::Init()
 		cout << "chdir to " << strCurPath << endl;
 		chdir(strCurPath.c_str());
 #endif
-		GetCDRomListFromFile("./CDRom_List");
+		GetCDRomListFromFile("./CDRom_List", true);
 		for (int i = 0; i < m_vecCDRomInfo.size(); i++)
 		{
 			g_NetLog.Debug("cdrom :%d, cdromID:%s, cdromDevID:%s, cdromName:%s.\n", i, m_vecCDRomInfo.at(i).m_strCDRomID.c_str(), 
@@ -146,6 +150,8 @@ void CBusiness::InitLog()
 			g_NetLog.SetDest3(vecLogRecvInfo.at(2).strLogRecvIP, vecLogRecvInfo.at(2).nLogRecvPort);
 			cout << "strLogRecvIP: " << vecLogRecvInfo.at(2).strLogRecvIP << ", port: " << vecLogRecvInfo.at(2).nLogRecvPort << endl;
 		}
+		int nAlarmSize = MainConfig::GetInstance()->GetDiscAlarmSize();
+		cout << "AlarmSize is " << nAlarmSize << endl;
 	}
 	catch (...)
 	{
@@ -330,19 +336,25 @@ int	CBusiness::ExtractString(const char *head, const char *end,
 void CBusiness::GetCDRomList(std::vector<CDRomInfo>& vecCDRomInfo)
 {
 	// 调用shell脚本获取光驱列表
-	g_NetLog.Debug("GetCDRomList.\n");
+	g_NetLog.Debug("[CBusiness::GetCDRomList] GetCDRomList.\n");
 	//system("./Get_CDRom_Dev_Info.sh");
 	GetCDRomListFromFile("./CDRom_List", true);	//每次都重新获取
 	vecCDRomInfo.clear();
+	Poco::Mutex::ScopedLock lock(m_mutexBurnTaskVec);
 	for (int i = 0; i < m_vecCDRomInfo.size(); i++)
 		vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
 }
 
-bool CBusiness::StartBurn(BurnTask& task)
+bool CBusiness::StartBurn(BurnTask* task)
 {
-	bool bRet = true;
-	Mutex::ScopedLock lock(m_mutexBurnTaskVec);
-	m_vecBurnTask.push_back(task);
+	bool bRet = false;
+	if (task != NULL)
+	{
+		Mutex::ScopedLock lock(m_mutexBurnTaskVec);
+		g_NetLog.Debug("[%s] Add a Task. task addr is %0x\n", __PRETTY_FUNCTION__, task);
+		m_vecBurnTask.push_back(task);
+		bRet = true;
+	}
 	return bRet;
 }
 
@@ -351,34 +363,42 @@ bool CBusiness::PauseBurn(std::string strSessionID)
 	try
 	{
 		bool bRet = true;
-		if (m_burnTask.m_strSessionID.compare(strSessionID) == 0)
+		if (m_burnTask == NULL)
 		{
-			m_burnTask.m_taskState = TASK_PAUSE;
+			bRet = false;
+		}
+		else if (m_burnTask->m_strSessionID.compare(strSessionID) == 0)
+		{
+			m_burnTask->m_taskState = TASK_PAUSE;
 		}
 		else
 		{
 			bRet = false;
-			printf("PauseBurn fail, can't find seesionID : %s.\n", strSessionID.c_str());
+			g_NetLog.Debug("[CBusiness::PauseBurn]PauseBurn fail, can't find seesionID : %s.\n", strSessionID.c_str());
 		}
 		return bRet;
 	}
 	catch (...)
 	{
-		g_NetLog.Debug("CBusiness::PauseBurn error. \n");
+		g_NetLog.Debug("[CBusiness::PauseBurn]CBusiness::PauseBurn error. \n");
 	}
 }
 
 bool CBusiness::ResumeBurn(std::string strSessionID)
 {
 	bool bRet = true;
-	if (m_burnTask.m_strSessionID.compare(strSessionID) == 0)
+	if (m_burnTask == NULL)
 	{
-		m_burnTask.m_taskState = TASK_BURN;
+		bRet = false;
+	}
+	else if (m_burnTask->m_strSessionID.compare(strSessionID) == 0)
+	{
+		m_burnTask->m_taskState = TASK_BURN;
 	}
 	else
 	{
 		bRet = false;
-		printf("ResumeBurn fail, can't find seesionID : %s.\n", strSessionID.c_str());
+		g_NetLog.Debug("[CBusiness::ResumeBurn]ResumeBurn fail, can't find seesionID : %s.\n", strSessionID.c_str());
 	}
 	return bRet;
 }
@@ -386,14 +406,25 @@ bool CBusiness::ResumeBurn(std::string strSessionID)
 bool CBusiness::StopBurn(std::string strSessionID)
 {
 	bool bRet = true;
-	if (m_burnTask.m_strSessionID.compare(strSessionID) == 0)
+	Poco::Mutex::ScopedLock lock(m_mutexBurnTaskVec);
+	if (m_burnTask == NULL && m_vecBurnTask.size() > 0)
 	{
-		m_burnTask.m_taskState = TASK_STOP;
+		g_NetLog.Debug("[CBusiness::StopBurn] vecBurnTask sessionID: %s, seesionID : %s.\n", 
+			m_vecBurnTask.at(0)->m_strSessionID.c_str(), strSessionID.c_str());
+
+		if (m_vecBurnTask.at(0)->m_strSessionID.compare(strSessionID) == 0)
+			m_vecBurnTask.at(0)->m_taskState = TASK_STOP;
+		else
+			bRet = false;
+	}
+	else if (m_burnTask->m_strSessionID.compare(strSessionID) == 0)
+	{
+		m_burnTask->m_taskState = TASK_STOP;
 	}
 	else
 	{
 		bRet = false;
-		printf("StopBurn fail, can't find seesionID : %s.\n", strSessionID.c_str());
+		g_NetLog.Debug("[CBusiness::StopBurn] StopBurn fail, can't find seesionID : %s.\n", strSessionID.c_str());
 	}
 	return bRet;
 }
@@ -429,7 +460,7 @@ int CBusiness::GetCDRomInfo(std::string strCDRomID, CDRomInfo& cdRomInfo, DiskIn
 
 		if (0 == dvdInterface.DVDSDK_GetDevInfo(m_vecCDRomInfo.at(nIndex).m_pDVDHandle, &dvdDev))
 		{
-			if (0 == dvdInterface.DVDSDK_GetDiscInfo(m_vecCDRomInfo.at(nIndex).m_pDVDHandle, &dvdDisc))
+			if (0 == CDataOpr::GetInstance()->SDK_GetDiscInfo(m_vecCDRomInfo.at(nIndex).m_pDVDHandle, dvdDisc))
 			{
 				//cdRomInfo.m_euWorkState = m_vecCDRomInfo.at(nIndex).m_euWorkState;
 				discInfo.discsize = dvdDisc.discsize;
@@ -446,104 +477,113 @@ int CBusiness::GetCDRomInfo(std::string strCDRomID, CDRomInfo& cdRomInfo, DiskIn
 
 std::string CBusiness::GetCDRomInfo(std::string strCDRomID, std::string sMethod)
 {
-	std::string strOut = "";
-	CDRomInfo cdRomInfo;
-	DiskInfo diskInfo;
-
-	BurnTask task;
-	int nRet = GetCurTask(task);
-	g_NetLog.Debug("%s GetCDRomInfo.\n", __PRETTY_FUNCTION__);
-
-	int nIndex = -1;
-	if (nRet == 0)
+	try
 	{
-		nRet = -1;
-		for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+		//g_NetLog.Debug("Enter [CBusiness::GetCDRomInfo].\n");
+		std::string strOut = "";
+		CDRomInfo cdRomInfo;
+		DiskInfo diskInfo;
+
+		Json::Value     jsonValueRoot;
+		Json::Value     jsonValue1;
+		Json::Value     jsonValue2;
+
+		int nRet = 0;
+		int nIndex = -1;
+		bool bGetInfoFromSaved = true;
+		
+		Mutex::ScopedLock lock(m_mutexBurnTask);
+		if (m_burnTask != NULL)
 		{
-			g_NetLog.Debug("%s i = %d.\n", __PRETTY_FUNCTION__, i);
-			if (task.m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0 && task.m_nUseCDRomIndex == i)
+			nRet = -1;
+			for (int i = 0; i < m_burnTask->m_vecCDRomInfo.size(); i++)
 			{
-				nIndex = i;
-				nRet = 0;
-				cdRomInfo = task.m_vecCDRomInfo.at(i);
-				diskInfo = task.m_vecCDRomInfo.at(i).m_discInfo;
-				break;
+				//g_NetLog.Debug("%s i = %d.\n", __PRETTY_FUNCTION__, i);
+				if (m_burnTask->m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0)
+				{
+					nIndex = i;
+					nRet = 0;
+					cdRomInfo = m_burnTask->m_vecCDRomInfo.at(i);
+					break;
+				}
+			}
+			if (nRet == 0 && nIndex > -1)
+			{
+				//当前刻录光驱
+				jsonValue2["retCode"] = Json::Value(0);
+				jsonValue2["retMessage"] = Json::Value("ok");
+
+				//返回实际光驱信息
+				jsonValue2["cdRomID"] = Json::Value(strCDRomID);
+				jsonValue2["cdRomName"] = Json::Value(cdRomInfo.m_strCDRomName);
+				std::string strDes = "";
+				int nFeedbackState = 0;
+				strDes = GetCDRomState(m_burnTask->m_vecCDRomInfo.at(nIndex).m_euWorkState, nFeedbackState);
+				//g_NetLog.Debug("[HttpServerModule::GetCDRomInfo]m_euWorkState %d, nFeedbackState : %d.\n",
+				//				(int)m_burnTask->m_vecCDRomInfo.at(nIndex).m_euWorkState, nFeedbackState);
+				jsonValue2["burnState"] = Json::Value(nFeedbackState);
+				jsonValue2["burnStateDescription"] = Json::Value(strDes);
+				jsonValue2["hasDVD"] = Json::Value(cdRomInfo.m_discInfo.discsize > 0 ? 1 : 0);
+				char szSize[256] = { 0 };
+				sprintf(szSize, "%dMB", max(0, int(cdRomInfo.m_discInfo.discsize - m_burnTask->m_vecCDRomInfo.at(nIndex).m_nBurnedSize)));
+				jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);
+				memset(szSize, 0, 256);
+				sprintf(szSize, "%dMB", cdRomInfo.m_discInfo.discsize);
+				jsonValue2["DVDTotalCapcity"] = Json::Value(szSize);
+
+				bGetInfoFromSaved = false;
 			}
 		}
-	}
-	g_NetLog.Debug("%s nIndex = %d, nRet = %d.\n", __PRETTY_FUNCTION__, nIndex, nRet);
-	Json::Value     jsonValueRoot;
-	Json::Value     jsonValue1;
-	Json::Value     jsonValue2;
-	if (nRet == 0 && nIndex > -1)
-	{
-		if (nRet == 0)
+		if (bGetInfoFromSaved)
 		{
+			//任务不存在，或者任务存在但是任务工作光驱不是所要查询的。
 			jsonValue2["retCode"] = Json::Value(0);
 			jsonValue2["retMessage"] = Json::Value("ok");
-
+			GetCDRomInfoFromSavedVector(strCDRomID, cdRomInfo);
 			//返回实际光驱信息
 			jsonValue2["cdRomID"] = Json::Value(strCDRomID);
 			jsonValue2["cdRomName"] = Json::Value(cdRomInfo.m_strCDRomName);
-			std::string strDes = "";
-			jsonValue2["burnState"] = Json::Value(1);
-			jsonValue2["burnStateDescription"] = Json::Value("刻录中");
-			jsonValue2["hasDVD"] = Json::Value(diskInfo.discsize > 0 ? 1 : 0);
-			char szSize[256] = { 0 };
-			sprintf(szSize, "%dMB", max(0, int(diskInfo.discsize - task.m_nBurnedSize)));
-			jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);
-			memset(szSize, 0, 256);
-			sprintf(szSize, "%dMB", diskInfo.discsize);
-			jsonValue2["DVDTotalCapcity"] = Json::Value(szSize);
-			g_NetLog.Debug("%s nRet = %d. assign json value.\n", __PRETTY_FUNCTION__, nRet);
-		}
-		else
-		{
-			jsonValue2["retCode"] = Json::Value(1);
-			jsonValue2["retMessage"] = Json::Value("Get CDRomInfo fail.");
-
-			//返回实际光驱信息
-			jsonValue2["cdRomID"] = Json::Value(strCDRomID);
-			jsonValue2["cdRomName"] = Json::Value("");
 			jsonValue2["burnState"] = Json::Value(0);
-			jsonValue2["burnStateDescription"] = Json::Value("");
+			std::string strDes = "空闲";
+			jsonValue2["burnStateDescription"] = Json::Value(strDes);
 			jsonValue2["hasDVD"] = Json::Value(0);
 			jsonValue2["DVDLeftCapcity"] = Json::Value("0MB");
 			jsonValue2["DVDTotalCapcity"] = Json::Value("0MB");
-			g_NetLog.Debug("%s nRet = %d. assign json value.\n", __PRETTY_FUNCTION__, nRet);
 		}
+		jsonValue1["method"] = Json::Value(sMethod.c_str());
+		jsonValue1["params"] = jsonValue2;
+		jsonValueRoot["result"] = jsonValue1;
+		strOut = jsonValueRoot.toStyledString();
+		//g_NetLog.Debug("%s nRet = %d. return string is %s.\n", __PRETTY_FUNCTION__, nRet, strOut.c_str());
+		
+		//g_NetLog.Debug("Leave [CBusiness::GetCDRomInfo].\n");
+		return strOut;
 	}
-	else
-	{	//任务不存在，或者任务存在但是任务工作光驱不是所要查询的。
-		jsonValue2["retCode"] = Json::Value(0);
-		jsonValue2["retMessage"] = Json::Value("ok");
-		CBusiness::GetInstance()->GetCDRomInfoFromSavedVector(strCDRomID, cdRomInfo);
-		//返回实际光驱信息
-		jsonValue2["cdRomID"] = Json::Value(strCDRomID);
-		jsonValue2["cdRomName"] = Json::Value(cdRomInfo.m_strCDRomName);
-		jsonValue2["burnState"] = Json::Value(0);//无任务
-		std::string strDes = "空闲";
-		jsonValue2["burnStateDescription"] = Json::Value(strDes);
-		jsonValue2["hasDVD"] = Json::Value(0);
-		jsonValue2["DVDLeftCapcity"] = Json::Value("0MB");
-		jsonValue2["DVDTotalCapcity"] = Json::Value("0MB");
-		g_NetLog.Debug("%s nRet = %d. assign json value.\n", __PRETTY_FUNCTION__, nRet);
+	catch (...)
+	{
+		g_NetLog.Debug("%s catched\n", __PRETTY_FUNCTION__);
+		return "";
 	}
-
-	jsonValue1["method"] = Json::Value(sMethod.c_str());
-	jsonValue1["params"] = jsonValue2;
-	jsonValueRoot["result"] = jsonValue1;
-	strOut = jsonValueRoot.toStyledString();
-	g_NetLog.Debug("%s nRet = %d. return string is %s.\n", __PRETTY_FUNCTION__, nRet, strOut.c_str());
-	return strOut;
 }
 
-int CBusiness::GetCurTask(BurnTask& task)
+int CBusiness::GetCurTask(BurnTask* & task)
 {
 	int nRet = 0;
+	task = NULL;
 	g_NetLog.Debug("[CBusiness::GetCurTask] m_vecBurnTask.size() is %d.\n", m_vecBurnTask.size());
-	if (m_vecBurnTask.size() > 0)
+	if (m_vecBurnTask.size() > 0 && m_burnTask != NULL)
 		task = m_burnTask;
+	else
+		nRet = -1;
+	return nRet;
+}
+
+int	CBusiness::GetFirstTaskInVec(BurnTask*& task)
+{
+	int nRet = 0;
+	Poco::Mutex::ScopedLock lock(m_mutexBurnTaskVec);
+	if (m_vecBurnTask.size() > 0)
+		task = m_vecBurnTask.at(0);
 	else
 		nRet = -1;
 	return nRet;
@@ -551,22 +591,41 @@ int CBusiness::GetCurTask(BurnTask& task)
 
 void CBusiness::AddBurnFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo)
 {
-	if (m_burnTask.m_strSessionID.compare(strSessionID) == 0)
+	if (m_burnTask != NULL)
 	{
-		m_mutexVecBurnFileInfo.lock();
-		int nSize = m_burnTask.m_vecBurnFileInfo.size();
-		g_NetLog.Debug("current vector file size is %d.\n", nSize);
-		//m_burnTask.m_vecBurnFileInfo.resize(m_burnTask.m_vecBurnFileInfo.size() + vecFileInfo.size());
-		//m_burnTask.m_vecBurnFileInfo.insert(m_burnTask.m_vecBurnFileInfo.end(), vecFileInfo.begin(), vecFileInfo.end());
-		for (int i = 0; i < vecFileInfo.size(); i++)
+		if (m_burnTask->m_strSessionID.compare(strSessionID) == 0)
 		{
-			m_burnTask.m_vecBurnFileInfo.push_back(vecFileInfo.at(i));
+			m_burnTask->m_mutexBurnFileInfo.lock();
+			for (int i = 0; i < vecFileInfo.size(); i++)
+			{
+				m_burnTask->m_vecBurnFileInfo.push_back(vecFileInfo.at(i));
+			}
+			int nSize = m_burnTask->m_vecBurnFileInfo.size();
+			m_burnTask->m_mutexBurnFileInfo.unlock();
+			g_NetLog.Debug("current vector file size is %d.\n", nSize);
+			return;
 		}
-		m_mutexVecBurnFileInfo.unlock();
-		return;
+	}
+	else
+	{
+		Poco::Mutex::ScopedLock lock(m_mutexBurnTaskVec);
+		if (m_vecBurnTask.size() > 0)
+		{
+			if (m_vecBurnTask.at(0)->m_strSessionID.compare(strSessionID) == 0)
+			{
+				for (int i = 0; i < vecFileInfo.size(); i++)
+				{
+					m_vecBurnTask.at(0)->m_vecBurnFileInfo.push_back(vecFileInfo.at(i));
+				}
+			}
+			else
+				g_NetLog.Debug("First task sessionID(%s) not equal to :%s.\n", 
+								m_vecBurnTask.at(0)->m_strSessionID.c_str(), strSessionID.c_str());
+		}
 	}
 	return;
 	//只添加此 sessionID对应的任务
+#if 0  //有任务队列了使用
 	for (size_t i = 0; i< m_vecBurnTask.size(); i++)
 	{
 		if (!m_vecBurnTask.at(i).m_strSessionID.empty() && m_vecBurnTask.at(i).m_strSessionID.compare(strSessionID) == 0)
@@ -576,17 +635,31 @@ void CBusiness::AddBurnFile(std::string strSessionID, std::vector<FileInfo>& vec
 			break;
 		}
 	}
+#endif 
 }
 
-void CBusiness::AddFeedbackFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo)
+void CBusiness::AddFeedbackFile(std::string strSessionID, std::vector<FileInfo>& vecFileInfo, int nCDRomIndex)
 {
 	//if (m_burnTask.m_strSessionID.compare(strSessionID) == 0)
 	{
-		m_burnTask.m_vecFeedbackFileInfo.clear();
-		for (int i = 0; i < vecFileInfo.size(); i++)
+		m_burnTask->m_mutexFeedbackFileInfo.lock();
+		if (nCDRomIndex == 0)
 		{
-			m_burnTask.m_vecFeedbackFileInfo.push_back(vecFileInfo.at(i));
+			m_burnTask->m_vecFeedbackFileInfo.clear();
+			for (int i = 0; i < vecFileInfo.size(); i++)
+			{
+				m_burnTask->m_vecFeedbackFileInfo.push_back(vecFileInfo.at(i));
+			}
 		}
+		else
+		{
+			m_burnTask->m_vecFeedbackFileInfo2.clear();
+			for (int i = 0; i < vecFileInfo.size(); i++)
+			{
+				m_burnTask->m_vecFeedbackFileInfo2.push_back(vecFileInfo.at(i));
+			}
+		}
+		m_burnTask->m_mutexFeedbackFileInfo.unlock();
 		//m_burnTask.m_vecFeedbackFileInfo.insert(m_burnTask.m_vecFeedbackFileInfo.end(), vecFileInfo.begin(), vecFileInfo.end());
 		return;
 	}
@@ -606,105 +679,53 @@ void CBusiness::BurnStateFeedback()
 {
 	try
 	{
-		int nInterval = m_burnTask.m_burnStateFeedback.m_nFeedbackInterval;
+		g_NetLog.Debug("Enter CBusiness::BurnStateFeedback.\n");
+		Poco::Mutex::ScopedLock lock(m_mutexBurnTask);
+		if (m_burnTask == NULL)
+			return;
+		int nInterval = m_burnTask->m_burnStateFeedback.m_nFeedbackInterval;
 		//异常处理 
-		if (m_burnTask.m_burnStateFeedback.m_strFeedbackIP.empty() ||
-			m_burnTask.m_burnStateFeedback.m_nFeedbackPort <= 0
+		if (m_burnTask->m_burnStateFeedback.m_strFeedbackIP.empty() ||
+			m_burnTask->m_burnStateFeedback.m_nFeedbackPort <= 0
 			)
 			return;
 
 		while (true)
 		{
-			if (m_burnTask.m_burnStateFeedback.m_strNeedFeedback.compare("yes") == 0)
+			if (m_burnTask->m_burnStateFeedback.m_strNeedFeedback.compare("yes") == 0)
 			{
 				std::string		sMethod = "burnStateFeedback";
 				Json::Value     jsonValueRoot;
 				Json::Value     jsonValue1;
 				Json::Value     jsonValue2;
 				int nIndex = -1;
-#if 0
-				DVDDRV_HANDLE pHandle = GetSpecCDRom(m_burnTask, m_burnTask.m_strCDRomID, nIndex);
-				DVDSDKInterface dvdInterface;
-				int nHasDisc = 0;
-				if (pHandle != NULL)
-					nHasDisc = dvdInterface.DVDSDK_HaveDisc(pHandle);
-				jsonValue2["cdRomID"] = Json::Value(m_burnTask.m_strCDRomID);
-				jsonValue2["cdRomName"] = Json::Value(m_burnTask.m_strCDRomName);
-				jsonValue2["sessionID"] = Json::Value(m_burnTask.m_strSessionID);
-
-				jsonValue2["burnState"] = Json::Value(m_burnTask.m_taskRealState);
-				std::string strDes = "";
-				GetBurnStateString(m_burnTask.m_taskRealState, strDes);
-				jsonValue2["burnStateDescription"] = Json::Value(strDes);
-				jsonValue2["hasDVD"] = Json::Value(nHasDisc/*m_burnTask.m_burnStateFeedback.m_nHasDisc*/);
-
-				char szSize[256] = { 0 };
-				sprintf(szSize, "%dMB", m_burnTask.m_diskInfo.discsize - m_burnTask.m_nBurnedSize);
-				jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);
-				memset(szSize, 0, 256);
-				sprintf(szSize, "%dMB", m_burnTask.m_diskInfo.discsize);
-				jsonValue2["DVDTotalCapcity"] = Json::Value(szSize);
-#endif			
-				int nUseCDRomIndex = m_burnTask.m_nUseCDRomIndex;
-				int nBurnedSize = m_burnTask.m_nBurnedSize;
+	
+				int nUseCDRomIndex = m_burnTask->m_nUseCDRomIndex;
+				int nBurnedSize = m_burnTask->m_nBurnedSize;
 				CDRomInfo cdRomInfo;
 				DiskInfo diskInfo;
-
+				std::string strOut = "";
 				//有几个光驱反馈几次
-				for (int i = 0; i < m_burnTask.m_vecCDRomInfo.size(); i++)
+				for (int i = 0; i < m_burnTask->m_vecCDRomInfo.size(); i++)
 				{
-					if (i == nUseCDRomIndex)
+					std::string strCDRomID = m_burnTask->m_vecCDRomInfo.at(i).m_strCDRomID;
+					jsonValue1 = GetCDRomInfo(strCDRomID, sMethod);
+					std::string strSend = jsonValue1.toStyledString();
+					std::string strRecv;
+					if (m_burnTask->m_burnStateFeedback.m_transType.compare("udp") == 0)
 					{
-						//刻录使用中的光驱 返回实际光驱信息
-						cdRomInfo = m_burnTask.m_vecCDRomInfo.at(i);
-						diskInfo = m_burnTask.m_vecCDRomInfo.at(i).m_discInfo;
-
-						jsonValue2["cdRomID"] = Json::Value(m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomID);
-						jsonValue2["cdRomName"] = Json::Value(m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomName);
-						std::string strDes = "";
-						int nFeedbackState = 0;
-						strDes = GetCDRomState(m_burnTask.m_vecCDRomInfo.at(nUseCDRomIndex).m_euWorkState, nFeedbackState);
-						jsonValue2["burnState"] = Json::Value(nFeedbackState);
-						jsonValue2["burnStateDescription"] = Json::Value(strDes);
-						jsonValue2["hasDVD"] = Json::Value(diskInfo.discsize > 0 ? 1 : 0);
-						char szSize[256] = { 0 };
-						sprintf(szSize, "%dMB", max(0, int(diskInfo.discsize - nBurnedSize)));
-						jsonValue2["DVDLeftCapcity"] = Json::Value(szSize);
-						memset(szSize, 0, 256);
-						sprintf(szSize, "%dMB", diskInfo.discsize);
-						jsonValue2["DVDTotalCapcity"] = Json::Value(szSize);
+						UDPClient client;
+						client.Init(m_burnTask->m_burnStateFeedback.m_strFeedbackIP, m_burnTask->m_burnStateFeedback.m_nFeedbackPort);
+						client.ConnectServer();
+						client.SendProtocol(strSend, strRecv);
+						client.Close();
 					}
 					else
 					{
-						jsonValue2["cdRomID"] = Json::Value(m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomID);
-						jsonValue2["cdRomName"] = Json::Value(m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomName);
-						jsonValue2["sessionID"] = Json::Value(m_burnTask.m_strSessionID);
-
-						jsonValue2["burnState"] = Json::Value(0);
-						std::string strDes = "空闲";
-						jsonValue2["burnStateDescription"] = Json::Value(strDes);
-						jsonValue2["hasDVD"] = Json::Value(0);
-						jsonValue2["DVDLeftCapcity"] = Json::Value("0MB");
-						jsonValue2["DVDTotalCapcity"] = Json::Value("0MB");
+						CHttpClient client;
+						client.SendHttpProtocol(m_burnTask->m_burnStateFeedback.m_strFeedbackIP, m_burnTask->m_burnStateFeedback.m_nFeedbackPort,
+												strSend, strRecv);
 					}
-				}
-				jsonValue1["method"] = Json::Value(sMethod.c_str());
-				jsonValue1["params"] = jsonValue2;
-				std::string strSend = jsonValue1.toStyledString();
-				std::string strRecv;
-				if (m_burnTask.m_burnStateFeedback.m_transType.compare("udp") == 0)
-				{
-					UDPClient client;
-					client.Init(m_burnTask.m_burnStateFeedback.m_strFeedbackIP, m_burnTask.m_burnStateFeedback.m_nFeedbackPort);
-					client.ConnectServer();
-					client.SendProtocol(strSend, strRecv);
-					client.Close();
-				}
-				else
-				{
-					CHttpClient client;
-					client.SendHttpProtocol(m_burnTask.m_burnStateFeedback.m_strFeedbackIP, m_burnTask.m_burnStateFeedback.m_nFeedbackPort,
-						strSend, strRecv);
 				}
 			}
 			else
@@ -712,7 +733,7 @@ void CBusiness::BurnStateFeedback()
 			if (nInterval <= 0)
 				nInterval = 2000;
 			sleep(nInterval/1000);
-			if (m_burnTask.m_taskRealState == TASK_STOP)
+			if (m_burnTask->m_taskRealState == TASK_STOP)
 				break;
 		}
 	}
@@ -724,13 +745,13 @@ void CBusiness::BurnStateFeedback()
 }
 
 //封盘前刻录状态反馈协议
-void CBusiness::CloseDiscFeedback(int leftCap, int totalCap)
+void CBusiness::CloseDiscFeedback(int leftCap, int totalCap, int nCDRomIndex)
 {
 	try
 	{
 		//异常处理 
-		if (m_burnTask.m_burnStateFeedback.m_strFeedbackIP.empty() ||
-			m_burnTask.m_burnStateFeedback.m_nFeedbackPort <= 0
+		if (m_burnTask->m_burnStateFeedback.m_strFeedbackIP.empty() ||
+			m_burnTask->m_burnStateFeedback.m_nFeedbackPort <= 0
 			)
 			return;
 
@@ -738,8 +759,8 @@ void CBusiness::CloseDiscFeedback(int leftCap, int totalCap)
 		Json::Value     jsonValueRoot;
 		Json::Value     jsonValue1;
 		Json::Value     jsonValue2;
-		jsonValue2["cdRomID"] = Json::Value(m_burnTask.m_strCDRomID);
-		jsonValue2["sessionID"] = Json::Value(m_burnTask.m_strSessionID);
+		jsonValue2["cdRomID"] = Json::Value(nCDRomIndex ==0 ? m_burnTask->m_strCDRomID : m_burnTask->m_strCDRomID2);
+		jsonValue2["sessionID"] = Json::Value(m_burnTask->m_strSessionID);
 
 		jsonValue2["DVDLeftCapcity"] = Json::Value(leftCap);
 		jsonValue2["DVDTotalCapcity"] = Json::Value(totalCap);
@@ -750,10 +771,10 @@ void CBusiness::CloseDiscFeedback(int leftCap, int totalCap)
 		string strSend = jsonValue1.toStyledString(); //jsonValueRoot.toStyledString();
 		//g_NetLog.Debug("[CBusiness::CloseDiscFeedback]send string is %s.\n", strSend.c_str());
 		std::string strRecv;
-		if (m_burnTask.m_burnStateFeedback.m_transType.compare("udp") == 0)
+		if (m_burnTask->m_burnStateFeedback.m_transType.compare("udp") == 0)
 		{
 			UDPClient client;
-			client.Init(m_burnTask.m_burnStateFeedback.m_strFeedbackIP, m_burnTask.m_burnStateFeedback.m_nFeedbackPort);
+			client.Init(m_burnTask->m_burnStateFeedback.m_strFeedbackIP, m_burnTask->m_burnStateFeedback.m_nFeedbackPort);
 			client.ConnectServer();
 			client.SendProtocol(strSend, strRecv);
 			client.Close();
@@ -764,12 +785,12 @@ void CBusiness::CloseDiscFeedback(int leftCap, int totalCap)
 		else
 		{
 			CHttpClient client;
-			client.SendHttpProtocol(m_burnTask.m_burnStateFeedback.m_strFeedbackIP, m_burnTask.m_burnStateFeedback.m_nFeedbackPort,
+			client.SendHttpProtocol(m_burnTask->m_burnStateFeedback.m_strFeedbackIP, m_burnTask->m_burnStateFeedback.m_nFeedbackPort,
 				strSend, strRecv);
 
 			g_NetLog.Debug("ip : %s, port : %d, send string : %s, recv string %s.\n",
-				m_burnTask.m_burnStateFeedback.m_strFeedbackIP.c_str(), m_burnTask.m_burnStateFeedback.m_nFeedbackPort,
-				strSend.c_str(), strRecv.c_str());
+						   m_burnTask->m_burnStateFeedback.m_strFeedbackIP.c_str(), m_burnTask->m_burnStateFeedback.m_nFeedbackPort,
+							strSend.c_str(), strRecv.c_str());
 		}
 		Json::Reader    jsonReader;
 		Json::Value     jsonValueIn;
@@ -815,7 +836,7 @@ void CBusiness::CloseDiscFeedback(int leftCap, int totalCap)
 				vecFileInfo.push_back(fileInfo);
 			}
 			g_NetLog.Debug("call add feedbackfile. feedbackFile size is %d\n", vecFileInfo.size());
-			CBusiness::GetInstance()->AddFeedbackFile(m_burnTask.m_strSessionID, vecFileInfo);
+			CBusiness::GetInstance()->AddFeedbackFile(m_burnTask->m_strSessionID, vecFileInfo);
 		}
 	}
 	catch (...)
@@ -853,27 +874,29 @@ void CBusiness::CloseDisc()
 
 
 //业务处理
-int CBusiness::GetUndoTask(BurnTask& task)
+int CBusiness::GetUndoTask(BurnTask*& task)
 {
 	int nRet = -1;
 	Mutex::ScopedLock   lock(m_mutexBurnTaskVec);
-	g_NetLog.Debug("task size is %d.\n", m_vecBurnTask.size());
+	g_NetLog.Debug("[CBusiness::GetUndoTask] task size is %d.\n", m_vecBurnTask.size());
 	if (m_vecBurnTask.size() > 0)
 	{
-		m_mutexVecBurnFileInfo.lock();
+		/*m_mutexVecBurnFileInfo.lock();
 		m_vecBurnTask.at(0).m_vecBurnFileInfo.clear();
 		for (int i = 0; i < m_burnTask.m_vecBurnFileInfo.size(); i++)
 		{
 			m_vecBurnTask.at(0).m_vecBurnFileInfo.push_back(m_burnTask.m_vecBurnFileInfo.at(i));
 		}
 		task = m_vecBurnTask.at(0);
-		m_mutexVecBurnFileInfo.unlock();
+		m_mutexVecBurnFileInfo.unlock();*/
+		task = m_vecBurnTask.at(0);
+		g_NetLog.Debug("[CBusiness::GetUndoTask] task addr is %0x. m_burnTask : %0x\n", task, m_burnTask);
 		nRet = 0;
 	}
 	return nRet;
 }
 
-void CBusiness::DoTask(BurnTask& task)
+void CBusiness::DoTask(BurnTask* task)
 {
 	/*if (task.m_vecBurnFileInfo.size() > 0)
 	{
@@ -892,9 +915,10 @@ void CBusiness::DoTask(BurnTask& task)
 	//CBusiness::Download("file", "http://192.168.1.149:1001/download?filePath=D:\\download\\小鸡快跑.mkv", "/mnt/HD0/burnTestFile/Download/小鸡快跑.mkv");
 
 	//m_burnTask = task;
-	g_NetLog.Debug("Get One Task, DoTask. m_burnTask addr is %d, task addr is %d\n", &m_burnTask, &task);
-	std::string strBurnCDRomID = task.m_strCDRomID;
-
+	g_NetLog.Debug("[CBusiness::DoTask]Get One Task, DoTask. m_burnTask addr is %0x, task addr is %0x\n", m_burnTask, task);
+	std::string strBurnCDRomID = task->m_strCDRomID;
+	g_NetLog.Debug("[CBusiness::DoTask]strBurnCDRomID is %s.\n", strBurnCDRomID.c_str());
+	
 	int nRet = ChooseCDRomToBurn(task);
 	if (0 != nRet)
 	{
@@ -905,11 +929,12 @@ void CBusiness::DoTask(BurnTask& task)
 			GetCDRomListFromFile("./CDRom_List", true);
 			g_NetLog.Debug("Load CDRom fail. may change device, check CDRom finish.\n");
 		}
-		g_NetLog.Debug("task.m_taskState is %d, m_burnTask.m_taskState is %d\n", task.m_taskState, m_burnTask.m_taskState);
-		if (task.m_taskState == TASK_STOP)// && task.m_vecBurnFileInfo.size() == 0)
+		g_NetLog.Debug("task.m_taskState is %d, m_burnTask.m_taskState is %d\n", task->m_taskState, m_burnTask->m_taskState);
+		if (task->m_taskState == TASK_STOP)// && task.m_vecBurnFileInfo.size() == 0)
 			goto EndTask;
 		return;
 	}
+
 	nRet = InitCDRom(task);
 	if (0 != nRet)
 	{
@@ -918,20 +943,20 @@ void CBusiness::DoTask(BurnTask& task)
 			g_NetLog.Debug("Init CDRom fail.task alarm size larger than disc size.\n");
 			goto EndTask;
 		}
-		g_NetLog.Debug("Init CDRom fail.task.m_taskState is %d, task.m_vecBurnFileInfo is %d\n", task.m_taskState, task.m_vecBurnFileInfo.size());
-		if (task.m_taskState == TASK_STOP && task.m_vecBurnFileInfo.size() == 0)
+		g_NetLog.Debug("Init CDRom fail.task.m_taskState is %d, task.m_vecBurnFileInfo is %d\n", task->m_taskState, task->m_vecBurnFileInfo.size());
+		if (task->m_taskState == TASK_STOP && task->m_vecBurnFileInfo.size() == 0)
 			goto EndTask;
 		return;
 	}
 
-	if (task.m_taskState == TASK_INIT)
-		task.m_taskState = TASK_BURN;
+	if (task->m_taskState == TASK_INIT)
+		task->m_taskState = TASK_BURN;
 	
-	task.m_taskRealState = TASK_BURN;
+	task->m_taskRealState = TASK_BURN;
 	//开线程进行刻录状态的反馈
-	if (task.m_burnStateFeedback.m_strNeedFeedback.compare("yes") == 0)
+	if (task->m_burnStateFeedback.m_strNeedFeedback.compare("yes") == 0)
 	{
-		pthread_create(&task.m_burnStateFeedback.m_nThreadID, NULL, &(CBusiness::BurnStateFeedbackThread), (void*)this);
+		pthread_create(&task->m_burnStateFeedback.m_nThreadID, NULL, &(CBusiness::BurnStateFeedbackThread), (void*)this);
 		m_bThreadState = true;
 	}
 	m_mapDirToHandle.clear();
@@ -939,13 +964,19 @@ void CBusiness::DoTask(BurnTask& task)
 	do
 	{
 		BurnStreamInfoToDisk(task);
-	} while (task.m_taskState == TASK_PAUSE);
+	} while (task->m_taskState == TASK_PAUSE);
 
-	do
+	if (task->m_strBurnMode.compare("doubleParallelBurn") == 0)
 	{
-		BurnFileToDisk(task);
-	} while (task.m_taskState == TASK_PAUSE);
-	
+		StartParallelBurnFileToDisc(task);
+	}
+	else
+	{	//
+		do
+		{
+			BurnFileToDisk(task);
+		} while (task->m_taskState == TASK_PAUSE);
+	}
 EndTask:
 	DeleteTask();
 	m_bThreadState = false;
@@ -955,10 +986,49 @@ EndTask:
 
 void CBusiness::DeleteTask()
 {
-	Mutex::ScopedLock   lock(m_mutexBurnTaskVec);
-	if (m_vecBurnTask.size() > 0 && m_burnTask.m_vecBurnFileInfo.size() == 0)
-		m_vecBurnTask.erase(m_vecBurnTask.begin());
-	m_burnTask.m_taskState = m_burnTask.m_taskRealState = TASK_INIT;
+	try
+	{
+		g_NetLog.Debug("[CBusiness::DeleteTask]m_vecBurnTask.size() is %d.\n", m_vecBurnTask.size());
+		Mutex::ScopedLock   lock(m_mutexBurnTaskVec);
+		if (m_vecBurnTask.size() > 0 && m_burnTask != NULL)
+		{
+			if (m_burnTask->m_vecBurnFileInfo.size() == 0)
+			{
+				g_NetLog.Debug("Delete Task success, m_vecBurnTask.at(0) : %0x, m_burnTask : %0x.\n",
+					m_vecBurnTask.at(0), m_burnTask);
+				m_vecBurnTask.erase(m_vecBurnTask.begin());
+				Mutex::ScopedLock lockBurnTask(m_mutexBurnTask);
+				if (m_burnTask != NULL)
+					delete m_burnTask;
+				m_burnTask = NULL;
+				g_NetLog.Debug("Delete Task success.\n");
+			}
+		}
+	}
+	catch (...)
+	{
+		g_NetLog.Debug("[CBusiness::DeleteTask] delete task catch.\n");
+	}
+}
+
+void CBusiness::TrayCDRom(BurnTask* task, std::string strCDRomID)
+{
+	if (task != NULL)
+	{
+	}
+}
+
+void CBusiness::TrayCDRomException(BurnTask* task, std::string strCDRomID, int nCDRomIndex)
+{
+	//弹出光盘
+	DVDDRV_HANDLE pHandle = GetSpecCDRom(task, strCDRomID, nCDRomIndex);
+	if (pHandle != NULL && nCDRomIndex != -1)
+	{
+		CDataOpr::GetInstance()->SDK_LockDoor(pHandle, 0);
+		CDataOpr::GetInstance()->SDK_Tray(pHandle, 1);
+	}
+	SetCDRomState(strCDRomID, CDROM_UNINIT);
+	m_bThreadState = false;
 }
 
 void CBusiness::SetCDRomState(std::string strCDRomID, CDROMSTATE state)
@@ -1022,74 +1092,117 @@ void CBusiness::ResetCDRomState()
 
 void CBusiness::SetTaskCDRomState(std::string strCDRomID, CDROMSTATE state)
 {
-	for (int i = 0; i < m_burnTask.m_vecCDRomInfo.size(); i++)
+	if (m_burnTask != NULL)
 	{
-		if (m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0)
+		for (int i = 0; i < m_burnTask->m_vecCDRomInfo.size(); i++)
 		{
-			m_burnTask.m_vecCDRomInfo.at(i).m_euWorkState = state;
-			if (state == CDROM_INIT || state == CDROM_UNINIT)
-			{	//重置光盘信息为0
-				m_burnTask.m_vecCDRomInfo.at(i).m_nBurnedSize = 0;
-				m_burnTask.m_vecCDRomInfo.at(i).m_discInfo.discsize = 0;
-				m_burnTask.m_vecCDRomInfo.at(i).m_discInfo.freesize = 0;
-				m_burnTask.m_vecCDRomInfo.at(i).m_discInfo.usedsize = 0;
+			if (m_burnTask->m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0)
+			{
+				m_burnTask->m_vecCDRomInfo.at(i).m_euWorkState = state;
+				if (state == CDROM_INIT || state == CDROM_UNINIT)
+				{	//重置光盘信息为0
+					m_burnTask->m_vecCDRomInfo.at(i).m_nBurnedSize = 0;
+					m_burnTask->m_vecCDRomInfo.at(i).m_discInfo.discsize = 0;
+					m_burnTask->m_vecCDRomInfo.at(i).m_discInfo.freesize = 0;
+					m_burnTask->m_vecCDRomInfo.at(i).m_discInfo.usedsize = 0;
 
-				g_NetLog.Debug("[CBusiness::SetTaskCDRomState] i : %d, state : %d, SetTaskCDRomState to UNINIT.", i, state);
+					g_NetLog.Debug("[CBusiness::SetTaskCDRomState] i : %d, state : %d, SetTaskCDRomState to UNINIT.\n", i, state);
+				}
+				break;
 			}
-			break;
 		}
 	}
 }
 
-void* CBusiness::GetIdleCDRom(BurnTask& task, std::string& strCDRomID, int& nCDRomIndex)
+void CBusiness::SetCDRomBurnSize(std::string strCDRomID, int nBurnSize)
 {
-	void* pHandle = NULL;
-	for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+	Poco::Mutex::ScopedLock lock(m_mutexCDRomInfoVec);
+	for (int i = 0; i < m_vecCDRomInfo.size(); i++)
 	{
-		if (task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_READY || task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT)
+		if (m_vecCDRomInfo.at(i).m_strCDRomID.compare(strCDRomID) == 0)
 		{
-			pHandle = task.m_vecCDRomInfo.at(i).m_pDVDHandle;
-			strCDRomID = task.m_vecCDRomInfo.at(i).m_strCDRomID;
-			nCDRomIndex = i;
+			m_vecCDRomInfo.at(i).m_nBurnedSize = nBurnSize;
+			g_NetLog.Debug("[CBusiness::SetCDRomBurnSize] i : %d, nBurnSize : %d, SetTaskCDRomState to UNINIT.", i, nBurnSize);
 			break;
 		}
 	}
-	return pHandle;
 }
 
-void* CBusiness::GetSpecCDRom(BurnTask& task, std::string& strCDRomID, int& nCDRomIndex)
+void* CBusiness::GetIdleCDRom(BurnTask* task, std::string& strCDRomID, int& nCDRomIndex)
 {
-	void* pHandle = NULL;
-	for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+	try
 	{
-		if (task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_READY || //task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT ||
-			task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_INIT)
+		if (task == NULL)
+			return NULL;
+
+		void* pHandle = NULL;
+		for (int i = 0; i < task->m_vecCDRomInfo.size(); i++)
 		{
-			pHandle = task.m_vecCDRomInfo.at(i).m_pDVDHandle;
-			strCDRomID = task.m_vecCDRomInfo.at(i).m_strCDRomID;
-			nCDRomIndex = i;
-			break;
+			if (task->m_vecCDRomInfo.at(i).m_euWorkState == CDROM_READY || task->m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT)
+			{
+				pHandle = task->m_vecCDRomInfo.at(i).m_pDVDHandle;
+				strCDRomID = task->m_vecCDRomInfo.at(i).m_strCDRomID;
+				nCDRomIndex = i;
+				break;
+			}
 		}
+		return pHandle;
 	}
-	return pHandle;
+	catch (...)
+	{
+	}
 }
 
-void*	CBusiness::GetWorkingCDRomHandle(BurnTask& task, std::string& strCDRomID)
+void* CBusiness::GetSpecCDRom(BurnTask* task, std::string& strCDRomID, int& nCDRomIndex)
 {
-	void* pHandle = NULL;
-	for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+	try
 	{
-		if (task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_BURNING)
+		if (task == NULL)
+			return NULL;
+
+		void* pHandle = NULL;
+		for (int i = 0; i < task->m_vecCDRomInfo.size(); i++)
 		{
-			pHandle = task.m_vecCDRomInfo.at(i).m_pDVDHandle;
-			strCDRomID = task.m_vecCDRomInfo.at(i).m_strCDRomID;
-			break;
+			if (task->m_vecCDRomInfo.at(i).m_euWorkState == CDROM_READY || //task.m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT ||
+				task->m_vecCDRomInfo.at(i).m_euWorkState == CDROM_INIT)
+			{
+				pHandle = task->m_vecCDRomInfo.at(i).m_pDVDHandle;
+				strCDRomID = task->m_vecCDRomInfo.at(i).m_strCDRomID;
+				task->m_vecCDRomInfo.at(i).m_euWorkState = CDROM_UNINIT;
+				nCDRomIndex = i;
+				break;
+			}
 		}
+		return pHandle;
 	}
-	return pHandle;
+	catch (...)
+	{
+	}
+	
 }
 
-int CBusiness::ChooseCDRomToBurn(BurnTask& task)
+void*	CBusiness::GetWorkingCDRomHandle(BurnTask* task, std::string& strCDRomID)
+{
+	try{
+		void* pHandle = NULL;
+		for (int i = 0; i < task->m_vecCDRomInfo.size(); i++)
+		{
+			if (task->m_vecCDRomInfo.at(i).m_euWorkState == CDROM_BURNING)
+			{
+				pHandle = task->m_vecCDRomInfo.at(i).m_pDVDHandle;
+				strCDRomID = task->m_vecCDRomInfo.at(i).m_strCDRomID;
+				break;
+			}
+		}
+		return pHandle;
+	}
+	catch (...)
+	{
+		g_NetLog.Debug("[CBusiness::GetWorkingCDRomHandle]catch.\n");
+	}
+}
+
+int CBusiness::ChooseCDRomToBurn(BurnTask*& task)
 {
 	try
 	{
@@ -1106,102 +1219,164 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 			}
 		}
 
-		if (task.m_taskRealState == TASK_BURN)// 续刻的任务
+		if (task->m_taskRealState == TASK_BURN)// 续刻的任务
 		{
-			if (task.m_strBurnMode.compare("doubleRelayBurn") == 0)//双盘续刻
+			if (task->m_strBurnMode.compare("doubleRelayBurn") == 0)//双盘续刻
 			{
-				g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn]task.m_nUseCDRomIndex is %d. cdrom state is %d.\n", 
-					task.m_nUseCDRomIndex, task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState);
+				g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn]task.m_nUseCDRomIndex is %d. cdrom state is %d.\n",
+					task->m_nUseCDRomIndex, task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_euWorkState);
 
-				task.m_nUseCDRomIndex = task.m_vecCDRomInfo.size() - 1 - task.m_nUseCDRomIndex;
+				task->m_nUseCDRomIndex = task->m_vecCDRomInfo.size() - 1 - task->m_nUseCDRomIndex;
 
 				g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn]task.m_nUseCDRomIndex is %d. cdrom state is %d.\n",
-					task.m_nUseCDRomIndex, task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState);
+					task->m_nUseCDRomIndex, task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_euWorkState);
 
-				task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState = CDROM_INIT;
+				task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_euWorkState = CDROM_INIT;
+				//上面是修改前逻辑
+#if 0
+				int nCDRomIndex = task->m_nUseCDRomIndex;
+				std::string strCDRomDevID = task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_strCDRomDevID;
+				DVDSDKInterface dvdInterface;
+				DVDDRV_HANDLE hDvD = dvdInterface.DVDSDK_Load(strCDRomDevID.c_str());
+				g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] dvdInterface.DVDSDK_Load.\n");
+				if (hDvD != NULL)
+				{
+					task->m_vecCDRomInfo.at(nCDRomIndex).m_pDVDHandle = hDvD;
+					if (dvdInterface.DVDSDK_GetTrayState(hDvD) == 1)
+					{
+						dvdInterface.DVDSDK_Tray(hDvD, 0);
+						if (dvdInterface.DVDSDK_GetTrayState(hDvD) == 1)
+						{
+							g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] close disk fail, please close the disk manual.\n");
+						}
+					}
+					task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_euWorkState = CDROM_WAIT_INSERT_DISC; // 置为等待插入光盘
+					int nCheckTime = 0;
+					int nErroNo = 0;
+					bool bInitState = false;
+					while (nErroNo = dvdInterface.DVDSDK_LoadDisc(hDvD) != 0)
+					{
+						g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] CDRom load disk fail, error number is %d, check time : %d.\n", nErroNo, nCheckTime);
+						bInitState = false;
+						if (++nCheckTime > 3)
+						{
+							dvdInterface.DVDSDK_LockDoor(hDvD, 0);
+							dvdInterface.DVDSDK_Tray(hDvD, 1);
+							dvdInterface.DVDSDK_UnLoad(hDvD);
+							break;
+						}
+						sleep(4);//3秒检测一次，12s为一个任务周期
+						if (task->m_taskState == TASK_STOP && task->m_vecBurnFileInfo.size() == 0)
+							break;
+					}
+					if (nCheckTime <= 3 /*&& task.m_taskState != TASK_STOP*/)
+					{
+						//置为准备中
+						bInitState = true;
+						task->m_burnStateFeedback.m_nHasDisc = 1;
+						dvdInterface.DVDSDK_LockDoor(hDvD, 1);
+						nRet = 0;
+					}
+				}
+				else
+					nRet = -2;
+			}
+			else
+				nRet = 0;
+			if (nRet != 0)
+			{
+				task->m_nUseCDRomIndex = task->m_vecCDRomInfo.size() - 1 - task->m_nUseCDRomIndex;
+			}
+			return nRet;
+#endif			
 			}
 			return 0;
 		}
 
+		//判断所需光驱个数
 		int nNeedCDRomCount = 0;
-		if (task.m_strBurnMode.compare("singleBurn") == 0)
+		if (task->m_strBurnMode.compare("singleBurn") == 0)
 			nNeedCDRomCount = 1;
-		else if (task.m_strBurnMode.compare("doubleParallelBurn") == 0 || task.m_strBurnMode.compare("doubleRelayBurn") == 0)
+		else if (task->m_strBurnMode.compare("doubleParallelBurn") == 0 || task->m_strBurnMode.compare("doubleRelayBurn") == 0)
 			nNeedCDRomCount = 2;
 		else
 			nNeedCDRomCount = 1;
+
 		if (m_vecCDRomInfo.size() < nNeedCDRomCount)	//光驱数量不足
 		{
-			g_NetLog.Debug("count of cdRom is %d, need cdRom is %d, ChooseCDRomToBurn fail.\n", m_vecCDRomInfo.size(), nNeedCDRomCount);
+			g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] count of cdRom is %d, need cdRom is %d, ChooseCDRomToBurn fail.\n", m_vecCDRomInfo.size(), nNeedCDRomCount);
 			//这里应该自动将任务改为单盘任务
 			return nRet;
 		}
-		task.m_vecCDRomInfo.clear();
+		task->m_vecCDRomInfo.clear();
+
 		m_mutexCDRomInfoVec.lock();
-		if (task.m_strBurnMode.compare("singleBurn") == 0)
+		if (task->m_strBurnMode.compare("singleBurn") == 0)
 		{
-			for (int i = 0; i < m_vecCDRomInfo.size()/*nNeedCDRomCount*/; i++)
+			//这里其实有问题, 单盘选择一个就可以了 
+			for (int i = 0; i < m_vecCDRomInfo.size(); i++)
 			{
-				if (m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT && m_vecCDRomInfo.at(i).m_strCDRomID.compare(task.m_strCDRomID) == 0)
+				if (m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT && m_vecCDRomInfo.at(i).m_strCDRomID.compare(task->m_strCDRomID) == 0)
 				{
 					m_vecCDRomInfo.at(i).m_euWorkState = CDROM_INIT;
-					task.m_vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
+					task->m_vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
 				}
 			}
 		}	
 		else
 		{
-			for (int i = 0; i < m_vecCDRomInfo.size()/*nNeedCDRomCount*/; i++)
+			for (int i = 0; i < m_vecCDRomInfo.size(); i++)
 			{
 				//if (m_vecCDRomInfo.at(i).m_euWorkState == CDROM_UNINIT)
-				task.m_vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
+				task->m_vecCDRomInfo.push_back(m_vecCDRomInfo.at(i));
 			}
 		}
-
 		m_mutexCDRomInfoVec.unlock();
-		if (task.m_vecCDRomInfo.size() < nNeedCDRomCount)
+
+		if (task->m_vecCDRomInfo.size() < nNeedCDRomCount)
 		{
-			g_NetLog.Debug("task can use CDRom Num is %d, need cdRom is %d, ChooseCDRomToBurn faile.\n", task.m_vecCDRomInfo.size(), nNeedCDRomCount);
+			g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] task can use CDRom Num is %d, need cdRom is %d, ChooseCDRomToBurn faile.\n", task->m_vecCDRomInfo.size(), nNeedCDRomCount);
+			task->m_vecCDRomInfo.clear();
 			return nRet;
 		}
 
-		g_NetLog.Debug("Load CDRom. task.m_vecCDRomInfo.size() is %d\n", task.m_vecCDRomInfo.size());
+		g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] Load CDRom. task.m_vecCDRomInfo.size() is %d\n", task->m_vecCDRomInfo.size());
 		for (int i = 0; i < m_vecCDRomInfo.size(); i++)
 		{
-			g_NetLog.Debug("index: %d, workstate: %d, cdRomDevID: %s, CDRomID: %s, name: %s, dvdHandle:%0x.\n",
+			g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] index: %d, workstate: %d, cdRomDevID: %s, CDRomID: %s, name: %s, dvdHandle:%0x.\n",
 						   i, m_vecCDRomInfo.at(i).m_euWorkState, 
 						   m_vecCDRomInfo.at(i).m_strCDRomDevID.c_str(), m_vecCDRomInfo.at(i).m_strCDRomID.c_str(),
 						   m_vecCDRomInfo.at(i).m_strCDRomName.c_str(), m_vecCDRomInfo.at(i).m_pDVDHandle);
 		}
 		int nErroNo = 0;
-		g_NetLog.Debug("define a dvdsdkinterface object.\n");
+		g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] define a dvdsdkinterface object.\n");
 		bool bInitState = true;
 		DVDSDKInterface dvdInterface;
 		DVDDRV_HANDLE hDvD = NULL;
-		for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+		for (int i = 0; i < task->m_vecCDRomInfo.size(); i++)
 		{
-			if (task.m_strBurnMode.compare("doubleRelayBurn") == 0)
+			if (task->m_strBurnMode.compare("doubleRelayBurn") == 0)
 			{
-				if (task.m_strCDRomID.compare(task.m_vecCDRomInfo.at(i).m_strCDRomID) != 0)
+				if (task->m_strCDRomID.compare(task->m_vecCDRomInfo.at(i).m_strCDRomID) != 0)
 				{
-					g_NetLog.Debug("needBurnCDRomID : %s, strCDRomDevID is %s.\n", task.m_strCDRomID.c_str(), task.m_vecCDRomInfo.at(i).m_strCDRomID.c_str());
+					g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] needBurnCDRomID : %s, strCDRomDevID is %s.\n", task->m_strCDRomID.c_str(), task->m_vecCDRomInfo.at(i).m_strCDRomID.c_str());
 					continue;
 				}
 			}
 			//从这里到 调用 DVDSDK_Load 应该放到 上面的续刻if里去，InitCDRom去掉相关的。
-			std::string strCDRomDevID = task.m_vecCDRomInfo.at(i).m_strCDRomDevID;
-			g_NetLog.Debug("cdRomID : %s, strCDRomDevID is %s.\n", task.m_vecCDRomInfo.at(i).m_strCDRomID.c_str(), strCDRomDevID.c_str());
+			std::string strCDRomDevID = task->m_vecCDRomInfo.at(i).m_strCDRomDevID;
+			g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] cdRomID : %s, strCDRomDevID is %s.\n", task->m_vecCDRomInfo.at(i).m_strCDRomID.c_str(), strCDRomDevID.c_str());
 			hDvD = dvdInterface.DVDSDK_Load(strCDRomDevID.c_str());
-			g_NetLog.Debug("dvdInterface.DVDSDK_Load.\n");
+			g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] dvdInterface.DVDSDK_Load, hDVD :%0x.\n", hDvD);
 			if (hDvD != NULL)
 			{
-				task.m_vecCDRomInfo.at(i).m_pDVDHandle = hDvD;
+				task->m_vecCDRomInfo.at(i).m_pDVDHandle = hDvD;
 				if (dvdInterface.DVDSDK_GetTrayState(hDvD) == 1)
 				{
 					dvdInterface.DVDSDK_Tray(hDvD, 0);
 					if (dvdInterface.DVDSDK_GetTrayState(hDvD) == 1)
 					{
-						g_NetLog.Debug("close disk fail, please close the disk manual.\n");
+						g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] close disk fail, please close the disk manual.\n");
 					}
 				}
 				/*if (dvdInterface.DVDSDK_HaveDisc(hDvD) == 0)
@@ -1214,12 +1389,12 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 				sleep(5);
 				}*/
 				//这里不会阻塞
-				task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState = CDROM_WAIT_INSERT_DISC; // 置为等待插入光盘
+				g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] task->m_nUseCDRomIndex  : %d.\n", task->m_nUseCDRomIndex);
+				task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_euWorkState = CDROM_WAIT_INSERT_DISC; // 置为等待插入光盘
 				int nCheckTime = 0;
 				while (nErroNo = dvdInterface.DVDSDK_LoadDisc(hDvD) != 0)
 				{
-					//这里可以加上未插入光盘
-					g_NetLog.Debug("CDRom load disk fail, error number is %d, check time : %d.\n", nErroNo, nCheckTime);
+					g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] CDRom load disk fail, error number is %d, check time : %d.\n", nErroNo, nCheckTime);
 					bInitState = false;
 					if (++nCheckTime > 3)
 					{
@@ -1229,22 +1404,22 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 						break;
 					}
 					sleep(4);//3秒检测一次，12s为一个任务周期
-					if (task.m_taskState == TASK_STOP && task.m_vecBurnFileInfo.size() == 0)
+					if (task->m_taskState == TASK_STOP && task->m_vecBurnFileInfo.size() == 0)
 						break;
 				}
 				if (nCheckTime <= 3 /*&& task.m_taskState != TASK_STOP*/)
 				{
 					//置为准备中
 					bInitState = true;
-					task.m_burnStateFeedback.m_nHasDisc = 1;
+					task->m_burnStateFeedback.m_nHasDisc = 1;
 					dvdInterface.DVDSDK_LockDoor(hDvD, 1);
 				}
 			}
 			else
 				nRet = -2;
-			if (hDvD != NULL && task.m_strBurnMode.compare("doubleRelayBurn") == 0 || task.m_strBurnMode.compare("singleBurn") == 0)
+			if (hDvD != NULL && task->m_strBurnMode.compare("doubleRelayBurn") == 0 || task->m_strBurnMode.compare("singleBurn") == 0)
 			{
-				g_NetLog.Debug("task.m_strBurnMode is %s.\n", task.m_strBurnMode.c_str());
+				g_NetLog.Debug("[CBusiness::ChooseCDRomToBurn] task.m_strBurnMode is %s.\n", task->m_strBurnMode.c_str());
 				break;
 			}
 		}
@@ -1258,22 +1433,24 @@ int CBusiness::ChooseCDRomToBurn(BurnTask& task)
 	}
 }
 
-int CBusiness::InitCDRom(BurnTask& task)
+int CBusiness::InitCDRom(BurnTask*& task)
 {
 	g_NetLog.Debug("CBusiness::InitCDRom.\n");
 	int nRet = -1;
 	DVDSDKInterface dvdInterface;
-	if (task.m_taskRealState == TASK_BURN)
+	if (task->m_taskRealState == TASK_BURN)
 	{
 		g_NetLog.Debug("[CBusiness::InitCDRom] continue burn, task real state is task_burn.\n");
-		//if (task.m_strBurnMode.compare("doubleRelayBurn") == 0)  单盘双盘 续刻都走下面逻辑
+		//if (task->m_strBurnMode.compare("doubleRelayBurn") == 0)  单盘双盘 续刻都走下面逻辑
 		{	//双盘续刻，需要挑选另外一个未使用光驱
-			int nCDRomIndex = task.m_nUseCDRomIndex;
-			DVDDRV_HANDLE hDvD = task.m_vecCDRomInfo.at(nCDRomIndex).m_pDVDHandle;
-			g_NetLog.Debug("[CBusiness::InitCDRom]task.m_vecCDRomInfo.at(nCDRomIndex).m_strCDRomDevID : %s, hDvD is %0x.\n", 
-				task.m_vecCDRomInfo.at(nCDRomIndex).m_strCDRomDevID.c_str(), hDvD);
+			int nCDRomIndex = task->m_nUseCDRomIndex;
+			DVDDRV_HANDLE hDvD = task->m_vecCDRomInfo.at(nCDRomIndex).m_pDVDHandle;
+			g_NetLog.Debug("[CBusiness::InitCDRom] task->m_vecCDRomInfo.at(%d).m_strCDRomDevID : %s, hDvD is %0x.\n", 
+							nCDRomIndex, task->m_vecCDRomInfo.at(nCDRomIndex).m_strCDRomDevID.c_str(), hDvD);
 			//if (hDvD == NULL)
-			hDvD = dvdInterface.DVDSDK_Load(task.m_vecCDRomInfo.at(nCDRomIndex).m_strCDRomDevID.c_str());
+			hDvD = dvdInterface.DVDSDK_Load(task->m_vecCDRomInfo.at(nCDRomIndex).m_strCDRomDevID.c_str());
+			if (hDvD != task->m_vecCDRomInfo.at(nCDRomIndex).m_pDVDHandle)
+				task->m_vecCDRomInfo.at(nCDRomIndex).m_pDVDHandle = hDvD;
 			if (hDvD != NULL)
 			{
 				if (dvdInterface.DVDSDK_GetTrayState(hDvD) == 1)
@@ -1288,92 +1465,104 @@ int CBusiness::InitCDRom(BurnTask& task)
 				{
 					dvdInterface.DVDSDK_LockDoor(hDvD, 0);
 					dvdInterface.DVDSDK_Tray(hDvD, 1);
-					g_NetLog.Debug("[CBusiness::InitCDRom]Open CDRom Tray, please insert Disc.\n");
-					task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_WAIT_INSERT_DISC;
-					task.m_burnStateFeedback.m_nHasDisc = 0;
+					g_NetLog.Debug("[CBusiness::InitCDRom]Open CDRom Tray, please insert Disc, nCDRomIndex : %d.\n", nCDRomIndex);
+					task->m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_WAIT_INSERT_DISC;
+					task->m_burnStateFeedback.m_nHasDisc = 0;
 					sleep(5);
 				}
 
-				if (0 != dvdInterface.DVDSDK_LoadDisc(hDvD))
+				int nTryLoadDisc = 0;
+				while (0 != dvdInterface.DVDSDK_LoadDisc(hDvD) && nTryLoadDisc++ < 3)
 				{
-					g_NetLog.Debug("[CBusiness::InitCDRom] DVDSDK_LoadDisc fail.\n");
+					g_NetLog.Debug("[CBusiness::InitCDRom] DVDSDK_LoadDisc fail, try load time %d.\n", nTryLoadDisc);
 				}
-				task.m_vecCDRomInfo.at(nCDRomIndex).m_pDVDHandle = hDvD;
+				task->m_vecCDRomInfo.at(nCDRomIndex).m_pDVDHandle = hDvD;
+
 				DVD_DISC_INFO_T diskInfo;
-				dvdInterface.DVDSDK_GetDiscInfo(hDvD, &diskInfo);
-				task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.ntype = diskInfo.ntype;
-				task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.maxpeed = diskInfo.maxpeed;
-				task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.discsize = diskInfo.discsize;
-				task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.usedsize = diskInfo.usedsize;
-				task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.freesize = diskInfo.freesize;
-				task.m_vecCDRomInfo.at(nCDRomIndex).m_nBurnedSize = 0;
+				CDataOpr::GetInstance()->SDK_GetDiscInfo(hDvD, diskInfo);
+				task->m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.ntype = diskInfo.ntype;
+				task->m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.maxpeed = diskInfo.maxpeed;
+				task->m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.discsize = diskInfo.discsize;
+				task->m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.usedsize = diskInfo.usedsize;
+				task->m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.freesize = diskInfo.freesize;
+				task->m_vecCDRomInfo.at(nCDRomIndex).m_nBurnedSize = 0;
 
 
 				if (dvdInterface.DVDSDK_DiscCanWrite(hDvD) != ERROR_DVD_OK)
 				{
-					task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_WAIT_INSERT_DISC;
-					g_NetLog.Debug("Disc Can not be Writed! \n");
+					task->m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_WAIT_INSERT_DISC;
+					g_NetLog.Debug("Disc Can not be Writed! nCDRomIndex : %d \n", nCDRomIndex);
 					dvdInterface.DVDSDK_LockDoor(hDvD, 0);
 					dvdInterface.DVDSDK_Tray(hDvD, 1);
 					dvdInterface.DVDSDK_UnLoad(hDvD);
+
+					task->m_nUseCDRomIndex = task->m_vecCDRomInfo.size() - 1 - task->m_nUseCDRomIndex;
+					g_NetLog.Debug("1.task addr : %0x, task->m_nUseCDRomIndex :%d.\n", task, task->m_nUseCDRomIndex);
 					return -1;
 				}
-				//if (task.m_nBurnSpeed != 8) //默认写入速度是8X
-				//	dvdInterface.DVDSDK_SetWriteSpeed(hDvD, task.m_nBurnSpeed, diskInfo.ntype);
+				//if (task->m_nBurnSpeed != 8) //默认写入速度是8X
+				//	dvdInterface.DVDSDK_SetWriteSpeed(hDvD, task->m_nBurnSpeed, diskInfo.ntype);
 				
 				//判断报警大小是否超过光盘总容量，如果超过不刻录此任务
-				if (task.m_nAlarmSize >= task.m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.discsize)
+				if (task->m_nAlarmSize >= task->m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.discsize)
+				{
+					task->m_nUseCDRomIndex = task->m_vecCDRomInfo.size() - 1 - task->m_nUseCDRomIndex;
+					g_NetLog.Debug("2.task addr : %0x, task->m_nUseCDRomIndex :%d.\n", task, task->m_nUseCDRomIndex);
 					return -2;
-				
+				}
 				//置此光驱为Ready状态
 				g_NetLog.Debug("set cdrom work state.\n");
-				task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_READY;  //格式化之后才进入burning状态
-				SetCDRomState(task.m_vecCDRomInfo.at(nCDRomIndex).m_strCDRomID, CDROM_READY);
+				task->m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_READY;  //格式化之后才进入burning状态
+				SetCDRomState(task->m_vecCDRomInfo.at(nCDRomIndex).m_strCDRomID, CDROM_READY);
 			}
 			else
-				g_NetLog.Debug("[CBusiness::InitCDRom]hDVD is NuLL.\n");
+				g_NetLog.Debug("[CBusiness::InitCDRom] hDVD is NuLL.\n");
 			return 0;
 		}
-		//单盘续刻继续走下面逻辑，只有一个盘，无所谓挑选
 	}
-	for (int i = 0; i < task.m_vecCDRomInfo.size(); i++)
+	for (int i = 0; i < task->m_vecCDRomInfo.size(); i++)
 	{
-		DVDDRV_HANDLE hDvD = task.m_vecCDRomInfo.at(i).m_pDVDHandle;
+		DVDDRV_HANDLE hDvD = task->m_vecCDRomInfo.at(i).m_pDVDHandle;
 		g_NetLog.Debug("[CBusiness::InitCDRom] It's not continue burn, task real state is task_burn. hDVD is %0x\n", hDvD);
 		if (hDvD != NULL)
 		{
 			DVD_DISC_INFO_T diskInfo;
-			if (0 != dvdInterface.DVDSDK_GetDiscInfo(hDvD, &diskInfo))
+
+			if (0 != CDataOpr::GetInstance()->SDK_GetDiscInfo(hDvD, diskInfo))
 				g_NetLog.Debug("[CBusiness::InitCDRom] DVDSDK_GetDiscInfo fail.\n");
-			task.m_vecCDRomInfo.at(i).m_discInfo.ntype = diskInfo.ntype;
-			task.m_vecCDRomInfo.at(i).m_discInfo.maxpeed = diskInfo.maxpeed;
-			task.m_vecCDRomInfo.at(i).m_discInfo.discsize = diskInfo.discsize;
-			task.m_vecCDRomInfo.at(i).m_discInfo.usedsize = diskInfo.usedsize;
-			task.m_vecCDRomInfo.at(i).m_discInfo.freesize = diskInfo.freesize;
-			task.m_vecCDRomInfo.at(i).m_nBurnedSize = 0;
+			task->m_vecCDRomInfo.at(i).m_discInfo.ntype = diskInfo.ntype;
+			task->m_vecCDRomInfo.at(i).m_discInfo.maxpeed = diskInfo.maxpeed;
+			task->m_vecCDRomInfo.at(i).m_discInfo.discsize = diskInfo.discsize;
+			task->m_vecCDRomInfo.at(i).m_discInfo.usedsize = diskInfo.usedsize;
+			task->m_vecCDRomInfo.at(i).m_discInfo.freesize = diskInfo.freesize;
+			task->m_vecCDRomInfo.at(i).m_nBurnedSize = 0;
 
 			if (dvdInterface.DVDSDK_DiscCanWrite(hDvD) != ERROR_DVD_OK)
 			{
 				g_NetLog.Debug("Disc Can not be Writed! \n");
+				
 				dvdInterface.DVDSDK_LockDoor(hDvD, 0);
 				g_NetLog.Debug("DVDSDK_LockDoor! \n");
+				
 				dvdInterface.DVDSDK_Tray(hDvD, 1);
 				g_NetLog.Debug("DVDSDK_Tray! \n");
+				
 				usleep(500);
+				
 				dvdInterface.DVDSDK_UnLoad(hDvD);
 				g_NetLog.Debug("DVDSDK_UnLoad! \n");
 				break;
 			}
-			//if (task.m_nBurnSpeed != 8) //默认写入速度是8X
-			//	dvdInterface.DVDSDK_SetWriteSpeed(hDvD, task.m_nBurnSpeed, diskInfo.ntype);
+			//if (task->m_nBurnSpeed != 8) //默认写入速度是8X
+			//	dvdInterface.DVDSDK_SetWriteSpeed(hDvD, task->m_nBurnSpeed, diskInfo.ntype);
 			
 			//置此光驱为Ready状态
 			g_NetLog.Debug("set cdrom work state.\n");
-			task.m_vecCDRomInfo.at(i).m_euWorkState = CDROM_READY;
-			SetCDRomState(task.m_vecCDRomInfo.at(i).m_strCDRomID, CDROM_READY);
-			if (task.m_strBurnMode.compare("doubleRelayBurn") == 0 || task.m_strBurnMode.compare("singleBurn") == 0)
+			task->m_vecCDRomInfo.at(i).m_euWorkState = CDROM_READY;
+			SetCDRomState(task->m_vecCDRomInfo.at(i).m_strCDRomID, CDROM_READY);
+			if (task->m_strBurnMode.compare("doubleRelayBurn") == 0 || task->m_strBurnMode.compare("singleBurn") == 0)
 			{
-				task.m_nUseCDRomIndex = i;//赋值使用的光驱索引
+				task->m_nUseCDRomIndex = i;//赋值使用的光驱索引
 				nRet = 0;
 				break;	//只格式化一个光驱的光盘
 			}
@@ -1383,20 +1572,23 @@ int CBusiness::InitCDRom(BurnTask& task)
 	return nRet;
 }
 
-void CBusiness::BurnStreamInfoToDisk(const BurnTask& task)
+void CBusiness::BurnStreamInfoToDisk(const BurnTask* task)
 {
-	g_NetLog.Debug("CBusiness::BurnStreamInfoToDisk.\n");
+	g_NetLog.Debug("[CBusiness::BurnStreamInfoToDisk] CBusiness::BurnStreamInfoToDisk.\n");
 }
 
-void CBusiness::BurnFileToDisk(BurnTask& task)
+void CBusiness::BurnFileToDisk(BurnTask* task)
 {
-	g_NetLog.Debug("CBusiness::BurnFileToDisk.\n");
+	g_NetLog.Debug("[CBusiness::BurnFileToDisk] Enter .\n");
+	std::string strCDRomID = "";
+	int nCDRomIndex = -1;
+
 	int nBurnFileCount = 0;
 	while (nBurnFileCount <= 0)
 	{
-		m_mutexVecBurnFileInfo.lock();
-		nBurnFileCount = task.m_vecBurnFileInfo.size();
-		m_mutexVecBurnFileInfo.unlock();
+		task->m_mutexBurnFileInfo.lock();
+		nBurnFileCount = task->m_vecBurnFileInfo.size();
+		task->m_mutexBurnFileInfo.unlock();
 		if (nBurnFileCount <= 0)
 		{
 			//没文件，等待5s
@@ -1404,68 +1596,86 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 #if defined(_LINUX_)
 			sleep(5);
 #endif
+			if (task->m_taskState == TASK_STOP)
+			{
+				//弹出光盘
+				TrayCDRomException(task, strCDRomID, nCDRomIndex);
+				return;
+			}
 		}
-		if (task.m_taskState == TASK_STOP)
-			break;
 	}
 
-	std::string strCDRomID = "";
-	int nCDRomIndex = -1;
 	//只是单盘刻录和双盘续刻的情况，未包含双盘同刻情况
-	g_NetLog.Debug("task.m_vecCDrom size() is %d.\n", task.m_vecCDRomInfo.size());
+	g_NetLog.Debug("[CBusiness::BurnFileToDisk] task.m_vecCDrom size() is %d.\n", task->m_vecCDRomInfo.size());
 	DVDDRV_HANDLE pHandle = GetSpecCDRom(task, strCDRomID, nCDRomIndex);//GetIdleCDRom(task, strCDRomID, nCDRomIndex);
 	if (pHandle == NULL || nCDRomIndex == -1)
 	{
-		g_NetLog.Debug("GetSpecCDRom fail, pHandle : %0x, nCDRomIndex : %d.\n", pHandle, nCDRomIndex);
+		g_NetLog.Debug("[CBusiness::BurnFileToDisk] GetSpecCDRom fail, pHandle : %0x, nCDRomIndex : %d.\n", pHandle, nCDRomIndex);
 		return;
 	}
-	g_NetLog.Debug("burn dvd handle : %0x, CDRomIndex : %d.\n", pHandle, nCDRomIndex);
+	g_NetLog.Debug("[CBusiness::BurnFileToDisk] burn dvd handle : %0x, CDRomIndex : %d.\n", pHandle, nCDRomIndex);
 
-	task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_BURNING;
+	task->m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_BURNING;
 	SetCDRomState(strCDRomID, CDROM_BURNING);
-	g_NetLog.Debug("task.m_strCDRomID  : %s, strCDRomID : %s.\n", task.m_strCDRomID.c_str(), strCDRomID.c_str());
-	task.m_strCDRomID = strCDRomID;
+	g_NetLog.Debug("task.m_strCDRomID  : %s, strCDRomID : %s.\n", task->m_strCDRomID.c_str(), strCDRomID.c_str());
+	task->m_strCDRomID = strCDRomID;
 
 	DVDSDKInterface dvdInterface;
 	DVD_DISC_INFO_T discInfo;
 
 	if (nBurnFileCount > 0)
-	{	//格式化光盘
-		g_NetLog.Debug("[CBusiness::BurnFileToDisk] Format Disc.\n");
-		task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_FORMAT;
-		dvdInterface.DVDSDK_FormatDisc(pHandle, (char*)task.m_strSessionID.c_str());//光盘名称 协议里是否需要涉及
-		task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_BURNING;
+	{	//格式化光盘  先判断要刻录的文件是否超过报警值
+		task->m_mutexBurnFileInfo.lock();
+		FileInfo fileTmp = task->m_vecBurnFileInfo.at(0);
+		task->m_mutexBurnFileInfo.unlock();
+		if (fileTmp.m_strFileLocation.compare("local") == 0)
+		{
+			if (FileUtil::FileExist(fileTmp.m_strSrcUrl.c_str()))
+			{
+				INT64 nSizeB = FileUtil::FileSize(fileTmp.m_strSrcUrl.c_str());	//字节数
+				double dSizeMB = nSizeB * 1.0 / 1024 / 1024;	//MB
+				if (dSizeMB > task->m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.discsize - task->m_nAlarmSize)
+				{
+					TrayCDRomException(task, strCDRomID, nCDRomIndex);
+					return;
+				}
+			}
+			g_NetLog.Debug("[CBusiness::BurnFileToDisk] Format Disc.\n");
+			task->m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_FORMAT;
+			dvdInterface.DVDSDK_FormatDisc(pHandle, (char*)task->m_strSessionID.c_str());//光盘名称 协议里是否需要涉及
+			task->m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_BURNING;
+		}
 	}
 
-	task.m_nBurnedSize = 0;//清空刻录总量 不采用光驱获取的值，测试不准确
+	task->m_nBurnedSize = 0;//清空刻录总量 不采用光驱获取的值，测试不准确
 	do
 	{
-		m_mutexVecBurnFileInfo.lock();
-		int nFileCount = task.m_vecBurnFileInfo.size();
-		m_mutexVecBurnFileInfo.unlock();
-		if(nFileCount == 0 && task.m_taskState == TASK_STOP)
+		task->m_mutexBurnFileInfo.lock();
+		int nFileCount = task->m_vecBurnFileInfo.size();
+		task->m_mutexBurnFileInfo.unlock();
+		if(nFileCount == 0 && task->m_taskState == TASK_STOP)
 		{	//发送封盘反馈协议
-			dvdInterface.DVDSDK_GetDiscInfo(pHandle, &discInfo);
+			CDataOpr::GetInstance()->SDK_GetDiscInfo(pHandle, discInfo);
 			g_NetLog.Debug("no file to burn and task state is stop, send close disc feedback .\n" );
-			CBusiness::CloseDiscFeedback(discInfo.discsize - m_burnTask.m_nBurnedSize, discInfo.discsize);
+			CBusiness::CloseDiscFeedback(discInfo.discsize - m_burnTask->m_nBurnedSize, discInfo.discsize);
 			BurnFeedbackFileToDisc(task, pHandle);
-			task.m_taskRealState = TASK_STOP;
+			task->m_taskRealState = TASK_STOP;
 			
 			//置状态为封盘
-			task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState = CDROM_CLOSEDISC;
+			task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_euWorkState = CDROM_CLOSEDISC;
+			//同步更新到光驱信息
+			SetCDRomState(task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_strCDRomID, CDROM_CLOSEDISC);
 			break;
 		}
-		if (nFileCount == 0 || task.m_taskState == TASK_PAUSE)
+		if (nFileCount == 0 || task->m_taskState == TASK_PAUSE)
 		{
-#if defined (_LINUX_)
 			sleep(2);
-#endif
 			continue;
 		}
 
-		m_mutexVecBurnFileInfo.lock();
-		FileInfo fileInfo = task.m_vecBurnFileInfo.at(0);
-		m_mutexVecBurnFileInfo.unlock();
+		task->m_mutexBurnFileInfo.lock();
+		FileInfo fileInfo = task->m_vecBurnFileInfo.at(0);
+		task->m_mutexBurnFileInfo.unlock();
 		std::string strLocalPath = "";
 		if (fileInfo.m_strFileLocation.compare("remote") == 0)
 		{	//远端	--- 下载跟刻录 分离，异步执行
@@ -1492,17 +1702,17 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 			g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", strDestFilePathTmp.c_str());
 			GenerateLocalPath(strDestFilePathTmp, strLocalPath);
 			Download(fileInfo.m_strType, fileInfo.m_strSrcUrl, strLocalPath);
-			m_mutexVecBurnFileInfo.lock();
-			task.m_vecBurnFileInfo.at(0).m_strRemoteFileLocalPath = strLocalPath;
+			task->m_mutexBurnFileInfo.lock();
+			task->m_vecBurnFileInfo.at(0).m_strRemoteFileLocalPath = strLocalPath;
 			fileInfo.m_strRemoteFileLocalPath = strLocalPath;
-			m_mutexVecBurnFileInfo.unlock();
+			task->m_mutexBurnFileInfo.unlock();
 		}
 		else
 		{
 			strLocalPath = fileInfo.m_strSrcUrl;
 		}
 		g_NetLog.Debug("GetDisc Info.\n");
-		if (0 != dvdInterface.DVDSDK_GetDiscInfo(pHandle, &discInfo))
+		if (0 != CDataOpr::GetInstance()->SDK_GetDiscInfo(pHandle, discInfo))
 		{
 			g_NetLog.Debug("call dvd sdk get disk info fail.\n");
 		}
@@ -1516,36 +1726,28 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 			{
 				INT64 nSize = FileUtil::FileSize(strLocalPath.c_str());	//字节数
 				dSizeMB = nSize * 1.0 / 1024 / 1024;	//MB
-				g_NetLog.Debug("task.m_BrunSize is %d, disc freesize is %d, disc usedsize is %d, disc discsize is %d, disc task alarm size is %d, file size is %g.\n",
-					task.m_nBurnedSize, discInfo.freesize, discInfo.usedsize, discInfo.discsize, task.m_nAlarmSize, dSizeMB);
+				//g_NetLog.Debug("task.m_BrunSize is %d, disc freesize is %d, disc usedsize is %d, disc discsize is %d, disc task alarm size is %d, file size is %g.\n",
+				//			   task->m_nBurnedSize, discInfo.freesize, discInfo.usedsize, discInfo.discsize, task->m_nAlarmSize, dSizeMB);
 
-				//if (discInfo.freesize * 1.0 - dSizeMB <= task.m_nAlarmSize*1.0)
-				if (discInfo.discsize - dSizeMB - task.m_nBurnedSize <= task.m_nAlarmSize)
+				if (discInfo.discsize - dSizeMB - task->m_nBurnedSize <= task->m_nAlarmSize)
 				{
 					//刻录此文件将报警 发送封盘协议
-					dvdInterface.DVDSDK_GetDiscInfo(pHandle, &discInfo);
-					CBusiness::CloseDiscFeedback(discInfo.discsize - m_burnTask.m_nBurnedSize, discInfo.discsize);
+					CDataOpr::GetInstance()->SDK_GetDiscInfo(pHandle, discInfo);
+					CloseDiscFeedback(discInfo.discsize - m_burnTask->m_nBurnedSize, discInfo.discsize);
 					g_NetLog.Debug("disc capcity is not enough, send closeDiscFeedback. will close disc.\n");
 					BurnFeedbackFileToDisc(task, pHandle);
 					dSizeMB = 0;
 
-					g_NetLog.Debug("has burned size is %d.\n", task.m_nBurnedSize);
-					m_mutexVecBurnFileInfo.lock();
-					g_NetLog.Debug("[CBusiness::BurnFileToDisk]will erase task, and push cur task.\n");
-					m_vecBurnTask.erase(m_vecBurnTask.begin());
-					g_NetLog.Debug("task burn file size is %d.\n", task.m_vecBurnFileInfo.size());
+					g_NetLog.Debug("has burned size is %d.\n", task->m_nBurnedSize);
+					g_NetLog.Debug("task burn file size is %d.\n", task->m_vecBurnFileInfo.size());
 					//封盘前置状态 置为封盘中
-					task.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState = CDROM_CLOSEDISC;
-					m_burnTask.m_vecCDRomInfo.at(task.m_nUseCDRomIndex).m_euWorkState = CDROM_CLOSEDISC;
-					m_vecBurnTask.push_back(task);
-					m_mutexVecBurnFileInfo.unlock();
-
+					task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_euWorkState = CDROM_CLOSEDISC;
+					
 					break;
 				}
 				if (-1 == BurnLocalFile(pHandle, fileInfo))
 				{
 					g_NetLog.Debug("BurnLocalFile %s fail.\n", fileInfo.m_strSrcUrl.c_str());
-					//break;   ---->不应该break
 				}
 			}
 			else
@@ -1563,36 +1765,13 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 					g_NetLog.Debug("[CBusiness::BurnFileToDisk] burn a dir %s", str.c_str());
 					fileInfo.m_strDestFilePath = str + fileInfo.m_strDestFilePath;
 				}
-				task.m_vecBurnFileInfo.erase(task.m_vecBurnFileInfo.begin());
-				ConvertDirToFileInfo(task, fileInfo.m_strSrcUrl, fileInfo.m_strDestFilePath);
-				m_vecBurnTask.erase(m_vecBurnTask.begin());
-				m_vecBurnTask.push_back(task);
-				dSizeMB = 0;
-			}
-			else
-			{
-				task.m_vecBurnFileInfo.erase(task.m_vecBurnFileInfo.begin());
-				m_vecBurnTask.erase(m_vecBurnTask.begin());
-				m_vecBurnTask.push_back(task);
-			}
-#if 0
-			//目录 
-			dSizeMB = DirectoryUtil::GetDirSize(fileInfo.m_strSrcUrl.c_str()) / 1024 / 1024;
-			if (discInfo.discsize - dSizeMB - task.m_nBurnedSize <= task.m_nAlarmSize)//if (dSizeMB + task.m_nAlarmSize * 1.0 >= discInfo.freesize * 1.0)
-			{	//目录大小太大，拆分目录为多个文件
 				ConvertDirToFileInfo(task, fileInfo.m_strSrcUrl, fileInfo.m_strDestFilePath);
 				dSizeMB = 0;
 			}
 			else
 			{
-				g_NetLog.Debug("[CBusiness::BurnFileToDisk] fileInfo.destPath is : %s.\n", fileInfo.m_strDestFilePath.c_str());
-				if (-1 == BurnLocalDir(pHandle, fileInfo))
-				{
-					g_NetLog.Debug("BurnLocalDir fail.\n");
-					break;
-				}
+				task->m_vecBurnFileInfo.erase(task->m_vecBurnFileInfo.begin());
 			}
-#endif
 		}
 		else
 		{
@@ -1600,54 +1779,326 @@ void CBusiness::BurnFileToDisk(BurnTask& task)
 		}
 
 		//刻录文件结束，更新刻录大小信息
-		task.m_nBurnedSize += dSizeMB;
-		task.m_vecCDRomInfo.at(nCDRomIndex).m_nBurnedSize = task.m_nBurnedSize;
-		g_NetLog.Debug("has burned size is %d.\n", task.m_nBurnedSize);
-		m_mutexVecBurnFileInfo.lock();
-		if (task.m_vecBurnFileInfo.size() > 0 && fileInfo.m_strType.compare("dir") != 0)
-			task.m_vecBurnFileInfo.erase(task.m_vecBurnFileInfo.begin());
+		task->m_nBurnedSize += dSizeMB;
+		task->m_vecCDRomInfo.at(nCDRomIndex).m_nBurnedSize = task->m_nBurnedSize;
+		g_NetLog.Debug("has burned size is %d.\n", task->m_nBurnedSize);
+		task->m_mutexBurnFileInfo.lock();
+		if (task->m_vecBurnFileInfo.size() > 0 && fileInfo.m_strType.compare("dir") != 0)
+			task->m_vecBurnFileInfo.erase(task->m_vecBurnFileInfo.begin());
 		g_NetLog.Debug("left burn file count is : %d. m_burnTask.m_vecBurnFileInfo.size() is :%d\n", 
-			task.m_vecBurnFileInfo.size(), m_burnTask.m_vecBurnFileInfo.size());
+			task->m_vecBurnFileInfo.size(), m_burnTask->m_vecBurnFileInfo.size());
 		
-		m_vecBurnTask.erase(m_vecBurnTask.begin());
-		m_vecBurnTask.push_back(task);
-		m_mutexVecBurnFileInfo.unlock();
+		task->m_mutexBurnFileInfo.unlock();
 	} while (true);
 
 	//封盘
-	if (task.m_taskRealState != TASK_STOP && task.m_strBurnMode.compare("doubleRelayBurn") == 0)
+	if (task->m_taskRealState != TASK_STOP && task->m_strBurnMode.compare("doubleRelayBurn") == 0)
 	{
-		m_pCloseHandle = pHandle;//task.m_vecCDRomInfo.at(nCDRomIndex).m_pDVDHandle;
+		m_pCloseHandle = pHandle;
 		g_NetLog.Debug("create thread to close disc, disc handle : %0x.\n", m_pCloseHandle);
 		pthread_t threadID;
 		pthread_create(&threadID, NULL, &(CBusiness::CloseDiscThread), (void*)this);
+		sleep(3);
 	}
 	else
 	{	//单盘封盘
+		g_NetLog.Debug("will call CloseDisc, param Handle is %0x.\n", pHandle);
 		CloseDisc(pHandle, nBurnFileCount == 0 ? false : true);
 	}
 	//反馈线程停止
 	m_bThreadState = false;
-	if (task.m_taskRealState != TASK_STOP)
-	{
-		task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_UNINIT;
-		SetCDRomState(strCDRomID, CDROM_UNINIT);
-		g_NetLog.Debug("continue burn left file count is : %d. m_burnTask.m_vecBurnFileInfo.size() is :%d \n", 
-			task.m_vecBurnFileInfo.size(), m_burnTask.m_vecBurnFileInfo.size());
-		//return DoTask(task);//双盘续刻 还要进行逻辑处理
-	}
-	task.m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_UNINIT;
-	SetCDRomState(strCDRomID, CDROM_UNINIT);
+	g_NetLog.Debug("task.m_taskRealState is %d.\n", task->m_taskRealState);
 }
 
-void CBusiness::BurnFeedbackFileToDisc(BurnTask& task, const DVDDRV_HANDLE pHandle)
+void CBusiness::StartParallelBurnFileToDisc(BurnTask* task)
+{
+	//create thread to execte
+	pthread_create(&task->m_nThreadID, NULL, (CBusiness::ParallelBurnFileThread), (void*)this);
+}
+
+void* CBusiness::ParallelBurnFileThread(void* pVoid)
+{
+	g_NetLog.Debug("[CBusiness::ParallelBurnFileThread].\n");
+	if (pVoid != NULL)
+	{
+		CBusiness* pThis = (CBusiness*)pVoid;
+		pThis->ParallelBurnFile();
+	}
+	return NULL;
+}
+ 
+void CBusiness::ParallelBurnFile()
+{
+	int nBurnFileCount = 0;
+	std::string strCDRomID = "";
+	int nCDRomIndex = 0;
+
+	m_burnTask->m_mutexThreadNum.lock();
+	if (m_burnTask->m_nThreadNum == 0)
+	{	//分配CDRom_1
+		nCDRomIndex = m_burnTask->m_nUseCDRomIndex = 0;
+		strCDRomID = m_burnTask->m_strCDRomID = "CDRom_1"; //make sure 0 --> CDRom_1, 1-->CDRom_2
+		m_burnTask->m_nThreadNum++;
+	}
+	else if (m_burnTask->m_nThreadNum == 1)
+	{	//分配CDRom_2
+		nCDRomIndex = m_burnTask->m_nUseCDRomIndex2 = 1;
+		strCDRomID = m_burnTask->m_strCDRomID = "CDRom_2";
+		m_burnTask->m_nThreadNum++;
+	}
+	else
+	{
+		g_NetLog.Debug("[CBusiness::ParallelBurnFile], m_burnTask->m_nThreadNum is %d.\n", m_burnTask->m_nThreadNum);
+	}
+	m_burnTask->m_mutexThreadNum.unlock();
+
+	//参考BurnFileToDisc的代码
+	while (nBurnFileCount <= 0)
+	{
+		m_burnTask->m_mutexBurnFileInfo.lock();
+		if (m_burnTask->m_nUseCDRomIndex == 0)
+			nBurnFileCount = m_burnTask->m_vecBurnFileInfo.size();
+		else
+			nBurnFileCount = m_burnTask->m_vecBurnFileInfo2.size();
+		m_burnTask->m_mutexBurnFileInfo.unlock();
+		if (nBurnFileCount <= 0)
+		{
+			//没文件，等待5s
+			g_NetLog.Debug("No file to Burn.wait 5s to get file\n");
+			sleep(5);
+			if (m_burnTask->m_taskState == TASK_STOP)
+			{
+				//弹出光盘
+				TrayCDRomException(m_burnTask, strCDRomID, nCDRomIndex);
+				return;
+			}
+		}
+	}
+
+	DVDDRV_HANDLE pHandle = m_burnTask->m_vecCDRomInfo.at(m_burnTask->m_nUseCDRomIndex).m_pDVDHandle;//GetIdleCDRom(task, strCDRomID, nCDRomIndex);
+	if (pHandle == NULL || nCDRomIndex == -1)
+	{
+		g_NetLog.Debug("[CBusiness::BurnFileToDisk] GetSpecCDRom fail, pHandle : %0x, nCDRomIndex : %d.\n", pHandle, nCDRomIndex);
+		return;
+	}
+	g_NetLog.Debug("[CBusiness::BurnFileToDisk] burn dvd handle : %0x, CDRomIndex : %d.\n", pHandle, nCDRomIndex);
+
+	m_burnTask->m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_BURNING;
+	SetCDRomState(strCDRomID, CDROM_BURNING);
+	g_NetLog.Debug("task.m_strCDRomID  : %s, strCDRomID : %s.\n", m_burnTask->m_strCDRomID.c_str(), strCDRomID.c_str());
+
+	DVDSDKInterface dvdInterface;
+	DVD_DISC_INFO_T discInfo;
+
+	if (nBurnFileCount > 0)
+	{	//格式化光盘  先判断要刻录的文件是否超过报警值
+		m_burnTask->m_mutexBurnFileInfo.lock();
+		FileInfo fileTmp = m_burnTask->m_vecBurnFileInfo.at(0);
+		m_burnTask->m_mutexBurnFileInfo.unlock();
+		if (fileTmp.m_strFileLocation.compare("local") == 0)
+		{
+			if (FileUtil::FileExist(fileTmp.m_strSrcUrl.c_str()))
+			{
+				INT64 nSizeB = FileUtil::FileSize(fileTmp.m_strSrcUrl.c_str());	//字节数
+				double dSizeMB = nSizeB * 1.0 / 1024 / 1024;	//MB
+				if (dSizeMB > m_burnTask->m_vecCDRomInfo.at(nCDRomIndex).m_discInfo.discsize - m_burnTask->m_nAlarmSize)
+				{	//弹出指定光驱
+					TrayCDRomException(m_burnTask, strCDRomID, nCDRomIndex);
+					return;
+				}
+			}
+			g_NetLog.Debug("[CBusiness::BurnFileToDisk] Format Disc.\n");
+			m_burnTask->m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_FORMAT;
+			dvdInterface.DVDSDK_FormatDisc(pHandle, (char*)m_burnTask->m_strSessionID.c_str());//光盘名称 协议里是否需要涉及
+			m_burnTask->m_vecCDRomInfo.at(nCDRomIndex).m_euWorkState = CDROM_BURNING;
+		}
+	}
+
+	if (nCDRomIndex == 0)
+	{
+		m_burnTask->m_nBurnedSize = 0;
+	}
+	else
+	{
+		m_burnTask->m_nBurnedSize2 = 0;
+	}
+
+	do
+	{
+		int nFileCount = 0;
+		m_burnTask->m_mutexBurnFileInfo.lock();
+		if (nCDRomIndex == 0)
+			nFileCount = m_burnTask->m_vecBurnFileInfo.size();
+		else
+			nFileCount = m_burnTask->m_vecBurnFileInfo2.size();
+		m_burnTask->m_mutexBurnFileInfo.unlock();
+		
+		if (nFileCount == 0 && m_burnTask->m_taskState == TASK_STOP)
+		{	//发送封盘反馈协议
+			CDataOpr::GetInstance()->SDK_GetDiscInfo(pHandle, discInfo);
+			g_NetLog.Debug("no file to burn and task state is stop, send close disc feedback.\n");
+			int nLeftCap = discInfo.discsize - nCDRomIndex == 0 ? m_burnTask->m_nBurnedSize : m_burnTask->m_nBurnedSize2;
+			CBusiness::CloseDiscFeedback(nLeftCap, discInfo.discsize);
+			BurnFeedbackFileToDisc(m_burnTask, pHandle);
+			task->m_taskRealState = TASK_STOP;
+
+			//置状态为封盘
+			task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_euWorkState = CDROM_CLOSEDISC;
+			//同步更新到光驱信息
+			SetCDRomState(task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_strCDRomID, CDROM_CLOSEDISC);
+			break;
+		}
+		if (nFileCount == 0 || m_burnTask->m_taskState == TASK_PAUSE)
+		{
+			sleep(2);
+			continue;
+		}
+
+		task->m_mutexBurnFileInfo.lock();
+		FileInfo fileInfo = task->m_vecBurnFileInfo.at(0);
+		task->m_mutexBurnFileInfo.unlock();
+		std::string strLocalPath = "";
+		if (fileInfo.m_strFileLocation.compare("remote") == 0)
+		{	//远端	--- 下载跟刻录 分离，异步执行
+			//下载前应判断本地是否存在相同文件，这里可以作续传的逻辑
+			std::string strLocalPath;
+			std::string strDestFilePathTmp; // only for add / before file name eg : a.mp4 --> /a.mp4
+			g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", fileInfo.m_strDestFilePath.c_str());
+			if (fileInfo.m_strDestFilePath.length() >= 1 && fileInfo.m_strDestFilePath.at(0) != '/')
+			{
+				std::string str = "/";
+				g_NetLog.Debug("[CBusiness::BurnFileToDisk] burn a dir : %s", str.c_str());
+				strDestFilePathTmp = str + fileInfo.m_strDestFilePath;
+			}
+			else if (fileInfo.m_strDestFilePath.length() >= 1)
+			{
+				std::string str = "/";
+				g_NetLog.Debug("%s", str.c_str());
+				strDestFilePathTmp = str + FileUtil::GetFileName(fileInfo.m_strDestFilePath);
+			}
+			else
+			{
+				g_NetLog.Debug("fileInfo.m_strDestFilePath is %s.\n", fileInfo.m_strDestFilePath.c_str());
+			}
+			g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", strDestFilePathTmp.c_str());
+			GenerateLocalPath(strDestFilePathTmp, strLocalPath);
+			Download(fileInfo.m_strType, fileInfo.m_strSrcUrl, strLocalPath);
+			task->m_mutexBurnFileInfo.lock();
+			task->m_vecBurnFileInfo.at(0).m_strRemoteFileLocalPath = strLocalPath;
+			fileInfo.m_strRemoteFileLocalPath = strLocalPath;
+			task->m_mutexBurnFileInfo.unlock();
+		}
+		else
+		{
+			strLocalPath = fileInfo.m_strSrcUrl;
+		}
+		g_NetLog.Debug("GetDisc Info.\n");
+		if (0 != CDataOpr::GetInstance()->SDK_GetDiscInfo(pHandle, discInfo))
+		{
+			g_NetLog.Debug("call dvd sdk get disk info fail.\n");
+		}
+		//task.m_nBurnedSize = discInfo.discsize - discInfo.freesize;
+		double dSizeMB = 0;
+		//开始刻录
+		if (fileInfo.m_strType.compare("file") == 0)
+		{	//文件
+			//判断文件是否存在
+			if (FileUtil::FileExist(strLocalPath.c_str()))
+			{
+				INT64 nSize = FileUtil::FileSize(strLocalPath.c_str());	//字节数
+				dSizeMB = nSize * 1.0 / 1024 / 1024;	//MB
+				//g_NetLog.Debug("task.m_BrunSize is %d, disc freesize is %d, disc usedsize is %d, disc discsize is %d, disc task alarm size is %d, file size is %g.\n",
+				//			   task->m_nBurnedSize, discInfo.freesize, discInfo.usedsize, discInfo.discsize, task->m_nAlarmSize, dSizeMB);
+
+				if (discInfo.discsize - dSizeMB - task->m_nBurnedSize <= task->m_nAlarmSize)
+				{
+					//刻录此文件将报警 发送封盘协议
+					CDataOpr::GetInstance()->SDK_GetDiscInfo(pHandle, discInfo);
+					CloseDiscFeedback(discInfo.discsize - m_burnTask->m_nBurnedSize, discInfo.discsize, nCDRomIndex);
+					g_NetLog.Debug("disc capcity is not enough, send closeDiscFeedback. will close disc.\n");
+					BurnFeedbackFileToDisc(task, pHandle);
+					dSizeMB = 0;
+
+					g_NetLog.Debug("has burned size is %d.\n", task->m_nBurnedSize);
+					g_NetLog.Debug("task burn file size is %d.\n", task->m_vecBurnFileInfo.size());
+					//封盘前置状态 置为封盘中
+					task->m_vecCDRomInfo.at(task->m_nUseCDRomIndex).m_euWorkState = CDROM_CLOSEDISC;
+
+					break;
+				}
+				if (-1 == BurnLocalFile(pHandle, fileInfo))
+				{
+					g_NetLog.Debug("BurnLocalFile %s fail.\n", fileInfo.m_strSrcUrl.c_str());
+				}
+			}
+			else
+			{
+				g_NetLog.Debug("[CBusiness::BurnFileToDisk] file %s not exist.\n", strLocalPath.c_str());
+			}
+		}
+		else if (fileInfo.m_strType.compare("dir") == 0)
+		{
+			if (DirectoryUtil::IsDirExist(fileInfo.m_strSrcUrl.c_str()))
+			{
+				if (fileInfo.m_strDestFilePath.length() >= 1 && fileInfo.m_strDestFilePath.at(0) != '/')
+				{
+					std::string str = "/";
+					g_NetLog.Debug("[CBusiness::BurnFileToDisk] burn a dir %s", str.c_str());
+					fileInfo.m_strDestFilePath = str + fileInfo.m_strDestFilePath;
+				}
+				ConvertDirToFileInfo(task, fileInfo.m_strSrcUrl, fileInfo.m_strDestFilePath);
+				dSizeMB = 0;
+			}
+			else
+			{
+				task->m_vecBurnFileInfo.erase(task->m_vecBurnFileInfo.begin());
+			}
+		}
+		else
+		{
+			g_NetLog.Debug("error fileType, neither file or dir. fileType is %s\n", fileInfo.m_strType.c_str());
+		}
+
+		//刻录文件结束，更新刻录大小信息
+		task->m_nBurnedSize += dSizeMB;
+		task->m_vecCDRomInfo.at(nCDRomIndex).m_nBurnedSize = task->m_nBurnedSize;
+		g_NetLog.Debug("has burned size is %d.\n", task->m_nBurnedSize);
+		task->m_mutexBurnFileInfo.lock();
+		if (task->m_vecBurnFileInfo.size() > 0 && fileInfo.m_strType.compare("dir") != 0)
+			task->m_vecBurnFileInfo.erase(task->m_vecBurnFileInfo.begin());
+		g_NetLog.Debug("left burn file count is : %d. m_burnTask.m_vecBurnFileInfo.size() is :%d\n",
+			task->m_vecBurnFileInfo.size(), m_burnTask->m_vecBurnFileInfo.size());
+
+		task->m_mutexBurnFileInfo.unlock();
+	} while (true);
+
+	//封盘
+	if (task->m_taskRealState != TASK_STOP && task->m_strBurnMode.compare("doubleRelayBurn") == 0)
+	{
+		m_pCloseHandle = pHandle;
+		g_NetLog.Debug("create thread to close disc, disc handle : %0x.\n", m_pCloseHandle);
+		pthread_t threadID;
+		pthread_create(&threadID, NULL, &(CBusiness::CloseDiscThread), (void*)this);
+		sleep(3);
+	}
+	else
+	{	//单盘封盘
+		g_NetLog.Debug("will call CloseDisc, param Handle is %0x.\n", pHandle);
+		CloseDisc(pHandle, nBurnFileCount == 0 ? false : true);
+	}
+	//反馈线程停止
+	m_bThreadState = false;
+	g_NetLog.Debug("task.m_taskRealState is %d.\n", task->m_taskRealState);
+}
+
+void CBusiness::BurnFeedbackFileToDisc(BurnTask* task, const DVDDRV_HANDLE pHandle, int nCDRomIndex)
 {
 	DVDSDKInterface dvdInterface;
 	DVD_DISC_INFO_T discInfo;
-	g_NetLog.Debug("[CBusiness::BurnFeedbackFileToDisc] feedback fileInfo size is %d.\n", task.m_vecFeedbackFileInfo.size());
-	while (task.m_vecFeedbackFileInfo.size() > 0)
+	g_NetLog.Debug("[CBusiness::BurnFeedbackFileToDisc] feedback fileInfo size is %d.\n", task->m_vecFeedbackFileInfo.size());
+	while (task->m_vecFeedbackFileInfo.size() > 0)
 	{
-		FileInfo fileInfo = task.m_vecFeedbackFileInfo.at(0);
+		FileInfo fileInfo = task->m_vecFeedbackFileInfo.at(0);
 		
 		std::string strLocalPath = "";
 		if (fileInfo.m_strFileLocation.compare("remote") == 0)
@@ -1663,18 +2114,18 @@ void CBusiness::BurnFeedbackFileToDisc(BurnTask& task, const DVDDRV_HANDLE pHand
 			g_NetLog.Debug("fileInfo.m_strDestFilePath: %s.\n", fileInfo.m_strDestFilePath.c_str());
 			GenerateLocalPath(fileInfo.m_strDestFilePath, strLocalPath);
 			Download(fileInfo.m_strType, fileInfo.m_strSrcUrl, strLocalPath);
-			m_mutexVecBurnFileInfo.lock();
-			task.m_vecBurnFileInfo.at(0).m_strRemoteFileLocalPath = strLocalPath;
+			task->m_mutexBurnFileInfo.lock();
+			task->m_vecFeedbackFileInfo.at(0).m_strRemoteFileLocalPath = strLocalPath;
+			task->m_mutexBurnFileInfo.unlock();
 			fileInfo.m_strRemoteFileLocalPath = strLocalPath;
-			m_mutexVecBurnFileInfo.unlock();
 		}
 		else
 		{
 			strLocalPath = fileInfo.m_strSrcUrl;
 		}
 		g_NetLog.Debug("[CBusiness::BurnFeedbackFileToDisc]GetDisc Info.\n");
-		dvdInterface.DVDSDK_GetDiscInfo(pHandle, &discInfo);
-		task.m_nBurnedSize = discInfo.discsize - discInfo.freesize;
+		CDataOpr::GetInstance()->SDK_GetDiscInfo(pHandle, discInfo);
+		task->m_nBurnedSize = discInfo.discsize - discInfo.freesize;
 		double dSizeMB = 0;
 		//开始刻录
 		if (fileInfo.m_strType.compare("file") == 0)
@@ -1682,8 +2133,8 @@ void CBusiness::BurnFeedbackFileToDisc(BurnTask& task, const DVDDRV_HANDLE pHand
 			//文件
 			INT64 nSize = FileUtil::FileSize(strLocalPath.c_str());	//字节数
 			dSizeMB = nSize * 1.0 / 1024 / 1024;	//MB
-			g_NetLog.Debug("[CBusiness::BurnFeedbackFileToDisc]disc freesize is %d, task alarm size is %d, file size is %g.\n", discInfo.freesize, task.m_nAlarmSize, dSizeMB);
-			if (discInfo.freesize * 1.0 - dSizeMB <= task.m_nAlarmSize*1.0)
+			g_NetLog.Debug("[CBusiness::BurnFeedbackFileToDisc]disc freesize is %d, task alarm size is %d, file size is %g.\n", discInfo.freesize, task->m_nAlarmSize, dSizeMB);
+			if (discInfo.freesize * 1.0 - dSizeMB <= task->m_nAlarmSize*1.0)
 			{
 				g_NetLog.Debug("[CBusiness::BurnFeedbackFileToDisc]disc capcity is not enough, will close disc.\n");
 				dSizeMB = 0;
@@ -1698,23 +2149,6 @@ void CBusiness::BurnFeedbackFileToDisc(BurnTask& task, const DVDDRV_HANDLE pHand
 		{
 			ConvertDirToFileInfo(task, fileInfo.m_strSrcUrl, fileInfo.m_strDestFilePath, true);
 			dSizeMB = 0;
-#if 0
-			//目录 
-			dSizeMB = DirectoryUtil::GetDirSize(fileInfo.m_strSrcUrl.c_str()) / 1024 / 1024;
-			if (dSizeMB + task.m_nAlarmSize * 1.0 >= discInfo.freesize * 1.0)
-			{	//目录大小太大，拆分目录为多个文件
-				ConvertDirToFileInfo(task, fileInfo.m_strSrcUrl, fileInfo.m_strDestFilePath, true);
-				dSizeMB = 0;
-			}
-			else
-			{
-				if (-1 == BurnLocalDir(pHandle, fileInfo))
-				{
-					g_NetLog.Debug("BurnLocalDir fail.\n");
-					break;
-				}
-			}
-#endif
 		}
 		else
 		{
@@ -1722,10 +2156,15 @@ void CBusiness::BurnFeedbackFileToDisc(BurnTask& task, const DVDDRV_HANDLE pHand
 		}
 
 		//刻录结束，更新刻录大小信息
-		task.m_nBurnedSize += dSizeMB;
-		if (task.m_vecFeedbackFileInfo.size() > 0)
-			task.m_vecFeedbackFileInfo.erase(task.m_vecFeedbackFileInfo.begin());
-		g_NetLog.Debug("left burn file count is : %d.\n", task.m_vecFeedbackFileInfo.size());
+		task->m_nBurnedSize += dSizeMB;
+		//同步更新到光驱信息中
+		SetCDRomBurnSize(task->m_vecCDRomInfo.at(0).m_strCDRomID, task->m_nBurnedSize);
+
+		task->m_mutexFeedbackFileInfo.lock();
+		if (task->m_vecFeedbackFileInfo.size() > 0)
+			task->m_vecFeedbackFileInfo.erase(task->m_vecFeedbackFileInfo.begin());
+		task->m_mutexFeedbackFileInfo.unlock();
+		g_NetLog.Debug("left burn file count is : %d.\n", task->m_vecFeedbackFileInfo.size());
 	}
 }
 
@@ -1733,10 +2172,6 @@ std::string CBusiness::Download(std::string strType, std::string strSrcUrl, std:
 {
 	if (strType.compare("file") == 0)
 	{	//文件
-// 		if (strDestUrl.empty())
-// 		{
-// 			CBusiness::GenerateLocalPath(strSrcUrl, strDestUrl);
-// 		}
 		DownloadFile download;
 		g_NetLog.Debug("download file, srcUrl : %s, destUrl:%s.\n", strSrcUrl.c_str(), strDestUrl.c_str());
 		download.CurlDownloadFile(strSrcUrl, strDestUrl);
@@ -1786,6 +2221,7 @@ int CBusiness::WriteFileToDisk(void* pHandle, void* pFileHandle, std::string str
 	{
 		num += size;
 		ret = dvdInterface.DVDSDK_WriteData(pHandle, pFileHandle, buffer, size);
+			//CDataOpr::GetInstance()->SDK_WriteData(pHandle, pFileHandle, buffer, size);
 		if (ret != 0)
 		{
 			g_NetLog.Debug("========= Write [%s] [%ld] Is Failed =========\n", pFileName, num);
@@ -1812,19 +2248,21 @@ int CBusiness::CloseDisc(void* pvHandle, bool bHasBurnFile)
 {
 	try
 	{
-		g_NetLog.Debug("[CBusiness::CloseDisk].\n");
+		g_NetLog.Debug("[CBusiness::CloseDisc].\n");
 		if (pvHandle != NULL)
 		{
 			DVDSDKInterface dvdInterface;
 			DVDDRV_HANDLE* pHandle = (DVDDRV_HANDLE*)pvHandle;
 			if (bHasBurnFile)
 			{
-				g_NetLog.Debug("call DVDSDK_CloseDisc.\n");
+				g_NetLog.Debug("call DVDSDK_CloseDisc begin, pHandle:%0x.\n", pHandle);
 				dvdInterface.DVDSDK_CloseDisc(pHandle);
+				g_NetLog.Debug("call DVDSDK_CloseDisc end.\n");
 			}
-			g_NetLog.Debug("call DVDSDK_LockDoor.\n");
+
+			/*g_NetLog.Debug("call DVDSDK_LockDoor.\n");
 			if(0 != dvdInterface.DVDSDK_LockDoor(pHandle, 0))
-				g_NetLog.Debug("call DVDSDK_LockDoor fail.\n");
+			g_NetLog.Debug("call DVDSDK_LockDoor fail.\n");*/
 
 			g_NetLog.Debug("call DVDSDK_Tray.\n");
 			if (0 != dvdInterface.DVDSDK_Tray(pHandle, 1))
@@ -1834,31 +2272,17 @@ int CBusiness::CloseDisc(void* pvHandle, bool bHasBurnFile)
 			if (0 != dvdInterface.DVDSDK_UnLoad(pHandle))
 				g_NetLog.Debug("call DVDSDK_UnLoad fail.\n");
 
-			for (int i = 0; i < m_burnTask.m_vecCDRomInfo.size(); i++)
+			for (int i = 0; i < m_burnTask->m_vecCDRomInfo.size(); i++)
 			{		//置为为初始化状态
 				g_NetLog.Debug("[CBusiness::CloseDisk]i = %d, m_pDVDHandle = %0x, close Handle : %0x.\n",
-							   i, m_burnTask.m_vecCDRomInfo.at(i).m_pDVDHandle, pHandle);
-				if (m_burnTask.m_vecCDRomInfo.at(i).m_pDVDHandle == pHandle)
+							   i, m_burnTask->m_vecCDRomInfo.at(i).m_pDVDHandle, pHandle);
+				if (m_burnTask->m_vecCDRomInfo.at(i).m_pDVDHandle == pHandle)
 				{
-					SetTaskCDRomState(m_burnTask.m_vecCDRomInfo.at(i).m_strCDRomID, CDROM_UNINIT);
-
+					SetTaskCDRomState(m_burnTask->m_vecCDRomInfo.at(i).m_strCDRomID, CDROM_UNINIT);
+					//同步光驱信息
+					SetCDRomState(m_burnTask->m_vecCDRomInfo.at(i).m_strCDRomID, CDROM_UNINIT);
 					g_NetLog.Debug("[CBusiness::CloseDisk]i = %d, m_pDVDHandle = %0x, close Handle : %0x, cdromState : %d.\n",
-						i, m_burnTask.m_vecCDRomInfo.at(i).m_pDVDHandle, pHandle, m_burnTask.m_vecCDRomInfo.at(i).m_euWorkState);
-
-					//设置队列里任务的对应光驱信息为不可用
-					m_mutexBurnTaskVec.lock();
-					if (m_vecBurnTask.size() > 0)
-					{
-						if (m_vecBurnTask.at(0).m_vecCDRomInfo.size() > i)
-						{
-							m_vecBurnTask.at(0).m_vecCDRomInfo.at(i).m_euWorkState = CDROM_UNINIT;
-							m_vecBurnTask.at(0).m_vecCDRomInfo.at(i).m_nBurnedSize = 0;
-							m_vecBurnTask.at(0).m_vecCDRomInfo.at(i).m_discInfo.discsize = 0;
-							m_vecBurnTask.at(0).m_vecCDRomInfo.at(i).m_discInfo.freesize = 0;
-							m_vecBurnTask.at(0).m_vecCDRomInfo.at(i).m_discInfo.usedsize = 0;
-						}
-					}
-					m_mutexBurnTaskVec.unlock();
+								   i, m_burnTask->m_vecCDRomInfo.at(i).m_pDVDHandle, pHandle, m_burnTask->m_vecCDRomInfo.at(i).m_euWorkState);
 					break;
 				}
 			}
@@ -1893,7 +2317,7 @@ int CBusiness::BurnLocalFile(void* pHandle, FileInfo& fileInfo/*std::string strS
 		if (strDir.compare("/") != 0 && m_mapDirToHandle.find(strDir) == m_mapDirToHandle.end())
 		{
 			g_NetLog.Debug("[CBusiness::BurnLocalFile] DVDSDK CreateDir %s begin.\n", (char*)strDir.c_str());
-			DVDSDK_DIR pDir = dvdInterface.DVDSDK_CreateDir(pHandle, (char*)strDir.c_str());
+			DVDSDK_DIR pDir = CDataOpr::GetInstance()->SDK_CreateDir(pHandle, (char*)strDir.c_str());
 			g_NetLog.Debug("[CBusiness::BurnLocalFile] DVDSDK CreateDir %s end.Dir handle : %0x\n", (char*)strDir.c_str(), pDir);
 			m_mapDirToHandle[strDir] = pDir;
 			pParent = pDir;
@@ -1911,15 +2335,14 @@ int CBusiness::BurnLocalFile(void* pHandle, FileInfo& fileInfo/*std::string strS
 	if (pParent == NULL)
 	{
 		g_NetLog.Debug("parent dir is null, create file :%s in disc.\n", fileInfo.m_strDestFilePath.c_str());
-		dvdFile = dvdInterface.DVDSDK_CreateFile(pHandle, NULL, (char*)fileInfo.m_strDestFilePath.c_str(), 0);
+		dvdFile = CDataOpr::GetInstance()->SDK_CreateFile(pHandle, NULL, (char*)fileInfo.m_strDestFilePath.c_str(), 0);
 	}
 	else
 	{
 		g_NetLog.Debug("parent dir is not null, create file :%s in disc.\n", strFileName.c_str());
-		dvdFile = dvdInterface.DVDSDK_CreateFile(pHandle, pParent, (char*)strFileName.c_str(), 0);
+		dvdFile = CDataOpr::GetInstance()->SDK_CreateFile(pHandle, pParent, (char*)strFileName.c_str(), 0);
 	}
-	int nRet = dvdInterface.DVDSDK_SetFileLoca(pHandle, dvdFile);
-
+	int nRet = CDataOpr::GetInstance()->SDK_SetFileLocal(pHandle, dvdFile);
 	if (fileInfo.m_strFileLocation.compare("local") == 0)
 		strLocalPath = fileInfo.m_strSrcUrl;
 	else
@@ -1928,6 +2351,7 @@ int CBusiness::BurnLocalFile(void* pHandle, FileInfo& fileInfo/*std::string strS
 	if (-1 == WriteFileToDisk(pHandle, dvdFile, strLocalPath))
 	{
 		printf("WriteFIleToDisk fail.\n");
+		dvdInterface.DVDSDK_CloseFile(pHandle, dvdFile);
 		return -1;
 	}
 	g_NetLog.Debug("Write file %s to Disc Success.\n", fileInfo.m_strDestFilePath.c_str());
@@ -1951,12 +2375,12 @@ int	CBusiness::BurnLocalFile(void* pHandle, std::string strSrcPath, std::string 
 	DVDSDKInterface dvdInterface;
 	std::string strDestName = FileUtil::GetFileName(strDestPath);
 	//目前只是根目录
-	DVDSDK_FILE dvdFile = dvdInterface.DVDSDK_CreateFile(pHandle, NULL, (char*)strDestName.c_str(), 0);
-	int nRet = dvdInterface.DVDSDK_SetFileLoca(pHandle, dvdFile);
+	DVDSDK_FILE dvdFile = CDataOpr::GetInstance()->SDK_CreateFile(pHandle, NULL, (char*)strDestName.c_str(), 0);
+	int nRet = CDataOpr::GetInstance()->SDK_SetFileLocal(pHandle, dvdFile);
 	{
 		if (-1 == WriteFileToDisk(pHandle, dvdFile, strSrcPath))
 		{
-			printf("WriteFIleToDisk fail.\n");
+			printf("WriteFileToDisk fail.\n");
 			return -1;
 		}
 	}
@@ -2031,7 +2455,8 @@ void CBusiness::GetBurnStateString(int nBurnState, std::string& strDes)
 
 int CBusiness::GetBurnTaskSize()
 {
-	return m_vecBurnTask.size();
+	int nRet = m_vecBurnTask.size();
+	return nRet;
 }
 
 bool CBusiness::CheckExistCDRom(std::string strCDRomID)
@@ -2086,11 +2511,11 @@ void CBusiness::GetFileListByDir(std::string strDir, std::vector<std::string>& v
 	}
 }
 
-void CBusiness::ConvertDirToFileInfo(BurnTask& task, std::string strSrcDir, std::string strDestDir, bool bFeedback)
+void CBusiness::ConvertDirToFileInfo(BurnTask* task, std::string strSrcDir, std::string strDestDir, bool bFeedback)
 {
 	strSrcDir = DirectoryUtil::EnsureSlashEnd(strSrcDir);
 	strDestDir = DirectoryUtil::EnsureSlashEnd(strDestDir);
-	g_NetLog.Debug("strSrcDir is : %s, strDestDir is : %s.\n", strSrcDir.c_str(), strDestDir.c_str());
+	g_NetLog.Debug("[CBusiness::ConvertDirToFileInfo] strSrcDir is : %s, strDestDir is : %s.\n", strSrcDir.c_str(), strDestDir.c_str());
 	std::string strParse = strSrcDir + "*";
 
 	std::vector<string> vecFilePath;
@@ -2100,12 +2525,6 @@ void CBusiness::ConvertDirToFileInfo(BurnTask& task, std::string strSrcDir, std:
 
 	GetFileListByDir(strSrcDir, vecFilePath);
 	vecFileDstPath.assign(vecFilePath.begin(), vecFilePath.end());
-	//DirectoryUtil::GetFileList(strSrcDir, vecFilePath);
-
-	//std::vector<string> vecFileName;
-	//DirectoryUtil::GetFileNameList(strSrcDir, vecFileName);
-
-	//DirectoryUtil::GetFileList(strSrcDir, vecFileDstPath);
 
 	g_NetLog.Debug("vecFilePath size : %d, vecFileDstPath size : %d.\n", vecFilePath.size(), vecFileDstPath.size());
 	int nIndex = -1;
@@ -2122,49 +2541,49 @@ void CBusiness::ConvertDirToFileInfo(BurnTask& task, std::string strSrcDir, std:
 	//vecFilePath 中 find strSrcDir replace 为strDestDir即可。
 	if (!bFeedback)
 	{
-		std::vector<FileInfo>::iterator it = task.m_vecBurnFileInfo.begin();
-		std::vector<FileInfo> fileNew;
-		fileNew.clear();
-		for (int i = 0; i < vecFileDstPath.size()/*vecFileName.size()*/; i++)
+		task->m_mutexBurnFileInfo.lock();
+		std::vector<FileInfo>::iterator it = task->m_vecBurnFileInfo.begin();
+		for (int i = 0; i < vecFileDstPath.size(); i++)
 		{
-			//vecFileName.at(i) = DirectoryUtil::EnsureSlashEnd(strDestDir) + vecFileName.at(i);
 			FileInfo fileInfo;
 			fileInfo.m_nFlag = 1;
 			fileInfo.m_strType = "file";
 			fileInfo.m_strFileLocation = "local";
 			fileInfo.m_strSrcUrl = vecFilePath.at(i);
-			fileInfo.m_strDestFilePath = vecFileDstPath.at(i);//vecFileName.at(i);
+			fileInfo.m_strDestFilePath = vecFileDstPath.at(i);
 			g_NetLog.Debug("fileInfo.m_strSrcUrl is %s, fileInfo.m_strDestFilePath is %s.\n", fileInfo.m_strSrcUrl.c_str(), fileInfo.m_strDestFilePath.c_str());
-			if (it != task.m_vecBurnFileInfo.end())
+			if (it != task->m_vecBurnFileInfo.end())
 			{
-				it = task.m_vecBurnFileInfo.insert(it, fileInfo);
+				it = task->m_vecBurnFileInfo.insert(it, fileInfo);
 			}
 			else
 			{
-				task.m_vecBurnFileInfo.push_back(fileInfo);
+				task->m_vecBurnFileInfo.push_back(fileInfo);
 			}
 		}
+		task->m_mutexBurnFileInfo.unlock();
 	}
 	else
 	{
-		std::vector<FileInfo>::iterator it = task.m_vecFeedbackFileInfo.begin();
-		for (int i = 0; i < vecFileDstPath.size()/*vecFileName.size()*/; i++)
+		task->m_mutexFeedbackFileInfo.lock();
+		std::vector<FileInfo>::iterator it = task->m_vecFeedbackFileInfo.begin();
+		for (int i = 0; i < vecFileDstPath.size(); i++)
 		{
-			//vecFileName.at(i) = DirectoryUtil::EnsureSlashEnd(strDestDir) + vecFileName.at(i);
 			FileInfo fileInfo;
 			fileInfo.m_nFlag = 1;
 			fileInfo.m_strType = "file";
 			fileInfo.m_strFileLocation = "local";
 			fileInfo.m_strSrcUrl = vecFilePath.at(i);
-			fileInfo.m_strDestFilePath = vecFileDstPath.at(i); //vecFileName.at(i);
-			if (it != task.m_vecFeedbackFileInfo.end())
+			fileInfo.m_strDestFilePath = vecFileDstPath.at(i);
+			if (it != task->m_vecFeedbackFileInfo.end())
 			{
-				it = task.m_vecFeedbackFileInfo.insert(it, fileInfo);
+				it = task->m_vecFeedbackFileInfo.insert(it, fileInfo);
 			}
 			else
 			{
-				task.m_vecFeedbackFileInfo.push_back(fileInfo);
+				task->m_vecFeedbackFileInfo.push_back(fileInfo);
 			}
 		}
+		task->m_mutexFeedbackFileInfo.unlock();
 	}
 }

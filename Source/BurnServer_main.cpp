@@ -17,6 +17,7 @@
 #include <netinet/in.h> 
 #include <net/if.h> 
 #include <string.h>
+#include <time.h>
 
 #elif defined WIN32
 #include <Windows.h>
@@ -156,24 +157,24 @@ using std::string;
 int main(int argc, char *argv[])
 {
 	printf("Enter main.\n");
-#if 0 // for test
-	Poco::DateTime now;
-	cout << "data time is :" << now.day() << endl;
-	
-	string jsonString = "{ \"name\" : \"罗伯特\" }";
-	cout << "jsonString" << jsonString << endl;
-	Poco::JSON::Parser	jsonParser;
-	Poco::Dynamic::Var result = jsonParser.parse(jsonString);
-	Poco::JSON::Object::Ptr pObj = result.extract<Poco::JSON::Object::Ptr>();
-	Poco::Dynamic::Var varName = pObj->get("name");
-	cout << "name is " << varName.toString() << endl;
-#endif 
 
 #ifdef WIN32
 #else
 
-	struct	sigaction	act;
+#if 0/*gdb*/
 	struct	rlimit		rl;
+
+	rl.rlim_cur	= 10240;
+	rl.rlim_max	= 10240;
+	setrlimit(RLIMIT_NOFILE,&rl);
+
+	rl.rlim_cur	= RLIM_INFINITY;
+	rl.rlim_max	= RLIM_INFINITY;
+	setrlimit(RLIMIT_CORE,&rl);
+#endif
+
+	struct	sigaction	act;
+	//struct	rlimit		rl;
 
 	act.sa_flags = 0;
 	act.sa_handler = SIG_IGN;
@@ -185,15 +186,11 @@ int main(int argc, char *argv[])
 	(void)::sigaction(SIGQUIT, &act, NULL);
 	(void)::sigaction(SIGALRM, &act, NULL);
 
-	//rl.rlim_cur = 10240;
-	//rl.rlim_max = 10240;
-	//setrlimit(RLIMIT_NOFILE, &rl);
 
-	//rl.rlim_cur = RLIM_INFINITY;
-	//rl.rlim_max = RLIM_INFINITY;
-	//setrlimit(RLIMIT_CORE, &rl);
+	
+
 #endif
-
+	
 
 #ifdef WIN32
 

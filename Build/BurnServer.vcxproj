@@ -165,6 +165,7 @@
     <ClCompile Include="..\Source\CharsetConvert.cpp" />
     <ClCompile Include="..\Source\CharsetConvertMFC.cpp" />
     <ClCompile Include="..\Source\CharsetConvertSTD.cpp" />
+    <ClCompile Include="..\Source\DataOpr.cpp" />
     <ClCompile Include="..\Source\DirectoryUtil.cpp" />
     <ClCompile Include="..\Source\DownloadFile.cpp" />
     <ClCompile Include="..\Source\FileUtil.cpp" />
@@ -528,6 +529,7 @@
     <ClInclude Include="..\Source\CharsetConvertMFC.h" />
     <ClInclude Include="..\Source\CharsetConvertSTD.h" />
     <ClInclude Include="..\Source\CommonDefine.h" />
+    <ClInclude Include="..\Source\DataOpr.h" />
     <ClInclude Include="..\Source\DataStructDefine.h" />
     <ClInclude Include="..\Source\DirectoryUtil.h" />
     <ClInclude Include="..\Source\DownloadFile.h" />

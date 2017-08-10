@@ -1,5 +1,5 @@
 #include "CharsetConvert.h"
-#include "Log/NetLog.h"
+#include "NetLog.h"
 #include <string.h>
 #include <stdio.h>
 #ifdef WIN32

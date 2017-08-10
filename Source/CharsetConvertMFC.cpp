@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "CharsetConvertMFC.h"
 #include "CharsetConvertSTD.h"
 

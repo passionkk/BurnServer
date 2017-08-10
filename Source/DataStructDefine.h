@@ -72,7 +72,8 @@ class CDRomInfo
 {
 public:
 	CDRomInfo()
-		: m_discInfo()
+		: m_discInfo(),
+		  m_mutex()
 	{
 		m_strCDRomName = "";
 		m_strCDRomID = "";
@@ -116,6 +117,12 @@ public:
 
 	virtual ~CDRomInfo(){};
 
+	void SetCDRomWorkState(CDROMSTATE state)
+	{
+		Poco::Mutex::ScopedLock     lock(m_mutex);
+		m_euWorkState = state;
+	};
+
 public:
 	std::string		m_strCDRomName;		//光驱名: 光驱1
 	std::string		m_strCDRomID;		//光驱ID: CDRom_1 CDRom_2...CDRom_n  从1开始
@@ -125,6 +132,7 @@ public:
 	void*			m_pDVDHandle;		//光驱Handle
 	int				m_nBurnedSize;		//已刻录大小
 	DiskInfo		m_discInfo;			//光盘信息
+	Poco::Mutex		m_mutex;
 };
 
 class FileInfo
@@ -200,41 +208,79 @@ class BurnTask
 {
 public:
 	BurnTask()
+		:	m_mutexThreadNum(),
+			m_mutexFeedbackFileInfo(),
+			m_mutexBurnFileInfo()
 	{
 		m_strCDRomID = "";
 		m_strCDRomName = "";
-		m_vecCDRomInfo.clear();
 		m_nUseCDRomIndex = 0;
-		m_strBurnMode = "";
-		m_strBurnType = "";
-		m_strDiscName = "";
 		m_nBurnedSize = 0;
-		m_nAlarmSize = 0;
+		m_strDiscName = "";
+		m_nThreadID = 0;
 		m_vecBurnFileInfo.clear();
-		m_nCurBurnFileIndex = 0;
-		m_nBurnSpeed = 0;
+		m_vecFeedbackFileInfo.clear();
+		m_taskRealState = TASK_INIT;
+
+		m_strCDRomID2 = "";
+		m_strCDRomName2 = "";
+		m_nUseCDRomIndex2 = 0;
+		m_nBurnedSize2 = 0;
+		m_strDiscName2 = "";
+		m_nThreadID2 = 0;
+		m_vecBurnFileInfo2.clear();
+		m_vecFeedbackFileInfo2.clear();
+		m_taskRealState2 = TASK_INIT;
+
+		m_vecCDRomInfo.clear();
 		m_strSessionID = "";
+		m_nThreadNum = 0;
+		m_nAlarmSize = 0;
+		m_strBurnType = "";
+		m_strBurnMode = "";
 		m_taskState = TASK_INIT;
+		m_nBurnSpeed = 0;
+		m_nCurBurnFileIndex = 0;
 	};
 
 public:
 	std::string					m_strCDRomID;
 	std::string					m_strCDRomName;
-	std::vector<CDRomInfo>		m_vecCDRomInfo;
-	int							m_nUseCDRomIndex;
-	DiskInfo					m_discInfo;			//光盘信息，包含光盘类型，大小等。
+	int							m_nUseCDRomIndex;	//当前正在使用的光驱索引
 	int							m_nBurnedSize;		//已刻录大小
-	int							m_nAlarmSize;		//报警大小阈值
-	std::string					m_strBurnMode;		//"singleBurn" "doubleParallelBurn" "doubleRelayBurn" 
 	std::string					m_strDiscName;
-	std::string					m_strBurnType;		//"realTimeBurn" ”pseudoRealTimeBurn” ”fileBurn”
-	BurnStreamInfo				m_burnStreamInfo;
+	pthread_t					m_nThreadID;			//双盘同刻2个线程ID
 	std::vector<FileInfo>		m_vecBurnFileInfo;
 	std::vector<FileInfo>		m_vecFeedbackFileInfo;
-	int							m_nCurBurnFileIndex;	//当前刻录文件索引
-	int							m_nBurnSpeed;		//光驱刻录速度
-	BurnStateFeedbcak			m_burnStateFeedback;
+	TASKSTATE					m_taskRealState;		//实际刻录状态
+
+	// 双盘同刻需要的参数
+	std::string					m_strCDRomID2;
+	std::string					m_strCDRomName2;
+	int							m_nUseCDRomIndex2;		//双盘同刻时，第二个使用的光驱索引
+	int							m_nBurnedSize2;			//已刻录大小
+	std::string					m_strDiscName2;			//光盘名
+	pthread_t					m_nThreadID2;
+	std::vector<FileInfo>		m_vecFeedbackFileInfo2; //双盘同刻
+	std::vector<FileInfo>		m_vecBurnFileInfo2;		//双盘同刻时，任务分别处理
+	TASKSTATE					m_taskRealState2;		//实际刻录状态
+
+	//公用的参数
+	std::vector<CDRomInfo>		m_vecCDRomInfo;
 	std::string					m_strSessionID;
-	TASKSTATE					m_taskState;		//接收上层控制刻录状态
-	TASKSTATE					m_taskRealState;	//实际刻录状态
+	int							m_nThreadNum;			//已开启线程数
+	Poco::Mutex					m_mutexThreadNum;		//mutex for m_nThreadNum
+	BurnStateFeedbcak			m_burnStateFeedback;
+	Poco::Mutex					m_mutexFeedbackFileInfo;
+	DiskInfo					m_discInfo;			//光盘信息，包含光盘类型，大小等。
+	int							m_nAlarmSize;		//报警大小阈值
+	std::string					m_strBurnType;		//"realTimeBurn" ”pseudoRealTimeBurn” ”fileBurn”
+	std::string					m_strBurnMode;		//"singleBurn" "doubleParallelBurn" "doubleRelayBurn" "hybirdBurn"(混合刻录，有几个光驱用几个)
+	Poco::Mutex					m_mutexBurnFileInfo;
+	TASKSTATE					m_taskState;			//接收上层控制刻录状态
+
+	int							m_nBurnSpeed;			//光驱刻录速度 暂时不用
+	BurnStreamInfo				m_burnStreamInfo;		//暂时不用
+	int							m_nCurBurnFileIndex;	//当前刻录文件索引 保留字段
+
 };

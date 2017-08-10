@@ -30,6 +30,9 @@ public:
 	RetransChannel GetServerConfigInfo(int nServerType);
 	std::string GetDownloadDir();
 
+	//获取报警大小值
+	int GetDiscAlarmSize();
+
 	//获取LogServer信息
 	void GetLogRecvInfo(std::vector<stLogRecvInfo>& pLogRecvInfo);
 
@@ -53,6 +56,10 @@ protected:
 	Poco::DynamicStruct			m_dsUDPInfo;
 	RetransChannel				m_chnnelUdp;
 	std::string					m_strConfigPath;
+
+	//disc alarm size
+	Poco::DynamicStruct			m_dsAlarmSize;
+	int							m_nDiscAlarmSize;
 
 	//Log Recv config
 	Poco::DynamicStruct			m_LogRecvInfo;

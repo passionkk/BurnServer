@@ -55,6 +55,9 @@
     <Filter Include="Charset">
       <UniqueIdentifier>{50a98d97-b22f-4e69-b180-1b02c6520ec3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Data">
+      <UniqueIdentifier>{0f17c5bf-9784-4bf4-8ab6-59ed35fd5768}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
@@ -107,6 +110,9 @@
     </ClCompile>
     <ClCompile Include="..\Source\CharsetConvertSTD.cpp">
       <Filter>Charset</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\DataOpr.cpp">
+      <Filter>Data</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1195,6 +1201,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\CharsetConvertSTD.h">
       <Filter>Charset</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\DataOpr.h">
+      <Filter>Data</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

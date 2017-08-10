@@ -190,7 +190,7 @@ void CTestProtocolDlg::OnBnClickedBtnStartburn()
 		CString strSessionID = strRecv.Mid(nIndex + 14, 36);
 		SetDlgItemText(IDC_EDIT_SESSIONID, strSessionID);
 	}
-
+	//立即发送 addBurnFile stopBurn协议
 }
 
 void CTestProtocolDlg::OnBnClickedBtnPauseburn()

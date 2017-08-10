@@ -17,7 +17,8 @@ const char* g_pConfigPath = "..\\Bin\\x86\\Debug\\config.json";
 MainConfig *MainConfig::m_pInstance = NULL;
 
 MainConfig::MainConfig()
-:m_strFile("")
+	:m_strFile(""),
+	m_nDiscAlarmSize(0)
 {
 }
 
@@ -219,6 +220,22 @@ void MainConfig::GetLogRecvInfo(std::vector<stLogRecvInfo>& vecLogRecvInfo)
 		{
 			vecLogRecvInfo.push_back(m_vecLogRecvInfo.at(i));
 		}
+	}
+	catch (...)
+	{
+		g_NetLog.Debug("%s catched.\n", __PRETTY_FUNCTION__);
+	}
+}
+
+int MainConfig::GetDiscAlarmSize()
+{
+	try
+	{
+		Object::Ptr obj = m_varFullConfig.extract<Object::Ptr>();
+
+		m_dsAlarmSize = Object::makeStruct(obj->getObject("DiscAlarmSize"));
+		m_nDiscAlarmSize = (int)m_dsAlarmSize["DefaultAlarmSize"];
+		return m_nDiscAlarmSize <= 0 ? 300 : m_nDiscAlarmSize;
 	}
 	catch (...)
 	{
